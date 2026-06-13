@@ -1,0 +1,30 @@
+{
+  "id": "code-review",
+  "name": "code-review",
+  "title": "Code Review - Clean Code 规范检查",
+  "description": "对整个项目 Dart 代码进行 Clean Code 规范检查",
+  "status": "completed",
+  "dev_type": "docs",
+  "scope": "fullstack",
+  "package": null,
+  "priority": "P2",
+  "creator": "lengsukq",
+  "assignee": "lengsukq",
+  "createdAt": "2026-06-13",
+  "completedAt": "2026-06-13",
+  "branch": null,
+  "base_branch": "master",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [
+    "06-13-code-review-r2"
+  ],
+  "parent": null,
+  "relatedFiles": [
+    "research/clean-code-review.md"
+  ],
+  "notes": "详见 research/clean-code-review.md。P0: 空catch吞异常、JSON不安全转型。P1: 错误处理不一致、Future.wait转型、重复代码。P2: build方法拆分、常量提取、字符串抽取。",
+  "meta": {}
+}
