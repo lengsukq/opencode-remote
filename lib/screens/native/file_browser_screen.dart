@@ -75,7 +75,16 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
     }
   }
 
+  bool _isImageFile(String name) {
+    final ext = name.split('.').last.toLowerCase();
+    return ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg'].contains(ext);
+  }
+
   void _showFileContent(FileNode node) async {
+    if (_isImageFile(node.name)) {
+      _showImagePreview(node);
+      return;
+    }
     try {
       final content = await widget.api.readFile(node.path);
       if (!mounted) return;
@@ -113,7 +122,85 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
     }
   }
 
+  void _showImagePreview(FileNode node) {
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        backgroundColor: AppColors.surface,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AppBar(
+              title: Text(node.name, style: const TextStyle(color: AppColors.textPrimary, fontSize: 14)),
+              leading: IconButton(
+                icon: const Icon(Icons.close, color: AppColors.textSecondary),
+                onPressed: () => Navigator.pop(ctx),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                children: [
+                  Icon(Icons.image, size: 64, color: AppColors.textTertiary),
+                  const SizedBox(height: 12),
+                  Text(node.name, style: TextStyle(color: AppColors.textPrimary, fontSize: 14)),
+                  if (node.size != null) ...[
+                    const SizedBox(height: 4),
+                    Text('${node.size} bytes', style: TextStyle(color: AppColors.textTertiary, fontSize: 12)),
+                  ],
+                  const SizedBox(height: 16),
+                  Text(
+                    '图片预览需要在服务端配置后可用',
+                    style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _readFileByPath(String path) async {
+    final name = path.split('/').last;
+    final ext = name.contains('.') ? name.split('.').last.toLowerCase() : '';
+    final isImage = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg'].contains(ext);
+    if (isImage) {
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        builder: (ctx) => Dialog(
+          backgroundColor: AppColors.surface,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AppBar(
+                title: Text(name, style: const TextStyle(color: AppColors.textPrimary, fontSize: 14)),
+                leading: IconButton(
+                  icon: const Icon(Icons.close, color: AppColors.textSecondary),
+                  onPressed: () => Navigator.pop(ctx),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  children: [
+                    Icon(Icons.image, size: 64, color: AppColors.textTertiary),
+                    const SizedBox(height: 12),
+                    Text(name, style: TextStyle(color: AppColors.textPrimary, fontSize: 14)),
+                    const SizedBox(height: 16),
+                    Text('图片预览需要在服务端配置后可用', style: TextStyle(color: AppColors.textSecondary, fontSize: 13), textAlign: TextAlign.center),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+      return;
+    }
     try {
       final content = await widget.api.readFile(path);
       if (!mounted) return;
@@ -125,7 +212,7 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
             mainAxisSize: MainAxisSize.max,
             children: [
               AppBar(
-                title: Text(path.split('/').last, style: const TextStyle(color: AppColors.textPrimary, fontSize: 14)),
+                title: Text(name, style: const TextStyle(color: AppColors.textPrimary, fontSize: 14)),
                 leading: IconButton(
                   icon: const Icon(Icons.close, color: AppColors.textSecondary),
                   onPressed: () => Navigator.pop(ctx),
