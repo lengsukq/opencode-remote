@@ -19,11 +19,27 @@ class _SessionListScreenState extends State<SessionListScreen> {
   List<Session> _sessions = [];
   bool _loading = true;
   String? _error;
+  bool _searching = false;
+  final _searchCtrl = TextEditingController();
+
+  List<Session> get _filteredSessions {
+    if (!_searching || _searchCtrl.text.isEmpty) return _sessions;
+    final q = _searchCtrl.text.toLowerCase();
+    return _sessions.where((s) =>
+      s.title.toLowerCase().contains(q) || s.id.toLowerCase().contains(q)
+    ).toList();
+  }
 
   @override
   void initState() {
     super.initState();
     _load();
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -479,11 +495,20 @@ class _SessionListScreenState extends State<SessionListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final displaySessions = _filteredSessions;
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('会话列表'),
         actions: [
+          IconButton(
+            icon: Icon(_searching ? Icons.search_off : Icons.search, color: AppColors.textSecondary),
+            tooltip: '搜索',
+            onPressed: () => setState(() {
+              _searching = !_searching;
+              if (!_searching) _searchCtrl.clear();
+            }),
+          ),
           IconButton(
             icon: const Icon(Icons.add, color: AppColors.textSecondary),
             tooltip: '新建会话',
@@ -491,26 +516,63 @@ class _SessionListScreenState extends State<SessionListScreen> {
           ),
         ],
       ),
-      body: RefreshIndicator(
-        color: AppColors.primary,
-        onRefresh: _load,
-        child: _loading
-            ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
-            : _error != null
-                ? Center(child: Text(_error!, style: TextStyle(color: AppColors.textSecondary)))
-                : _sessions.isEmpty
-                    ? Center(child: Text('暂无会话', style: TextStyle(color: AppColors.textTertiary)))
-                    : ListView.builder(
-                        padding: const EdgeInsets.all(12),
-                        itemCount: _sessions.length,
-                        itemBuilder: (ctx, i) => _SessionTile(
-                          session: _sessions[i],
-                          onTap: () => Navigator.push(context, MaterialPageRoute(
-                            builder: (_) => ChatScreen(session: _sessions[i], entry: widget.entry, api: widget.api),
-                          )),
-                          onLongPress: () => _showSessionActions(_sessions[i]),
-                        ),
-                      ),
+      body: Column(
+        children: [
+          if (_searching)
+            Container(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+              color: AppColors.surface,
+              child: TextField(
+                controller: _searchCtrl,
+                autofocus: true,
+                style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
+                decoration: InputDecoration(
+                  hintText: '搜索会话标题...',
+                  hintStyle: TextStyle(color: AppColors.textTertiary),
+                  prefixIcon: Icon(Icons.search, color: AppColors.textSecondary, size: 20),
+                  suffixIcon: _searchCtrl.text.isNotEmpty
+                    ? IconButton(
+                        icon: Icon(Icons.clear, color: AppColors.textSecondary, size: 18),
+                        onPressed: () {
+                          _searchCtrl.clear();
+                          setState(() {});
+                        },
+                      )
+                    : null,
+                  filled: true,
+                  fillColor: AppColors.background,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: AppColors.border)),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: AppColors.border)),
+                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: AppColors.borderFocused)),
+                ),
+                onChanged: (_) => setState(() {}),
+              ),
+            ),
+          Expanded(
+            child: RefreshIndicator(
+              color: AppColors.primary,
+              onRefresh: _load,
+              child: _loading
+                  ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+                  : _error != null
+                      ? Center(child: Text(_error!, style: TextStyle(color: AppColors.textSecondary)))
+                      : displaySessions.isEmpty
+                          ? Center(child: Text(_searching ? '无匹配会话' : '暂无会话', style: TextStyle(color: AppColors.textTertiary)))
+                          : ListView.builder(
+                              padding: const EdgeInsets.all(12),
+                              itemCount: displaySessions.length,
+                              itemBuilder: (ctx, i) => _SessionTile(
+                                session: displaySessions[i],
+                                onTap: () => Navigator.push(context, MaterialPageRoute(
+                                  builder: (_) => ChatScreen(session: displaySessions[i], entry: widget.entry, api: widget.api),
+                                )),
+                                onLongPress: () => _showSessionActions(displaySessions[i]),
+                              ),
+                            ),
+            ),
+          ),
+        ],
       ),
     );
   }
