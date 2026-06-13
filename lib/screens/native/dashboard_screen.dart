@@ -92,7 +92,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           children: [
             Padding(
               padding: const EdgeInsets.all(16),
-              child: Text('切换服务器', style: TextStyle(color: AppColors.textPrimary, fontSize: 16)),
+              child: Text('切换服务�?, style: TextStyle(color: AppColors.textPrimary, fontSize: 16)),
             ),
             const Divider(),
             ...servers.map((s) => ListTile(
@@ -129,7 +129,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           autofocus: true,
           style: const TextStyle(color: AppColors.textPrimary),
           decoration: const InputDecoration(
-            hintText: 'provider ID (如 openai)',
+            hintText: 'provider ID (�?openai)',
             hintStyle: TextStyle(color: AppColors.textTertiary),
             enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: AppColors.border)),
             focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: AppColors.borderFocused)),
@@ -175,7 +175,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (apiKey == null || apiKey.isEmpty) return;
     try {
       await _api.setAuth(providerID, {'apiKey': apiKey});
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('认证已设置')));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('认证已设�?)));
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('设置认证失败: $e')));
     }
@@ -190,7 +190,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.swap_horiz, color: AppColors.textSecondary),
-            tooltip: '切换服务器',
+            tooltip: '切换服务�?,
             onPressed: _switchServer,
           ),
           IconButton(
@@ -203,19 +203,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
               if (v == 'dispose') {
                 try {
                   await _api.disposeInstance();
-                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('实例已销毁')));
+                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('实例已销�?)));
                 } catch (e) {
-                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('销毁失败: $e')));
+                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('销毁失�? $e')));
                 }
               } else if (v == 'log') {
                 await _api.writeLog('client', 'info', 'Dashboard health check from remote app', extra: {'url': _entry.url});
-                if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('日志已写入')));
+                if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('日志已写�?)));
               } else if (v == 'auth') {
-                _showAuthDialog();
+                await _showAuthDialog();
               }
             },
             itemBuilder: (_) => [
-              const PopupMenuItem(value: 'dispose', child: ListTile(leading: Icon(Icons.power_settings_new, size: 18), title: Text('销毁实例', style: TextStyle(fontSize: 13)))),
+              const PopupMenuItem(value: 'dispose', child: ListTile(leading: Icon(Icons.power_settings_new, size: 18), title: Text('销毁实�?, style: TextStyle(fontSize: 13)))),
               const PopupMenuItem(value: 'log', child: ListTile(leading: Icon(Icons.article, size: 18), title: Text('写入诊断日志', style: TextStyle(fontSize: 13)))),
               const PopupMenuItem(value: 'auth', child: ListTile(leading: Icon(Icons.key, size: 18), title: Text('设置认证', style: TextStyle(fontSize: 13)))),
             ],
@@ -264,7 +264,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('最近会话', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+            Text('最近会�?, style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
             TextButton(
               onPressed: () => Navigator.push(context, MaterialPageRoute(
                 builder: (_) => SessionListScreen(entry: widget.entry, api: _api),
@@ -332,7 +332,7 @@ class _StatusCard extends StatelessWidget {
                 Text(host, style: const TextStyle(color: AppColors.textPrimary, fontSize: 14, fontWeight: FontWeight.w500)),
                 const SizedBox(height: 2),
                 Text(
-                  isHealthy ? 'v${health?.version ?? "?"} · 已连接' : '无法连接',
+                  isHealthy ? 'v${health?.version ?? "?"} · 已连�? : '无法连接',
                   style: TextStyle(color: isHealthy ? AppColors.success : AppColors.danger, fontSize: 12),
                 ),
               ],
@@ -394,7 +394,7 @@ class _SessionCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(session.title.isNotEmpty ? session.title : '未命名会话',
+                    Text(session.title.isNotEmpty ? session.title : '未命名会�?,
                         style: const TextStyle(color: AppColors.textPrimary, fontSize: 13)),
                     const SizedBox(height: 2),
                     Text(timeStr, style: TextStyle(color: AppColors.textTertiary, fontSize: 11)),
@@ -483,7 +483,7 @@ String _formatTime(int ms) {
   final now = DateTime.now();
   final diff = now.difference(dt);
   if (diff.inMinutes < 1) return '刚刚';
-  if (diff.inHours < 1) return '${diff.inMinutes} 分钟前';
-  if (diff.inDays < 1) return '${diff.inHours} 小时前';
+  if (diff.inHours < 1) return '${diff.inMinutes} 分钟�?;
+  if (diff.inDays < 1) return '${diff.inHours} 小时�?;
   return '${diff.inDays} 天前';
 }

@@ -141,6 +141,14 @@ class _SessionListScreenState extends State<SessionListScreen> {
         await _renameSession(session);
       case 'share':
         await _shareSession(session);
+      case 'abort':
+        await _abortSession(session);
+      case 'unshare':
+        await _unshareSession(session);
+      case 'children':
+        await _showChildSessions(session);
+      case 'todo':
+        await _showTodoList(session);
       case 'diff':
         await _showDiff(session);
       case 'summarize':

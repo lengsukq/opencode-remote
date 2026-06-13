@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models.dart';
 
@@ -87,6 +87,13 @@ class OpenCodeApi {
     return VcsInfo.fromJson(jsonDecode(res.body));
   }
 
+  // --- Path ---
+  Future<PathInfo> getPath() async {
+    final res = await _get('/path');
+    _check(res);
+    return PathInfo.fromJson(jsonDecode(res.body));
+  }
+
   // --- Instance ---
   Future<bool> disposeInstance() async {
     final res = await _post('/instance/dispose');
@@ -121,8 +128,9 @@ class OpenCodeApi {
     return res.statusCode == 200;
   }
 
-  Future<void> abortSession(String id) async {
-    await _post('/session/$id/abort');
+  Future<bool> abortSession(String id) async {
+    final res = await _post('/session/$id/abort');
+    return res.statusCode == 200;
   }
 
   Future<Session> updateSession(String id, {String? title}) async {
@@ -215,52 +223,62 @@ class OpenCodeApi {
     return [];
   }
 
-  Future<Map<String, dynamic>> getMessageDetail(String sessionId, String messageId) async {
+  Future<SessionMessageResponse> getMessageDetail(String sessionId, String messageId) async {
     final res = await _get('/session/$sessionId/message/$messageId');
     _check(res);
-    return jsonDecode(res.body) as Map<String, dynamic>;
+    return SessionMessageResponse.fromJson(jsonDecode(res.body));
   }
 
-  Future<Map<String, dynamic>> sendMessage(
+  Future<SessionMessageResponse> sendMessage(
     String sessionId, {
     required String content,
     String? model,
     String? agent,
     String? messageID,
+    bool? noReply,
+    String? system,
+    List<Map<String, dynamic>>? tools,
   }) async {
     final bodyParts = [
       {'type': 'text', 'text': content}
     ];
     final body = <String, dynamic>{'parts': bodyParts};
-    if (model != null) {
-      final parts = model.split('/');
-      body['model'] = {'providerID': parts[0], 'modelID': parts.sublist(1).join('/')};
-    }
+    if (model != null) body['model'] = model;
     if (agent != null) body['agent'] = agent;
     if (messageID != null) body['messageID'] = messageID;
-
+    if (noReply != null) body['noReply'] = noReply;
+    if (system != null) body['system'] = system;
+    if (tools != null) body['tools'] = tools;
     final res = await _post('/session/$sessionId/message', body: body);
     _check(res);
-    return jsonDecode(res.body) as Map<String, dynamic>;
+    return SessionMessageResponse.fromJson(jsonDecode(res.body));
   }
 
-  Future<void> sendMessageAsync(String sessionId, String content, {String? model, String? agent}) async {
+  Future<void> sendMessageAsync(String sessionId, String content, {
+    String? model,
+    String? agent,
+    String? messageID,
+    bool? noReply,
+    String? system,
+    List<Map<String, dynamic>>? tools,
+  }) async {
     final bodyParts = [
       {'type': 'text', 'text': content}
     ];
     final body = <String, dynamic>{'parts': bodyParts};
-    if (model != null) {
-      final parts = model.split('/');
-      body['model'] = {'providerID': parts[0], 'modelID': parts.sublist(1).join('/')};
-    }
+    if (model != null) body['model'] = model;
     if (agent != null) body['agent'] = agent;
+    if (messageID != null) body['messageID'] = messageID;
+    if (noReply != null) body['noReply'] = noReply;
+    if (system != null) body['system'] = system;
+    if (tools != null) body['tools'] = tools;
     final res = await _post('/session/$sessionId/prompt_async', body: body);
     if (res.statusCode != 204) {
       throw OpenCodeApiException(res.statusCode, res.body);
     }
   }
 
-  Future<Map<String, dynamic>> executeCommand(
+  Future<SessionMessageResponse> executeCommand(
     String sessionId, {
     required String command,
     required List<String> arguments,
@@ -273,17 +291,14 @@ class OpenCodeApi {
       'arguments': arguments,
     };
     if (agent != null) body['agent'] = agent;
-    if (model != null) {
-      final parts = model.split('/');
-      body['model'] = {'providerID': parts[0], 'modelID': parts.sublist(1).join('/')};
-    }
+    if (model != null) body['model'] = model;
     if (messageID != null) body['messageID'] = messageID;
     final res = await _post('/session/$sessionId/command', body: body);
     _check(res);
-    return jsonDecode(res.body) as Map<String, dynamic>;
+    return SessionMessageResponse.fromJson(jsonDecode(res.body));
   }
 
-  Future<Map<String, dynamic>> runShell(
+  Future<SessionMessageResponse> runShell(
     String sessionId, {
     required String command,
     String? agent,
@@ -291,13 +306,10 @@ class OpenCodeApi {
   }) async {
     final body = <String, dynamic>{'command': command};
     if (agent != null) body['agent'] = agent;
-    if (model != null) {
-      final parts = model.split('/');
-      body['model'] = {'providerID': parts[0], 'modelID': parts.sublist(1).join('/')};
-    }
+    if (model != null) body['model'] = model;
     final res = await _post('/session/$sessionId/shell', body: body);
     _check(res);
-    return jsonDecode(res.body) as Map<String, dynamic>;
+    return SessionMessageResponse.fromJson(jsonDecode(res.body));
   }
 
   // --- Commands ---
@@ -329,21 +341,28 @@ class OpenCodeApi {
     return list.map((e) => SearchMatch.fromJson(e as Map<String, dynamic>)).toList();
   }
 
-  Future<List<String>> findFiles(String query, {String? type, int? limit}) async {
+  Future<List<String>> findFiles(String query, {
+    String? type,
+    int? limit,
+    String? directory,
+    bool? dirs,
+  }) async {
     var path = '/find/file?query=${Uri.encodeComponent(query)}';
     if (type != null) path += '&type=$type';
     if (limit != null) path += '&limit=$limit';
+    if (directory != null) path += '&directory=${Uri.encodeComponent(directory)}';
+    if (dirs != null) path += '&dirs=$dirs';
     final res = await _get(path);
     _check(res);
     final list = jsonDecode(res.body) as List<dynamic>;
     return list.map((e) => e.toString()).toList();
   }
 
-  Future<List<Map<String, dynamic>>> findSymbols(String query) async {
+  Future<List<Symbol>> findSymbols(String query) async {
     final res = await _get('/find/symbol?query=${Uri.encodeComponent(query)}');
     _check(res);
     final list = jsonDecode(res.body) as List<dynamic>;
-    return list.map((e) => e as Map<String, dynamic>).toList();
+    return list.map((e) => Symbol.fromJson(e as Map<String, dynamic>)).toList();
   }
 
   // --- Config ---
@@ -363,6 +382,12 @@ class OpenCodeApi {
     final res = await _get('/config/providers');
     _check(res);
     return jsonDecode(res.body) as Map<String, dynamic>;
+  }
+
+  Future<ProviderDefaults> getProviderDefaults() async {
+    final res = await _get('/config/providers');
+    _check(res);
+    return ProviderDefaults.fromJson(jsonDecode(res.body));
   }
 
   // --- Provider ---
@@ -438,13 +463,70 @@ class OpenCodeApi {
     return res.statusCode == 200;
   }
 
-  // --- Experimental Tools ---
-  Future<List<ToolEntry>> getToolIds() async {
+  // --- Session Status ---
+  Future<Map<String, SessionStatus>> getSessionStatuses() async {
+    final res = await _get('/session/status');
+    _check(res);
+    final data = jsonDecode(res.body) as Map<String, dynamic>;
+    return data.map((k, v) => MapEntry(k, SessionStatus.fromJson(v as Map<String, dynamic>)));
+  }
+
+  // --- Session Init ---
+  Future<bool> initSession(String id, {required String messageID, String? providerID, String? modelID}) async {
+    final body = <String, dynamic>{'messageID': messageID};
+    if (providerID != null) body['providerID'] = providerID;
+    if (modelID != null) body['modelID'] = modelID;
+    final res = await _post('/session/$id/init', body: body);
+    return res.statusCode == 200;
+  }
+
+  // --- Session Permissions ---
+  Future<bool> respondPermission(String sessionId, String permissionID, {required String response, bool? remember}) async {
+    final body = <String, dynamic>{'response': response};
+    if (remember != null) body['remember'] = remember;
+    final res = await _post('/session/$sessionId/permissions/$permissionID', body: body);
+    return res.statusCode == 200;
+  }
+
+  // --- Provider OAuth ---
+  Future<ProviderAuthAuthorization> oauthAuthorize(String id) async {
+    final res = await _post('/provider/$id/oauth/authorize');
+    _check(res);
+    return ProviderAuthAuthorization.fromJson(jsonDecode(res.body));
+  }
+
+  Future<bool> oauthCallback(String id, Map<String, dynamic> body) async {
+    final res = await _post('/provider/$id/oauth/callback', body: body);
+    return res.statusCode == 200;
+  }
+
+  // --- File Status ---
+  Future<List<FileStatus>> getFileStatus() async {
+    final res = await _get('/file/status');
+    _check(res);
+    final list = jsonDecode(res.body) as List<dynamic>;
+    return list.map((e) => FileStatus.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  // --- MCP ---
+  Future<MCPStatus> addMcpServer(String name, Map<String, dynamic> config) async {
+    final body = <String, dynamic>{'name': name, 'config': config};
+    final res = await _post('/mcp', body: body);
+    _check(res);
+    return MCPStatus.fromJson(jsonDecode(res.body));
+  }
+
+  // --- Experimental Tool ---
+  Future<Map<String, dynamic>> getToolList(String provider, String model) async {
+    final res = await _get('/experimental/tool?provider=${Uri.encodeComponent(provider)}&model=${Uri.encodeComponent(model)}');
+    _check(res);
+    return jsonDecode(res.body) as Map<String, dynamic>;
+  }
+
+  Future<ToolIDs> getToolIds() async {
     final res = await _get('/experimental/tool/ids');
     _check(res);
-    final data = jsonDecode(res.body);
-    final list = data['ids'] as List<dynamic>? ?? [];
-    return list.map((e) => ToolEntry.fromJson(e as Map<String, dynamic>? ?? {'id': e.toString()})).toList();
+    return ToolIDs.fromJson(jsonDecode(res.body));
   }
 }
 

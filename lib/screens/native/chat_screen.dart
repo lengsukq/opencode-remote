@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import '../../models.dart';
@@ -311,6 +311,11 @@ class _ChatScreenState extends State<ChatScreen> {
                 onTap: () => Navigator.pop(ctx, 'revert'),
               ),
               ListTile(
+                leading: const Icon(Icons.redo, color: AppColors.textSecondary),
+                title: const Text('恢复已回退', style: TextStyle(color: AppColors.textPrimary)),
+                onTap: () => Navigator.pop(ctx, 'unrevert'),
+              ),
+              ListTile(
                 leading: const Icon(Icons.info_outline, color: AppColors.textSecondary),
                 title: const Text('查看详情', style: TextStyle(color: AppColors.textPrimary)),
                 onTap: () => Navigator.pop(ctx, 'detail'),
@@ -332,6 +337,8 @@ class _ChatScreenState extends State<ChatScreen> {
         await _copyToClipboard(msg.content);
       case 'revert':
         await _doRevert(msg);
+      case 'unrevert':
+        await _doUnrevert();
       case 'detail':
         _showMessageDetail(msg);
       case 'fork':
@@ -359,12 +366,21 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+  Future<void> _doUnrevert() async {
+    try {
+      await widget.api.unrevertMessages(widget.session.id);
+      await _refreshMessages();
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('恢复失败: $e')));
+    }
+  }
+
   void _showMessageDetail(Message msg) async {
     try {
       final detail = await widget.api.getMessageDetail(widget.session.id, msg.id);
       if (!mounted) return;
-      final info = detail['info'] as Map<String, dynamic>? ?? {};
-      final parts = (detail['parts'] as List<dynamic>?) ?? [];
+      final info = detail.info;
+      final parts = detail.parts;
       showDialog(
         context: context,
         builder: (ctx) => Dialog(
@@ -383,18 +399,18 @@ class _ChatScreenState extends State<ChatScreen> {
                 child: ListView(
                   padding: const EdgeInsets.all(16),
                   children: [
-                    _detailRow('ID', info['id']?.toString() ?? ''),
-                    _detailRow('角色', info['role']?.toString() ?? ''),
+                    _detailRow('ID', info.id),
+                    _detailRow('角色', info.role),
                     _detailRow('Parts 数量', parts.length.toString()),
                     const SizedBox(height: 12),
                     Text('Parts:', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
                     const SizedBox(height: 4),
                     ...parts.take(10).map((p) {
-                      final pMap = p as Map<String, dynamic>;
+                      final pMap = p;
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 4),
                         child: Text(
-                          '  [${pMap['type']}]: ${(pMap['text']?.toString() ?? pMap.toString()).substring(0, (pMap['text']?.toString() ?? pMap.toString()).length.clamp(0, 100))}',
+                          '  [${pMap.type}]: ${(pMap.text ?? pMap.toString()).substring(0, (pMap.text ?? pMap.toString()).length.clamp(0, 100))}',
                           style: const TextStyle(color: AppColors.textPrimary, fontSize: 11, fontFamily: 'monospace'),
                         ),
                       );

@@ -72,12 +72,68 @@ class _ConfigScreenState extends State<ConfigScreen> {
     }
   }
 
+  Future<void> _editConfig(Map<String, dynamic> currentData) async {
+    final keyCtrl = TextEditingController();
+    final valueCtrl = TextEditingController();
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: const Text('Ìí¼Ó/¸üĞÂÅäÖÃ', style: TextStyle(color: AppColors.textPrimary)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: keyCtrl,
+              style: const TextStyle(color: AppColors.textPrimary),
+              decoration: const InputDecoration(
+                hintText: 'ÅäÖÃ¼ü',
+                hintStyle: TextStyle(color: AppColors.textTertiary),
+                enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: AppColors.border)),
+                focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: AppColors.borderFocused)),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: valueCtrl,
+              style: const TextStyle(color: AppColors.textPrimary),
+              decoration: const InputDecoration(
+                hintText: 'ÅäÖÃÖµ',
+                hintStyle: TextStyle(color: AppColors.textTertiary),
+                enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: AppColors.border)),
+                focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: AppColors.borderFocused)),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('È¡Ïû', style: TextStyle(color: AppColors.textSecondary))),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('±£´æ'),
+          ),
+        ],
+      ),
+    );
+    if (result != true || keyCtrl.text.isEmpty) return;
+    try {
+      await widget.api.patchConfig({keyCtrl.text.trim(): valueCtrl.text.trim()});
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('ÅäÖÃÒÑ¸üĞÂ')));
+        _load();
+      }
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('¸üĞÂÊ§°Ü: $e')));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('è¯Šæ–­ä¸é…ç½®'),
+        title: const Text('è¯Šæ–­ä¸é…ç½?),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh, color: AppColors.textSecondary),
@@ -101,7 +157,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
                       _sectionHeader('æä¾›å•†ä¸é»˜è®¤æ¨¡å‹'),
                       _providersCard(),
                       const SizedBox(height: 20),
-                      _sectionHeader('å·¥å…·çŠ¶æ€'),
+                      _sectionHeader('å·¥å…·çŠ¶æ€?),
                       _toolsCard(),
                       const SizedBox(height: 20),
                       _sectionHeader('è®¤è¯æ–¹å¼'),
@@ -155,7 +211,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
           if (data.length > 10)
             Padding(
               padding: const EdgeInsets.only(top: 4),
-              child: Text('... è¿˜æœ‰ ${data.length - 10} é¡¹', style: TextStyle(color: AppColors.textTertiary, fontSize: 11)),
+              child: Text('... è¿˜æœ‰ ${data.length - 10} é¡?, style: TextStyle(color: AppColors.textTertiary, fontSize: 11)),
             ),
         ],
       ),
@@ -182,10 +238,10 @@ class _ConfigScreenState extends State<ConfigScreen> {
             padding: const EdgeInsets.only(bottom: 2),
             child: Text('  ${e.key}: ${e.value}', style: TextStyle(color: AppColors.textPrimary, fontSize: 12, fontFamily: 'monospace')),
           )),
-          if (defaults.isEmpty) Text('  æ— é»˜è®¤æ¨¡å‹', style: TextStyle(color: AppColors.textTertiary, fontSize: 12)),
+          if (defaults.isEmpty) Text('  æ— é»˜è®¤æ¨¡å?, style: TextStyle(color: AppColors.textTertiary, fontSize: 12)),
           if (providers.isNotEmpty) ...[
             const SizedBox(height: 8),
-            Text('æä¾›å•† (${providers.length}):', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+            Text('æä¾›å•?(${providers.length}):', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
             const SizedBox(height: 4),
             ...providers.take(10).map((p) {
               final pMap = p as Map<String, dynamic>;
@@ -211,11 +267,11 @@ class _ConfigScreenState extends State<ConfigScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _toolGroup('LSP æœåŠ¡å™¨', _lsp.map((l) => _toolEntry(l.name, l.state)).toList()),
+          _toolGroup('LSP æœåŠ¡å™?, _lsp.map((l) => _toolEntry(l.name, l.state)).toList()),
           const SizedBox(height: 12),
           _toolGroup('æ ¼å¼åŒ–å™¨', _formatters.map((f) => _toolEntry(f.name, f.state)).toList()),
           const SizedBox(height: 12),
-          _toolGroup('MCP æœåŠ¡å™¨', _mcp.entries.map((e) => _toolEntry(e.key, e.value.state)).toList()),
+          _toolGroup('MCP æœåŠ¡å™?, _mcp.entries.map((e) => _toolEntry(e.key, e.value.state)).toList()),
         ],
       ),
     );
@@ -228,7 +284,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
         Text(title, style: TextStyle(color: AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.w500)),
         const SizedBox(height: 4),
         if (entries.isEmpty)
-          Text('  æ— ', style: TextStyle(color: AppColors.textTertiary, fontSize: 12))
+          Text('  æ—?, style: TextStyle(color: AppColors.textTertiary, fontSize: 12))
         else
           ...entries,
       ],
@@ -258,7 +314,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
   }
 
   Widget _authCard() {
-    if (_authMethods.isEmpty) return _card('æ— è®¤è¯ä¿¡æ¯', Icons.info_outline, AppColors.textSecondary);
+    if (_authMethods.isEmpty) return _card('æ— è®¤è¯ä¿¡æ?, Icons.info_outline, AppColors.textSecondary);
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(

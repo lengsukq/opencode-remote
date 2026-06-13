@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../models.dart';
 import '../../theme.dart';
 import '../../services/opencode_api.dart';
@@ -25,7 +25,7 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
   final _searchCtrl = TextEditingController();
   List<SearchMatch> _searchResults = [];
   List<String> _fileResults = [];
-  List<Map<String, dynamic>> _symbolResults = [];
+  List<Symbol> _symbolResults = [];
   bool _searching = false;
   String _searchTabName = 'file'; // file | text | symbol
 
@@ -298,11 +298,10 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
                                 return ListTile(
                                   dense: true,
                                   leading: Icon(Icons.code, color: AppColors.warning, size: 18),
-                                  title: Text(s['name']?.toString() ?? '', style: const TextStyle(color: AppColors.textPrimary, fontSize: 13)),
-                                  subtitle: Text(s['path']?.toString() ?? '', style: TextStyle(color: AppColors.textTertiary, fontSize: 11)),
+                                  title: Text(s.name, style: const TextStyle(color: AppColors.textPrimary, fontSize: 13)),
+                                  subtitle: Text(s.path, style: TextStyle(color: AppColors.textTertiary, fontSize: 11)),
                                   onTap: () {
-                                    final path = s['path']?.toString();
-                                    if (path != null && path.isNotEmpty) _readFileByPath(path);
+                                    if (s.path.isNotEmpty) _readFileByPath(s.path);
                                   },
                                 );
                               },

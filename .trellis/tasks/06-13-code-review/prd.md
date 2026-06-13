@@ -15,3 +15,16 @@
 6. **错误处理** — 吞异常（空 catch）、丢失错误上下文
 7. **Widget 拆分** — 过大 build 方法应拆分小组件
 8. **import 规范** — 未使用的 import、wildcard import
+
+---
+
+## 完成状态
+
+- [x] lib/main.dart 审查
+- [x] lib/models.dart 审查
+- [x] lib/theme.dart 审查
+- [x] lib/services/ 审查
+- [x] lib/screens/ 全部 9 个文件审查
+- [x] 跨文件共性问题汇总
+- [x] 优先级矩阵
+- [x] 结果写入 `research/clean-code-review.md`
