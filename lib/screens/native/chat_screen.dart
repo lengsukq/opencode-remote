@@ -48,6 +48,20 @@ class _ChatScreenState extends State<ChatScreen> {
     _inputCtrl.addListener(_onInputChanged);
   }
 
+  Future<void> _createNewSession() async {
+    try {
+      final session = await widget.api.createSession();
+      if (!mounted) return;
+      await Navigator.pushReplacement(context, MaterialPageRoute(
+        builder: (_) => ChatScreen(session: session, entry: widget.entry, api: widget.api),
+      ));
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('创建会话失败: $e')));
+      }
+    }
+  }
+
   @override
   void dispose() {
     _inputCtrl.removeListener(_onInputChanged);
@@ -487,51 +501,65 @@ class _ChatScreenState extends State<ChatScreen> {
       } catch (_) {}
     }
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text(widget.session.title.isNotEmpty ? widget.session.title : '会话'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.terminal, color: AppColors.textSecondary),
-            tooltip: 'Shell 命令',
-            onPressed: _runShell,
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.keyR, meta: true): _load,
+        const SingleActivator(LogicalKeyboardKey.keyN, meta: true): _createNewSession,
+        const SingleActivator(LogicalKeyboardKey.keyL, meta: true, shift: true): () {
+          _inputCtrl.clear();
+          _inputCtrl.text = '/';
+          _inputCtrl.selection = TextSelection.collapsed(offset: 1);
+        },
+      },
+      child: Focus(
+        autofocus: true,
+        child: Scaffold(
+          backgroundColor: AppColors.background,
+          appBar: AppBar(
+            title: Text(widget.session.title.isNotEmpty ? widget.session.title : '会话'),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.terminal, color: AppColors.textSecondary),
+                tooltip: 'Shell 命令',
+                onPressed: _runShell,
+              ),
+              IconButton(
+                icon: const Icon(Icons.refresh, color: AppColors.textSecondary),
+                onPressed: _load,
+              ),
+            ],
           ),
-          IconButton(
-            icon: const Icon(Icons.refresh, color: AppColors.textSecondary),
-            onPressed: _load,
+          body: Column(
+            children: [
+              Expanded(
+                child: _loading
+                    ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+                    : _error != null
+                        ? Center(child: Text(_error!, style: TextStyle(color: AppColors.textSecondary)))
+                        : _messages.isEmpty
+                            ? Center(child: Text('开始对话', style: TextStyle(color: AppColors.textTertiary)))
+                            : ListView.builder(
+                                controller: _scrollCtrl,
+                                padding: const EdgeInsets.all(16),
+                                itemCount: _messages.length,
+                                itemBuilder: (ctx, i) {
+                                  final isLatest = i == _messages.length - 1;
+                                  final isSecondLatest = !isLatest && (_messages[i].role != 'user') && (i == _messages.length - 2);
+                                  return _MessageBubble(
+                                    message: _messages[i],
+                                    isLatest: isLatest || isSecondLatest,
+                                    onLongPress: () => _showMessageActions(_messages[i]),
+                                    onToggleReasoning: null,
+                                  );
+                                },
+                              ),
+              ),
+              if (_showCommands && _filteredCommands.isNotEmpty) _buildCommandSuggestions(),
+              _agentBar(agentName, agentColor ?? AppColors.primary),
+              _buildInputBar(),
+            ],
           ),
-        ],
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: _loading
-                ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
-                : _error != null
-                    ? Center(child: Text(_error!, style: TextStyle(color: AppColors.textSecondary)))
-                    : _messages.isEmpty
-                        ? Center(child: Text('开始对话', style: TextStyle(color: AppColors.textTertiary)))
-                        : ListView.builder(
-                            controller: _scrollCtrl,
-                            padding: const EdgeInsets.all(16),
-                            itemCount: _messages.length,
-                            itemBuilder: (ctx, i) {
-                              final isLatest = i == _messages.length - 1;
-                              final isSecondLatest = !isLatest && (_messages[i].role != 'user') && (i == _messages.length - 2);
-                              return _MessageBubble(
-                                message: _messages[i],
-                                isLatest: isLatest || isSecondLatest,
-                                onLongPress: () => _showMessageActions(_messages[i]),
-                                onToggleReasoning: null,
-                              );
-                            },
-                          ),
-          ),
-          if (_showCommands && _filteredCommands.isNotEmpty) _buildCommandSuggestions(),
-          _agentBar(agentName, agentColor ?? AppColors.primary),
-          _buildInputBar(),
-        ],
+        ),
       ),
     );
   }
