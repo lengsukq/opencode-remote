@@ -13,8 +13,31 @@ class FileBrowserScreen extends StatefulWidget {
   State<FileBrowserScreen> createState() => _FileBrowserScreenState();
 }
 
+class _TreeNode {
+  final FileNode node;
+  final int depth;
+  bool expanded;
+  List<_TreeNode>? _children;
+  bool loading = false;
+
+  _TreeNode({required this.node, this.depth = 0, this.expanded = false});
+
+  bool get isDirectory => node.type == 'directory';
+  bool get hasChildren => _children != null && _children!.isNotEmpty;
+  List<_TreeNode> get children => _children ?? [];
+  bool get isLoaded => _children != null;
+
+  void setChildren(List<_TreeNode> c) {
+    _children = c;
+  }
+
+  void clearChildren() {
+    _children = null;
+  }
+}
+
 class _FileBrowserScreenState extends State<FileBrowserScreen> {
-  List<FileNode> _files = [];
+  List<_TreeNode> _roots = [];
   bool _loading = true;
   String? _error;
   String _currentPath = '';
@@ -32,7 +55,7 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
   @override
   void initState() {
     super.initState();
-    _loadFiles('');
+    _loadRoot();
   }
 
   @override
@@ -41,16 +64,34 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
     super.dispose();
   }
 
-  Future<void> _loadFiles(String path) async {
+  List<_TreeNode> _flatten(List<_TreeNode> nodes) {
+    final result = <_TreeNode>[];
+    for (final n in nodes) {
+      result.add(n);
+      if (n.isDirectory && n.expanded && n.isLoaded) {
+        result.addAll(_flatten(n.children));
+      }
+    }
+    return result;
+  }
+
+  List<_TreeNode> get _visibleNodes => _flatten(_roots);
+
+  Future<void> _loadRoot() async {
     setState(() => _loading = true);
     try {
-      final files = await widget.api.listFiles(path);
-      setState(() {
-        _files = files;
-        _currentPath = path;
-        _loading = false;
-        _error = null;
-      });
+      final files = await widget.api.listFiles('');
+      final rootNode = _TreeNode(
+        node: FileNode(name: '/', path: '', type: 'directory'),
+        depth: -1,
+        expanded: true,
+      );
+      rootNode.setChildren(files.where((f) => f.type == 'directory').map((f) => _TreeNode(node: f, depth: 0)).toList()
+        ..addAll(files.where((f) => f.type != 'directory').map((f) => _TreeNode(node: f, depth: 0))));
+      _roots = [rootNode];
+      _currentPath = '';
+      _loading = false;
+      _error = null;
     } catch (e) {
       setState(() {
         _loading = false;
@@ -59,25 +100,34 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
     }
   }
 
-  void _openEntry(FileNode node) {
-    if (node.type == 'directory') {
-      _history.add(_currentPath);
-      _loadFiles(node.path);
+  Future<void> _toggleNode(_TreeNode node) async {
+    if (!node.isDirectory) return;
+    if (node.expanded) {
+      setState(() => node.expanded = false);
+      return;
+    }
+    if (!node.isLoaded) {
+      setState(() => node.loading = true);
+      try {
+        final files = await widget.api.listFiles(node.node.path);
+        final children = files.map((f) => _TreeNode(
+          node: f,
+          depth: node.depth + 1,
+        )).toList();
+        setState(() {
+          node.setChildren(children);
+          node.expanded = true;
+          node.loading = false;
+        });
+      } catch (e) {
+        setState(() => node.loading = false);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('加载失败: $e')));
+        }
+      }
     } else {
-      _showFileContent(node);
+      setState(() => node.expanded = true);
     }
-  }
-
-  void _goBack() {
-    if (_history.isNotEmpty) {
-      final prev = _history.removeLast();
-      _loadFiles(prev);
-    }
-  }
-
-  bool _isImageFile(String name) {
-    final ext = name.split('.').last.toLowerCase();
-    return ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg'].contains(ext);
   }
 
   void _showFileContent(FileNode node) async {
@@ -122,6 +172,11 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
     }
   }
 
+  bool _isImageFile(String name) {
+    final ext = name.split('.').last.toLowerCase();
+    return ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg'].contains(ext);
+  }
+
   void _showImagePreview(FileNode node) {
     showDialog(
       context: context,
@@ -149,11 +204,7 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
                     Text('${node.size} bytes', style: TextStyle(color: AppColors.textTertiary, fontSize: 12)),
                   ],
                   const SizedBox(height: 16),
-                  Text(
-                    '图片预览需要在服务端配置后可用',
-                    style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
-                    textAlign: TextAlign.center,
-                  ),
+                  Text('图片预览需要在服务端配置后可用', style: TextStyle(color: AppColors.textSecondary, fontSize: 13), textAlign: TextAlign.center),
                 ],
               ),
             ),
@@ -298,15 +349,12 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
         scrollDirection: Axis.horizontal,
         child: Row(
           children: [
-            _breadcrumbItem('root', () => _loadFiles(''), isFirst: true),
-            ...segments.asMap().entries.map((entry) {
-              final idx = entry.key;
-              final seg = entry.value;
-              final fullPath = segments.take(idx + 1).join('/');
+            _breadcrumbItem('root', () => _loadRoot(), isFirst: true),
+            ...segments.map((seg) {
               return Row(
                 children: [
                   Icon(Icons.chevron_right, size: 14, color: AppColors.textTertiary),
-                  _breadcrumbItem(seg, () => _loadFiles(fullPath)),
+                  _breadcrumbItem(seg, () {}),
                 ],
               );
             }),
@@ -339,11 +387,16 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
       leading: _history.isNotEmpty
           ? IconButton(
               icon: const Icon(Icons.arrow_back, color: AppColors.textSecondary),
-              onPressed: _goBack,
+              onPressed: () {},
             )
           : null,
       title: Text(_currentPath.isEmpty ? '文件浏览' : _currentPath.split('/').last),
       actions: [
+        IconButton(
+          icon: const Icon(Icons.refresh, color: AppColors.textSecondary),
+          tooltip: '刷新',
+          onPressed: _loadRoot,
+        ),
         IconButton(
           icon: const Icon(Icons.search, color: AppColors.textSecondary),
           tooltip: '搜索',
@@ -506,23 +559,40 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
     if (_error != null) {
       return Center(child: Text(_error!, style: TextStyle(color: AppColors.textSecondary)));
     }
+    final visible = _visibleNodes;
+    if (visible.isEmpty) {
+      return Center(child: Text('空目录', style: TextStyle(color: AppColors.textTertiary)));
+    }
     return ListView.builder(
-      padding: const EdgeInsets.all(12),
-      itemCount: _files.length,
-      itemBuilder: (ctx, i) => _FileTile(node: _files[i], onTap: () => _openEntry(_files[i])),
+      padding: const EdgeInsets.all(4),
+      itemCount: visible.length,
+      itemBuilder: (ctx, i) {
+        final tn = visible[i];
+        if (tn.depth < 0) return const SizedBox.shrink();
+        return _TreeFileTile(
+          node: tn,
+          onTap: () {
+            if (tn.isDirectory) {
+              _toggleNode(tn);
+            } else {
+              _showFileContent(tn.node);
+            }
+          },
+        );
+      },
     );
   }
 }
 
-class _FileTile extends StatelessWidget {
-  final FileNode node;
+class _TreeFileTile extends StatelessWidget {
+  final _TreeNode node;
   final VoidCallback onTap;
 
-  const _FileTile({required this.node, required this.onTap});
+  const _TreeFileTile({required this.node, required this.onTap});
 
   IconData get _icon {
-    if (node.type == 'directory') return Icons.folder;
-    final ext = node.name.split('.').lastOrNull ?? '';
+    if (node.isDirectory) return node.expanded ? Icons.folder_open : Icons.folder;
+    final ext = node.node.name.split('.').lastOrNull ?? '';
     switch (ext) {
       case 'dart': return Icons.code;
       case 'md': return Icons.description;
@@ -535,22 +605,33 @@ class _FileTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 2),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          child: Row(
-            children: [
-              Icon(_icon, color: node.type == 'directory' ? AppColors.warning : AppColors.textSecondary, size: 18),
-              const SizedBox(width: 12),
-              Expanded(child: Text(node.name, style: const TextStyle(color: AppColors.textPrimary, fontSize: 13))),
-              if (node.type == 'directory')
-                Icon(Icons.chevron_right, color: AppColors.textTertiary, size: 16),
-            ],
-          ),
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: 12.0 + node.depth * 20.0,
+          right: 12,
+          top: 6,
+          bottom: 6,
+        ),
+        child: Row(
+          children: [
+            if (node.loading)
+              const SizedBox(
+                width: 16, height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            else
+              Icon(_icon, color: node.isDirectory ? AppColors.warning : AppColors.textSecondary, size: 16),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                node.node.name,
+                style: const TextStyle(color: AppColors.textPrimary, fontSize: 13),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
         ),
       ),
     );
