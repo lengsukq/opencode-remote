@@ -279,7 +279,58 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: _searchMode ? _searchAppBar() : _browserAppBar(),
-      body: _searchMode ? _buildSearchResults() : _buildFileList(),
+      body: _searchMode ? _buildSearchResults() : Column(
+        children: [
+          _buildBreadcrumb(),
+          Expanded(child: _buildFileList()),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBreadcrumb() {
+    if (_currentPath.isEmpty) return const SizedBox.shrink();
+    final segments = _currentPath.split('/');
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      color: AppColors.surface,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            _breadcrumbItem('root', () => _loadFiles(''), isFirst: true),
+            ...segments.asMap().entries.map((entry) {
+              final idx = entry.key;
+              final seg = entry.value;
+              final fullPath = segments.take(idx + 1).join('/');
+              return Row(
+                children: [
+                  Icon(Icons.chevron_right, size: 14, color: AppColors.textTertiary),
+                  _breadcrumbItem(seg, () => _loadFiles(fullPath)),
+                ],
+              );
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _breadcrumbItem(String label, VoidCallback onTap, {bool isFirst = false}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 12,
+            fontFamily: 'monospace',
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ),
     );
   }
 
