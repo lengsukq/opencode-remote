@@ -6,6 +6,7 @@ import 'package:flutter_highlight/themes/github.dart';
 import '../../models.dart';
 import '../../theme.dart';
 import '../../services/opencode_api.dart';
+import '../../services/event_service.dart';
 
 class ChatScreen extends StatefulWidget {
   final Session session;
@@ -37,11 +38,13 @@ class _ChatScreenState extends State<ChatScreen> {
   String? _selectedModel;
   bool _showCommands = false;
   List<Command> _filteredCommands = [];
+  EventService? _eventService;
 
   @override
   void initState() {
     super.initState();
     _load();
+    _connectEvents();
     _inputCtrl.addListener(_onInputChanged);
   }
 
@@ -50,7 +53,23 @@ class _ChatScreenState extends State<ChatScreen> {
     _inputCtrl.removeListener(_onInputChanged);
     _inputCtrl.dispose();
     _scrollCtrl.dispose();
+    _eventService?.dispose();
     super.dispose();
+  }
+
+  void _connectEvents() {
+    _eventService?.dispose();
+    _eventService = EventService(
+      baseUrl: widget.entry.url,
+      username: widget.entry.username,
+      password: widget.entry.password,
+    );
+    _eventService!.connect();
+    _eventService!.events.listen((event) {
+      if (event.type == EventType.messageNew || event.type == EventType.sessionUpdated) {
+        _refreshMessages();
+      }
+    });
   }
 
   void _onInputChanged() {
@@ -139,7 +158,7 @@ class _ChatScreenState extends State<ChatScreen> {
         await widget.api.sendMessageAsync(widget.session.id, text, agent: _selectedAgent, model: _selectedModel);
       }
       await _refreshMessages();
-      _pollForNewMessages();
+      _waitForFirstReply();
     } catch (e) {
       if (mounted) {
         showDialog(
@@ -194,7 +213,7 @@ class _ChatScreenState extends State<ChatScreen> {
     try {
       await widget.api.runShell(widget.session.id, command: command, agent: _selectedAgent, model: _selectedModel);
       await _refreshMessages();
-      _pollForNewMessages();
+      _waitForFirstReply();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Shell 执行失败: $e')));
@@ -216,16 +235,14 @@ class _ChatScreenState extends State<ChatScreen> {
     } catch (_) {}
   }
 
-  void _pollForNewMessages() {
-    Future.delayed(const Duration(seconds: 2), () async {
+  void _waitForFirstReply() {
+    Future.delayed(const Duration(milliseconds: 800), () async {
       if (!mounted) return;
       await _refreshMessages();
       final lastMsg = _messages.isNotEmpty ? _messages.last : null;
       final hasReply = lastMsg != null && lastMsg.role != 'user' && lastMsg.content.isNotEmpty;
       if (mounted && hasReply) {
         setState(() => _sending = false);
-      } else if (mounted && _sending) {
-        _pollForNewMessages();
       }
     });
   }
