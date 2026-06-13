@@ -70,7 +70,7 @@ class _SessionListScreenState extends State<SessionListScreen> {
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
             onPressed: () => Navigator.pop(ctx, ''),
-            child: const Text('创建空会话'),
+            child: const Text('创建空会�?),
           ),
         ],
       ),
@@ -97,12 +97,12 @@ class _SessionListScreenState extends State<SessionListScreen> {
           children: [
             Padding(
               padding: const EdgeInsets.all(16),
-              child: Text(session.title.isNotEmpty ? session.title : '未命名会话', style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
+              child: Text(session.title.isNotEmpty ? session.title : '未命名会�?, style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
             ),
             const Divider(),
             ListTile(
               leading: const Icon(Icons.edit, color: AppColors.textSecondary),
-              title: const Text('重命名', style: TextStyle(color: AppColors.textPrimary)),
+              title: const Text('重命�?, style: TextStyle(color: AppColors.textPrimary)),
               onTap: () => Navigator.pop(ctx, 'rename'),
             ),
             ListTile(
@@ -157,13 +157,13 @@ class _SessionListScreenState extends State<SessionListScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.surface,
-        title: const Text('重命名', style: TextStyle(color: AppColors.textPrimary)),
+        title: const Text('重命�?, style: TextStyle(color: AppColors.textPrimary)),
         content: TextField(
           autofocus: true,
           controller: TextEditingController(text: session.title),
           style: const TextStyle(color: AppColors.textPrimary),
           decoration: const InputDecoration(
-            hintText: '新标题',
+            hintText: '新标�?,
             hintStyle: TextStyle(color: AppColors.textTertiary),
             enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: AppColors.border)),
             focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: AppColors.borderFocused)),
@@ -186,7 +186,7 @@ class _SessionListScreenState extends State<SessionListScreen> {
       await _load();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('重命名失败: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('重命名失�? $e')));
       }
     }
   }
@@ -196,7 +196,7 @@ class _SessionListScreenState extends State<SessionListScreen> {
       await widget.api.shareSession(session.id);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('会话已分享', style: TextStyle(color: AppColors.textPrimary)),
+          content: Text('会话已分�?, style: TextStyle(color: AppColors.textPrimary)),
           backgroundColor: AppColors.surface,
         ));
       }
@@ -264,7 +264,7 @@ class _SessionListScreenState extends State<SessionListScreen> {
                               overflow: TextOverflow.ellipsis,
                             )),
                             if (d.hunks.length > 3)
-                              Text('... 还有 ${d.hunks.length - 3} 个 hunk', style: TextStyle(color: AppColors.textTertiary, fontSize: 10)),
+                              Text('... 还有 ${d.hunks.length - 3} �?hunk', style: TextStyle(color: AppColors.textTertiary, fontSize: 10)),
                           ],
                         ],
                       ),
@@ -306,7 +306,7 @@ class _SessionListScreenState extends State<SessionListScreen> {
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.surface,
         title: const Text('分叉会话', style: TextStyle(color: AppColors.textPrimary)),
-        content: const Text('从最新消息分叉一个新会话？', style: TextStyle(color: AppColors.textSecondary)),
+        content: const Text('从最新消息分叉一个新会话�?, style: TextStyle(color: AppColors.textSecondary)),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消', style: TextStyle(color: AppColors.textSecondary))),
           FilledButton(
@@ -322,7 +322,7 @@ class _SessionListScreenState extends State<SessionListScreen> {
       await widget.api.forkSession(session.id);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('已分叉为新会话', style: TextStyle(color: AppColors.textPrimary)),
+          content: Text('已分叉为新会�?, style: TextStyle(color: AppColors.textPrimary)),
           backgroundColor: AppColors.surface,
         ));
         await _load();
@@ -340,7 +340,7 @@ class _SessionListScreenState extends State<SessionListScreen> {
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.surface,
         title: const Text('删除会话', style: TextStyle(color: AppColors.textPrimary)),
-        content: Text('确定删除"${session.title}"？', style: TextStyle(color: AppColors.textSecondary)),
+        content: Text('确定删除"${session.title}"�?, style: TextStyle(color: AppColors.textSecondary)),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('取消', style: TextStyle(color: AppColors.textSecondary))),
           FilledButton(
@@ -436,7 +436,7 @@ class _SessionTile extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(session.title.isNotEmpty ? session.title : '未命名会话',
+                    Text(session.title.isNotEmpty ? session.title : '未命名会�?,
                         style: const TextStyle(color: AppColors.textPrimary, fontSize: 14, fontWeight: FontWeight.w500)),
                     const SizedBox(height: 3),
                     Text(timeStr, style: TextStyle(color: AppColors.textTertiary, fontSize: 11)),

@@ -1,4 +1,4 @@
-import 'dart:math';
+﻿import 'dart:math';
 
 class ServerEntry {
   final String id;
@@ -82,7 +82,7 @@ class Project {
 
   factory Project.fromJson(Map<String, dynamic> json) => Project(
         id: json['id'] as String? ?? '',
-        name: json['id'] as String? ?? '',
+        name: json['name'] as String? ?? '',
         path: json['worktree'] as String? ?? '',
       );
 }
@@ -314,9 +314,9 @@ class Provider {
   factory Provider.fromJson(Map<String, dynamic> json) {
     final id = json['id'] as String? ?? '';
     final name = json['name'] as String? ?? id;
-    final modelsMap = json['models'] as Map<String, dynamic>? ?? {};
-    final models = modelsMap.entries.map((e) =>
-      ProviderModel.fromJson(e.value as Map<String, dynamic>, providerID: id)
+    final modelsList = json['models'] as List<dynamic>? ?? [];
+    final models = modelsList.map((e) =>
+      ProviderModel.fromJson(e as Map<String, dynamic>, providerID: id)
     ).toList();
     return Provider(id: id, name: name, models: models);
   }
@@ -487,4 +487,137 @@ class Todo {
       );
 }
 
+
+class PathInfo {
+  final String path;
+  final String? directory;
+
+  PathInfo({required this.path, this.directory});
+
+  factory PathInfo.fromJson(Map<String, dynamic> json) => PathInfo(
+        path: json['path'] as String? ?? '',
+        directory: json['directory'] as String?,
+      );
+}
+
+class SessionStatus {
+  final String id;
+  final String status;
+
+  SessionStatus({required this.id, required this.status});
+
+  factory SessionStatus.fromJson(Map<String, dynamic> json) => SessionStatus(
+        id: json['id'] as String? ?? '',
+        status: json['status'] as String? ?? 'idle',
+      );
+}
+
+class Part {
+  final String type;
+  final String? text;
+  final Map<String, dynamic>? state;
+  final Map<String, dynamic>? toolCall;
+
+  Part({required this.type, this.text, this.state, this.toolCall});
+
+  factory Part.fromJson(Map<String, dynamic> json) => Part(
+        type: json['type'] as String? ?? '',
+        text: json['text'] as String?,
+        state: json['state'] as Map<String, dynamic>?,
+        toolCall: json['toolCall'] as Map<String, dynamic>?,
+      );
+}
+
+class FileStatus {
+  final String path;
+  final String status;
+
+  FileStatus({required this.path, required this.status});
+
+  factory FileStatus.fromJson(Map<String, dynamic> json) => FileStatus(
+        path: json['path'] as String? ?? '',
+        status: json['status'] as String? ?? 'unknown',
+      );
+}
+
+class Symbol {
+  final String name;
+  final String path;
+  final String? kind;
+  final String? containerName;
+
+  Symbol({required this.name, required this.path, this.kind, this.containerName});
+
+  factory Symbol.fromJson(Map<String, dynamic> json) => Symbol(
+        name: json['name'] as String? ?? '',
+        path: json['path'] as String? ?? '',
+        kind: json['kind'] as String?,
+        containerName: json['containerName'] as String?,
+      );
+}
+
+class ProviderDefaults {
+  final List<Provider> providers;
+  final Map<String, String> defaultModels;
+
+  ProviderDefaults({required this.providers, required this.defaultModels});
+
+  factory ProviderDefaults.fromJson(Map<String, dynamic> json) {
+    final providersList = json['providers'] as List<dynamic>? ?? [];
+    final defaults = json['default'] as Map<String, dynamic>? ?? {};
+    return ProviderDefaults(
+      providers: providersList.map((e) => Provider.fromJson(e as Map<String, dynamic>)).toList(),
+      defaultModels: defaults.map((k, v) => MapEntry(k, v.toString())),
+    );
+  }
+}
+
+class ProviderAuthAuthorization {
+  final String? url;
+  final String? codeVerifier;
+
+  ProviderAuthAuthorization({this.url, this.codeVerifier});
+
+  factory ProviderAuthAuthorization.fromJson(Map<String, dynamic> json) => ProviderAuthAuthorization(
+        url: json['url'] as String?,
+        codeVerifier: json['codeVerifier'] as String?,
+      );
+}
+
+class ToolIDs {
+  final List<String> ids;
+
+  ToolIDs({required this.ids});
+
+  factory ToolIDs.fromJson(Map<String, dynamic> json) {
+    final list = json['ids'] as List<dynamic>? ?? [];
+    return ToolIDs(ids: list.map((e) => e.toString()).toList());
+  }
+}
+
+class SessionMessageResponse {
+  final Message info;
+  final List<Part> parts;
+
+  SessionMessageResponse({required this.info, required this.parts});
+
+  factory SessionMessageResponse.fromJson(Map<String, dynamic> json) {
+    final infoMap = json['info'] as Map<String, dynamic>? ?? {};
+    final partsList = (json['parts'] as List<dynamic>?) ?? [];
+    final time = infoMap['time'] as Map<String, dynamic>?;
+    return SessionMessageResponse(
+      info: Message(
+        id: infoMap['id'] as String? ?? '',
+        role: infoMap['role'] as String? ?? '',
+        content: '',
+        createdAt: time?['created'] as int? ?? 0,
+      ),
+      parts: partsList.map((p) => Part.fromJson(p as Map<String, dynamic>)).toList(),
+    );
+  }
+}
+
 enum AppMode { webview, native }
+
+
+
