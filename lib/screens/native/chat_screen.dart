@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../models.dart';
 import '../../theme.dart';
 import '../../services/opencode_api.dart';
@@ -23,6 +24,7 @@ class _ChatScreenState extends State<ChatScreen> {
   List<Message> _messages = [];
   List<Agent> _agents = [];
   List<Provider> _providers = [];
+  List<Command> _commands = [];
   bool _loading = true;
   String? _error;
   final _inputCtrl = TextEditingController();
@@ -30,18 +32,37 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _sending = false;
   String? _selectedAgent;
   String? _selectedModel;
+  bool _showCommands = false;
+  List<Command> _filteredCommands = [];
 
   @override
   void initState() {
     super.initState();
     _load();
+    _inputCtrl.addListener(_onInputChanged);
   }
 
   @override
   void dispose() {
+    _inputCtrl.removeListener(_onInputChanged);
     _inputCtrl.dispose();
     _scrollCtrl.dispose();
     super.dispose();
+  }
+
+  void _onInputChanged() {
+    final text = _inputCtrl.text;
+    if (text.startsWith('/') && text.length > 1) {
+      final query = text.substring(1).toLowerCase();
+      setState(() {
+        _showCommands = true;
+        _filteredCommands = _commands
+            .where((c) => c.id.toLowerCase().contains(query) || c.title.toLowerCase().contains(query))
+            .toList();
+      });
+    } else if (text.isEmpty || !text.startsWith('/')) {
+      setState(() => _showCommands = false);
+    }
   }
 
   Future<void> _load() async {
@@ -51,11 +72,13 @@ class _ChatScreenState extends State<ChatScreen> {
         widget.api.getMessages(widget.session.id),
         widget.api.getAgents(),
         widget.api.getProviders(),
+        widget.api.getCommands(),
       ]);
       setState(() {
         _messages = results[0] as List<Message>;
         _agents = results[1] as List<Agent>;
         _providers = results[2] as List<Provider>;
+        _commands = results[3] as List<Command>;
         if (_selectedAgent == null && _agents.isNotEmpty) {
           final buildAgent = _agents.where((a) => a.name == 'build').firstOrNull;
           _selectedAgent = buildAgent?.name ?? _agents.first.name;
@@ -84,9 +107,20 @@ class _ChatScreenState extends State<ChatScreen> {
     final text = _inputCtrl.text.trim();
     if (text.isEmpty) return;
     _inputCtrl.clear();
-    setState(() => _sending = true);
+    setState(() {
+      _sending = true;
+      _showCommands = false;
+    });
+
     try {
-      await widget.api.sendMessageAsync(widget.session.id, text, agent: _selectedAgent, model: _selectedModel);
+      if (text.startsWith('/')) {
+        final parts = text.substring(1).split(' ');
+        final cmd = parts.first;
+        final args = parts.skip(1).toList();
+        await widget.api.executeCommand(widget.session.id, command: cmd, arguments: args, agent: _selectedAgent, model: _selectedModel);
+      } else {
+        await widget.api.sendMessageAsync(widget.session.id, text, agent: _selectedAgent, model: _selectedModel);
+      }
       await _refreshMessages();
       _pollForNewMessages();
     } catch (e) {
@@ -106,6 +140,47 @@ class _ChatScreenState extends State<ChatScreen> {
             ],
           ),
         );
+        setState(() => _sending = false);
+      }
+    }
+  }
+
+  Future<void> _runShell() async {
+    final command = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: const Text('运行 Shell 命令', style: TextStyle(color: AppColors.textPrimary)),
+        content: TextField(
+          autofocus: true,
+          style: const TextStyle(color: AppColors.textPrimary),
+          decoration: const InputDecoration(
+            hintText: 'ls -la',
+            hintStyle: TextStyle(color: AppColors.textTertiary),
+            enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: AppColors.border)),
+            focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: AppColors.borderFocused)),
+          ),
+          onSubmitted: (v) => Navigator.pop(ctx, v),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消', style: TextStyle(color: AppColors.textSecondary))),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+            onPressed: () => Navigator.pop(ctx, ''),
+            child: const Text('运行'),
+          ),
+        ],
+      ),
+    );
+    if (command == null || command.isEmpty) return;
+    setState(() => _sending = true);
+    try {
+      await widget.api.runShell(widget.session.id, command: command, agent: _selectedAgent, model: _selectedModel);
+      await _refreshMessages();
+      _pollForNewMessages();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Shell 执行失败: $e')));
         setState(() => _sending = false);
       }
     }
@@ -194,6 +269,162 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
+  Future<void> _showMessageActions(Message msg) async {
+    final result = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text('消息操作', style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
+            ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.copy, color: AppColors.textSecondary),
+              title: const Text('复制内容', style: TextStyle(color: AppColors.textPrimary)),
+              onTap: () => Navigator.pop(ctx, 'copy'),
+            ),
+            if (msg.role != 'user') ...[
+              ListTile(
+                leading: const Icon(Icons.undo, color: AppColors.textSecondary),
+                title: const Text('回退此消息', style: TextStyle(color: AppColors.textPrimary)),
+                onTap: () => Navigator.pop(ctx, 'revert'),
+              ),
+              ListTile(
+                leading: const Icon(Icons.info_outline, color: AppColors.textSecondary),
+                title: const Text('查看详情', style: TextStyle(color: AppColors.textPrimary)),
+                onTap: () => Navigator.pop(ctx, 'detail'),
+              ),
+            ],
+            ListTile(
+              leading: const Icon(Icons.call_split, color: AppColors.textSecondary),
+              title: const Text('从此消息分叉', style: TextStyle(color: AppColors.textPrimary)),
+              onTap: () => Navigator.pop(ctx, 'fork'),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+    if (result == null) return;
+    switch (result) {
+      case 'copy':
+        await _copyToClipboard(msg.content);
+      case 'revert':
+        await _doRevert(msg);
+      case 'detail':
+        _showMessageDetail(msg);
+      case 'fork':
+        await _doFork(msg);
+    }
+  }
+
+  Future<void> _copyToClipboard(String text) async {
+    await copyToClipboard(text);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('已复制', style: TextStyle(color: AppColors.textPrimary)), backgroundColor: AppColors.surface),
+      );
+    }
+  }
+
+  Future<void> _doRevert(Message msg) async {
+    try {
+      await widget.api.revertMessage(widget.session.id, msg.id);
+      await _refreshMessages();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('回退失败: $e')));
+      }
+    }
+  }
+
+  void _showMessageDetail(Message msg) async {
+    try {
+      final detail = await widget.api.getMessageDetail(widget.session.id, msg.id);
+      if (!mounted) return;
+      final info = detail['info'] as Map<String, dynamic>? ?? {};
+      final parts = (detail['parts'] as List<dynamic>?) ?? [];
+      showDialog(
+        context: context,
+        builder: (ctx) => Dialog(
+          backgroundColor: AppColors.surface,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AppBar(
+                title: const Text('消息详情', style: TextStyle(color: AppColors.textPrimary, fontSize: 14)),
+                leading: IconButton(
+                  icon: const Icon(Icons.close, color: AppColors.textSecondary),
+                  onPressed: () => Navigator.pop(ctx),
+                ),
+              ),
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    _detailRow('ID', info['id']?.toString() ?? ''),
+                    _detailRow('角色', info['role']?.toString() ?? ''),
+                    _detailRow('Parts 数量', parts.length.toString()),
+                    const SizedBox(height: 12),
+                    Text('Parts:', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                    const SizedBox(height: 4),
+                    ...parts.take(10).map((p) {
+                      final pMap = p as Map<String, dynamic>;
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Text(
+                          '  [${pMap['type']}]: ${(pMap['text']?.toString() ?? pMap.toString()).substring(0, (pMap['text']?.toString() ?? pMap.toString()).length.clamp(0, 100))}',
+                          style: const TextStyle(color: AppColors.textPrimary, fontSize: 11, fontFamily: 'monospace'),
+                        ),
+                      );
+                    }),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('获取详情失败: $e')));
+      }
+    }
+  }
+
+  Widget _detailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('$label: ', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+          Expanded(child: Text(value, style: const TextStyle(color: AppColors.textPrimary, fontSize: 13))),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _doFork(Message msg) async {
+    try {
+      final session = await widget.api.forkSession(widget.session.id, messageID: msg.id);
+      if (mounted) {
+        Navigator.pushReplacement(context, MaterialPageRoute(
+          builder: (_) => ChatScreen(session: session, entry: widget.entry, api: widget.api),
+        ));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('分叉失败: $e')));
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final agentName = _selectedAgent ?? 'build';
@@ -210,6 +441,11 @@ class _ChatScreenState extends State<ChatScreen> {
       appBar: AppBar(
         title: Text(widget.session.title.isNotEmpty ? widget.session.title : '会话'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.terminal, color: AppColors.textSecondary),
+            tooltip: 'Shell 命令',
+            onPressed: _runShell,
+          ),
           IconButton(
             icon: const Icon(Icons.refresh, color: AppColors.textSecondary),
             onPressed: _load,
@@ -229,12 +465,47 @@ class _ChatScreenState extends State<ChatScreen> {
                             controller: _scrollCtrl,
                             padding: const EdgeInsets.all(16),
                             itemCount: _messages.length,
-                            itemBuilder: (ctx, i) => _MessageBubble(message: _messages[i]),
+                            itemBuilder: (ctx, i) {
+                              final isLatest = i == _messages.length - 1;
+                              final isSecondLatest = !isLatest && (_messages[i].role != 'user') && (i == _messages.length - 2);
+                              return _MessageBubble(
+                                message: _messages[i],
+                                isLatest: isLatest || isSecondLatest,
+                                onLongPress: () => _showMessageActions(_messages[i]),
+                                onToggleReasoning: null,
+                              );
+                            },
                           ),
           ),
+          if (_showCommands && _filteredCommands.isNotEmpty) _buildCommandSuggestions(),
           _agentBar(agentName, agentColor ?? AppColors.primary),
           _buildInputBar(),
         ],
+      ),
+    );
+  }
+
+  Widget _buildCommandSuggestions() {
+    return Container(
+      constraints: const BoxConstraints(maxHeight: 200),
+      decoration: const BoxDecoration(
+        color: AppColors.surface,
+        border: Border(top: BorderSide(color: AppColors.border)),
+      ),
+      child: ListView(
+        padding: EdgeInsets.zero,
+        shrinkWrap: true,
+        children: _filteredCommands.map((c) => ListTile(
+          dense: true,
+          leading: Icon(Icons.terminal, color: AppColors.primary, size: 18),
+          title: Text('/${c.id}', style: TextStyle(color: AppColors.textPrimary, fontSize: 13, fontFamily: 'monospace')),
+          subtitle: c.description != null ? Text(c.description!, style: TextStyle(color: AppColors.textTertiary, fontSize: 11)) : null,
+          onTap: () {
+            _inputCtrl.text = '/${c.id} ';
+            _inputCtrl.selection = TextSelection.collapsed(offset: _inputCtrl.text.length);
+            setState(() => _showCommands = false);
+          },
+        )).toList(),
       ),
     );
   }
@@ -291,7 +562,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   controller: _inputCtrl,
                   style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
                   decoration: InputDecoration(
-                    hintText: '输入消息...',
+                    hintText: '输入消息... (/ 查看命令)',
                     hintStyle: TextStyle(color: AppColors.textTertiary),
                     filled: true,
                     fillColor: AppColors.background,
@@ -328,6 +599,142 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 }
 
+// --- Reasoning Block ---
+class _ReasoningBlock extends StatefulWidget {
+  final String content;
+  final bool isLatest;
+
+  const _ReasoningBlock({required this.content, required this.isLatest});
+
+  @override
+  State<_ReasoningBlock> createState() => _ReasoningBlockState();
+}
+
+class _ReasoningBlockState extends State<_ReasoningBlock> {
+  late bool _expanded;
+
+  @override
+  void initState() {
+    super.initState();
+    _expanded = widget.isLatest;
+  }
+
+  @override
+  void didUpdateWidget(_ReasoningBlock oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!widget.isLatest && oldWidget.isLatest) {
+      setState(() => _expanded = false);
+    }
+    if (widget.isLatest && !oldWidget.isLatest) {
+      setState(() => _expanded = true);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceAlt,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          InkWell(
+            onTap: () => setState(() => _expanded = !_expanded),
+            borderRadius: BorderRadius.circular(10),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Row(
+                children: [
+                  Icon(Icons.psychology, color: AppColors.warning, size: 16),
+                  const SizedBox(width: 6),
+                  Text('思考过程', style: TextStyle(color: AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.w500)),
+                  const Spacer(),
+                  Icon(
+                    _expanded ? Icons.unfold_less : Icons.unfold_more,
+                    color: AppColors.textTertiary,
+                    size: 16,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (_expanded)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+              child: Text(
+                widget.content,
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 12, fontFamily: 'monospace', height: 1.5),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+// --- Message Bubble ---
+class _MessageBubble extends StatelessWidget {
+  final Message message;
+  final bool isLatest;
+  final VoidCallback? onLongPress;
+  final VoidCallback? onToggleReasoning;
+
+  const _MessageBubble({
+    required this.message,
+    this.isLatest = false,
+    this.onLongPress,
+    this.onToggleReasoning,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isUser = message.role == 'user';
+    final timeStr = _formatTime(message.createdAt);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Column(
+        crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        children: [
+          if (!isUser && message.hasReasoning)
+            _ReasoningBlock(content: message.reasoning!, isLatest: isLatest),
+          GestureDetector(
+            onLongPress: onLongPress,
+            child: Container(
+              constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.8),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: isUser ? AppColors.primary : AppColors.surface,
+                borderRadius: BorderRadius.circular(16).copyWith(
+                  bottomRight: isUser ? const Radius.circular(4) : null,
+                  bottomLeft: !isUser ? const Radius.circular(4) : null,
+                ),
+                boxShadow: isUser ? null : [BoxShadow(color: AppColors.shadow, blurRadius: 4, offset: const Offset(0, 1))],
+              ),
+              child: Text(
+                message.content,
+                style: TextStyle(color: isUser ? Colors.white : AppColors.textPrimary, fontSize: 14),
+              ),
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(timeStr, style: TextStyle(color: AppColors.textTertiary, fontSize: 10)),
+        ],
+      ),
+    );
+  }
+
+  String _formatTime(int ms) {
+    final dt = DateTime.fromMillisecondsSinceEpoch(ms);
+    return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+  }
+}
+
+// --- Model Picker ---
 class _ModelPickerSheet extends StatefulWidget {
   final List<Provider> providers;
   final String? selectedId;
@@ -544,46 +951,6 @@ class _Chip extends StatelessWidget {
   }
 }
 
-class _MessageBubble extends StatelessWidget {
-  final Message message;
-
-  const _MessageBubble({required this.message});
-
-  @override
-  Widget build(BuildContext context) {
-    final isUser = message.role == 'user';
-    final timeStr = _formatTime(message.createdAt);
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Column(
-        crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-        children: [
-          Container(
-            constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.8),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              color: isUser ? AppColors.primary : AppColors.surface,
-              borderRadius: BorderRadius.circular(16).copyWith(
-                bottomRight: isUser ? const Radius.circular(4) : null,
-                bottomLeft: !isUser ? const Radius.circular(4) : null,
-              ),
-              boxShadow: isUser ? null : [BoxShadow(color: AppColors.shadow, blurRadius: 4, offset: const Offset(0, 1))],
-            ),
-            child: Text(
-              message.content,
-              style: TextStyle(color: isUser ? Colors.white : AppColors.textPrimary, fontSize: 14),
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(timeStr, style: TextStyle(color: AppColors.textTertiary, fontSize: 10)),
-        ],
-      ),
-    );
-  }
-
-  String _formatTime(int ms) {
-    final dt = DateTime.fromMillisecondsSinceEpoch(ms);
-    return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
-  }
+Future<void> copyToClipboard(String text) async {
+  await Clipboard.setData(ClipboardData(text: text));
 }

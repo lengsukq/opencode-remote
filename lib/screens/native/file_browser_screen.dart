@@ -20,10 +20,25 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
   String _currentPath = '';
   final List<String> _history = [];
 
+  // Search mode
+  bool _searchMode = false;
+  final _searchCtrl = TextEditingController();
+  List<SearchMatch> _searchResults = [];
+  List<String> _fileResults = [];
+  List<Map<String, dynamic>> _symbolResults = [];
+  bool _searching = false;
+  String _searchTabName = 'file'; // file | text | symbol
+
   @override
   void initState() {
     super.initState();
     _loadFiles('');
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
   }
 
   Future<void> _loadFiles(String path) async {
@@ -98,30 +113,266 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
     }
   }
 
+  Future<void> _readFileByPath(String path) async {
+    try {
+      final content = await widget.api.readFile(path);
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        builder: (ctx) => Dialog(
+          backgroundColor: AppColors.surface,
+          child: Column(
+            mainAxisSize: MainAxisSize.max,
+            children: [
+              AppBar(
+                title: Text(path.split('/').last, style: const TextStyle(color: AppColors.textPrimary, fontSize: 14)),
+                leading: IconButton(
+                  icon: const Icon(Icons.close, color: AppColors.textSecondary),
+                  onPressed: () => Navigator.pop(ctx),
+                ),
+              ),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: SelectableText(
+                    content.content,
+                    style: const TextStyle(color: AppColors.textPrimary, fontSize: 12, fontFamily: 'monospace'),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('读取失败: $e')));
+      }
+    }
+  }
+
+  // --- Search ---
+  void _toggleSearch() {
+    setState(() {
+      _searchMode = !_searchMode;
+      if (!_searchMode) {
+        _searchResults = [];
+        _fileResults = [];
+        _symbolResults = [];
+        _searchCtrl.clear();
+      }
+    });
+  }
+
+  Future<void> _doSearch(String query) async {
+    if (query.isEmpty) return;
+    setState(() => _searching = true);
+    try {
+      switch (_searchTabName) {
+        case 'file':
+          _fileResults = await widget.api.findFiles(query);
+          break;
+        case 'text':
+          _searchResults = await widget.api.searchFiles(query);
+          break;
+        case 'symbol':
+          _symbolResults = await widget.api.findSymbols(query);
+          break;
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('搜索失败: $e')));
+      }
+    }
+    if (mounted) setState(() => _searching = false);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        leading: _history.isNotEmpty
-            ? IconButton(
-                icon: const Icon(Icons.arrow_back, color: AppColors.textSecondary),
-                onPressed: _goBack,
-              )
-            : null,
-        title: Text(
-          _currentPath.isEmpty ? '文件浏览' : _currentPath.split('/').last,
+      appBar: _searchMode ? _searchAppBar() : _browserAppBar(),
+      body: _searchMode ? _buildSearchResults() : _buildFileList(),
+    );
+  }
+
+  PreferredSizeWidget _browserAppBar() {
+    return AppBar(
+      leading: _history.isNotEmpty
+          ? IconButton(
+              icon: const Icon(Icons.arrow_back, color: AppColors.textSecondary),
+              onPressed: _goBack,
+            )
+          : null,
+      title: Text(_currentPath.isEmpty ? '文件浏览' : _currentPath.split('/').last),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.search, color: AppColors.textSecondary),
+          tooltip: '搜索',
+          onPressed: _toggleSearch,
+        ),
+      ],
+    );
+  }
+
+  PreferredSizeWidget _searchAppBar() {
+    return AppBar(
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back, color: AppColors.textSecondary),
+        onPressed: _toggleSearch,
+      ),
+      title: TextField(
+        controller: _searchCtrl,
+        autofocus: true,
+        style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
+        decoration: InputDecoration(
+          hintText: '搜索文件、内容或符号',
+          hintStyle: TextStyle(color: AppColors.textTertiary),
+          border: InputBorder.none,
+          filled: false,
+        ),
+        onSubmitted: _doSearch,
+      ),
+      actions: [
+        if (_searching)
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 12),
+            child: SizedBox(
+              width: 18, height: 18,
+              child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildSearchResults() {
+    return Column(
+      children: [
+        _searchTabBar(),
+        Expanded(
+          child: _searching
+              ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+              : _searchTabName == 'file'
+                  ? _fileResults.isNotEmpty
+                      ? ListView.builder(
+                          padding: const EdgeInsets.all(12),
+                          itemCount: _fileResults.length,
+                          itemBuilder: (ctx, i) => ListTile(
+                            dense: true,
+                            leading: Icon(Icons.insert_drive_file, color: AppColors.textSecondary, size: 18),
+                            title: Text(_fileResults[i], style: const TextStyle(color: AppColors.textPrimary, fontSize: 13)),
+                            onTap: () => _readFileByPath(_fileResults[i]),
+                          ),
+                        )
+                      : _emptySearch()
+                  : _searchTabName == 'text'
+                      ? _searchResults.isNotEmpty
+                          ? ListView.builder(
+                              padding: const EdgeInsets.all(12),
+                              itemCount: _searchResults.length,
+                              itemBuilder: (ctx, i) {
+                                final r = _searchResults[i];
+                                return ListTile(
+                                  dense: true,
+                                  leading: Icon(Icons.text_snippet, color: AppColors.textSecondary, size: 18),
+                                  title: Text(r.path.split('/').last, style: const TextStyle(color: AppColors.textPrimary, fontSize: 13)),
+                                  subtitle: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text('行 ${r.lineNumber}', style: TextStyle(color: AppColors.textTertiary, fontSize: 10)),
+                                      Text(r.lines, style: const TextStyle(color: AppColors.textSecondary, fontSize: 11, fontFamily: 'monospace'), maxLines: 2),
+                                    ],
+                                  ),
+                                  onTap: () => _readFileByPath(r.path),
+                                );
+                              },
+                            )
+                          : _emptySearch()
+                      : _symbolResults.isNotEmpty
+                          ? ListView.builder(
+                              padding: const EdgeInsets.all(12),
+                              itemCount: _symbolResults.length,
+                              itemBuilder: (ctx, i) {
+                                final s = _symbolResults[i];
+                                return ListTile(
+                                  dense: true,
+                                  leading: Icon(Icons.code, color: AppColors.warning, size: 18),
+                                  title: Text(s['name']?.toString() ?? '', style: const TextStyle(color: AppColors.textPrimary, fontSize: 13)),
+                                  subtitle: Text(s['path']?.toString() ?? '', style: TextStyle(color: AppColors.textTertiary, fontSize: 11)),
+                                  onTap: () {
+                                    final path = s['path']?.toString();
+                                    if (path != null && path.isNotEmpty) _readFileByPath(path);
+                                  },
+                                );
+                              },
+                            )
+                          : _emptySearch(),
+        ),
+      ],
+    );
+  }
+
+  Widget _searchTabBar() {
+    return Container(
+      decoration: const BoxDecoration(
+        color: AppColors.surface,
+        border: Border(bottom: BorderSide(color: AppColors.border)),
+      ),
+      child: Row(
+        children: [
+          _tabButton('file', '文件名'),
+          _tabButton('text', '内容'),
+          _tabButton('symbol', '符号'),
+        ],
+      ),
+    );
+  }
+
+  Widget _tabButton(String tab, String label) {
+    final selected = _searchTabName == tab;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          setState(() => _searchTabName = tab);
+          if (_searchCtrl.text.isNotEmpty) _doSearch(_searchCtrl.text);
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            border: Border(bottom: BorderSide(color: selected ? AppColors.primary : Colors.transparent, width: 2)),
+          ),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: selected ? AppColors.primary : AppColors.textSecondary,
+              fontSize: 12,
+              fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+            ),
+          ),
         ),
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
-          : _error != null
-              ? Center(child: Text(_error!, style: TextStyle(color: AppColors.textSecondary)))
-              : ListView.builder(
-                  padding: const EdgeInsets.all(12),
-                  itemCount: _files.length,
-                  itemBuilder: (ctx, i) => _FileTile(node: _files[i], onTap: () => _openEntry(_files[i])),
-                ),
+    );
+  }
+
+  Widget _emptySearch() {
+    return Center(
+      child: Text('输入搜索关键词', style: TextStyle(color: AppColors.textTertiary, fontSize: 14)),
+    );
+  }
+
+  Widget _buildFileList() {
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+    }
+    if (_error != null) {
+      return Center(child: Text(_error!, style: TextStyle(color: AppColors.textSecondary)));
+    }
+    return ListView.builder(
+      padding: const EdgeInsets.all(12),
+      itemCount: _files.length,
+      itemBuilder: (ctx, i) => _FileTile(node: _files[i], onTap: () => _openEntry(_files[i])),
     );
   }
 }

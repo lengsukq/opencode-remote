@@ -41,16 +41,32 @@ class OpenCodeApi {
     return http.post(_buildUri(path), headers: _headers, body: body != null ? jsonEncode(body) : null);
   }
 
+  Future<http.Response> _patch(String path, {Map<String, dynamic>? body}) async {
+    return http.patch(_buildUri(path), headers: _headers, body: body != null ? jsonEncode(body) : null);
+  }
+
+  Future<http.Response> _put(String path, {Map<String, dynamic>? body}) async {
+    return http.put(_buildUri(path), headers: _headers, body: body != null ? jsonEncode(body) : null);
+  }
+
   Future<http.Response> _delete(String path) async {
     return http.delete(_buildUri(path), headers: _headers);
   }
 
+  void _check(http.Response res) {
+    if (res.statusCode >= 400) {
+      throw OpenCodeApiException(res.statusCode, res.body);
+    }
+  }
+
+  // --- Global ---
   Future<HealthStatus> getHealth() async {
     final res = await _get('/global/health');
     _check(res);
     return HealthStatus.fromJson(jsonDecode(res.body));
   }
 
+  // --- Project ---
   Future<Project> getCurrentProject() async {
     final res = await _get('/project/current');
     _check(res);
@@ -64,12 +80,20 @@ class OpenCodeApi {
     return list.map((e) => Project.fromJson(e as Map<String, dynamic>)).toList();
   }
 
+  // --- Path & VCS ---
   Future<VcsInfo?> getVcs() async {
     final res = await _get('/vcs');
     if (res.statusCode != 200) return null;
     return VcsInfo.fromJson(jsonDecode(res.body));
   }
 
+  // --- Instance ---
+  Future<bool> disposeInstance() async {
+    final res = await _post('/instance/dispose');
+    return res.statusCode == 200;
+  }
+
+  // --- Session ---
   Future<List<Session>> getSessions() async {
     final res = await _get('/session');
     _check(res);
@@ -101,6 +125,78 @@ class OpenCodeApi {
     await _post('/session/$id/abort');
   }
 
+  Future<Session> updateSession(String id, {String? title}) async {
+    final body = <String, dynamic>{};
+    if (title != null) body['title'] = title;
+    final res = await _patch('/session/$id', body: body);
+    _check(res);
+    return Session.fromJson(jsonDecode(res.body));
+  }
+
+  Future<List<Session>> getChildSessions(String id) async {
+    final res = await _get('/session/$id/children');
+    _check(res);
+    final list = jsonDecode(res.body) as List<dynamic>;
+    return list.map((e) => Session.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  Future<Session> forkSession(String id, {String? messageID}) async {
+    final body = <String, dynamic>{};
+    if (messageID != null) body['messageID'] = messageID;
+    final res = await _post('/session/$id/fork', body: body);
+    _check(res);
+    return Session.fromJson(jsonDecode(res.body));
+  }
+
+  Future<Session> shareSession(String id) async {
+    final res = await _post('/session/$id/share');
+    _check(res);
+    return Session.fromJson(jsonDecode(res.body));
+  }
+
+  Future<Session> unshareSession(String id) async {
+    final res = await _delete('/session/$id/share');
+    _check(res);
+    return Session.fromJson(jsonDecode(res.body));
+  }
+
+  Future<List<DiffEntry>> getSessionDiff(String id, {String? messageID}) async {
+    var path = '/session/$id/diff';
+    if (messageID != null) path += '?messageID=$messageID';
+    final res = await _get(path);
+    _check(res);
+    final list = jsonDecode(res.body) as List<dynamic>;
+    return list.map((e) => DiffEntry.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  Future<bool> summarizeSession(String id, {String? providerID, String? modelID}) async {
+    final body = <String, dynamic>{};
+    if (providerID != null) body['providerID'] = providerID;
+    if (modelID != null) body['modelID'] = modelID;
+    final res = await _post('/session/$id/summarize', body: body);
+    return res.statusCode == 200;
+  }
+
+  Future<bool> revertMessage(String id, String messageID, {String? partID}) async {
+    final body = <String, dynamic>{'messageID': messageID};
+    if (partID != null) body['partID'] = partID;
+    final res = await _post('/session/$id/revert', body: body);
+    return res.statusCode == 200;
+  }
+
+  Future<bool> unrevertMessages(String id) async {
+    final res = await _post('/session/$id/unrevert');
+    return res.statusCode == 200;
+  }
+
+  Future<List<Todo>> getSessionTodo(String id) async {
+    final res = await _get('/session/$id/todo');
+    _check(res);
+    final list = jsonDecode(res.body) as List<dynamic>;
+    return list.map((e) => Todo.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  // --- Messages ---
   Future<List<Message>> getMessages(String sessionId, {int? limit}) async {
     final query = limit != null ? '?limit=$limit' : '';
     final res = await _get('/session/$sessionId/message$query');
@@ -119,15 +215,38 @@ class OpenCodeApi {
     return [];
   }
 
+  Future<Map<String, dynamic>> getMessageDetail(String sessionId, String messageId) async {
+    final res = await _get('/session/$sessionId/message/$messageId');
+    _check(res);
+    return jsonDecode(res.body) as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> sendMessage(
+    String sessionId, {
+    required String content,
+    String? model,
+    String? agent,
+    String? messageID,
+  }) async {
+    final bodyParts = [
+      {'type': 'text', 'text': content}
+    ];
+    final body = <String, dynamic>{'parts': bodyParts};
+    if (model != null) body['model'] = model;
+    if (agent != null) body['agent'] = agent;
+    if (messageID != null) body['messageID'] = messageID;
+
+    final res = await _post('/session/$sessionId/message', body: body);
+    _check(res);
+    return jsonDecode(res.body) as Map<String, dynamic>;
+  }
+
   Future<void> sendMessageAsync(String sessionId, String content, {String? model, String? agent}) async {
     final bodyParts = [
       {'type': 'text', 'text': content}
     ];
     final body = <String, dynamic>{'parts': bodyParts};
-    if (model != null) {
-      final parts = model.split('/');
-      body['model'] = {'providerID': parts[0], 'modelID': parts.sublist(1).join('/')};
-    }
+    if (model != null) body['model'] = model;
     if (agent != null) body['agent'] = agent;
     final res = await _post('/session/$sessionId/prompt_async', body: body);
     if (res.statusCode != 204) {
@@ -135,6 +254,49 @@ class OpenCodeApi {
     }
   }
 
+  Future<Map<String, dynamic>> executeCommand(
+    String sessionId, {
+    required String command,
+    required List<String> arguments,
+    String? agent,
+    String? model,
+    String? messageID,
+  }) async {
+    final body = <String, dynamic>{
+      'command': command,
+      'arguments': arguments,
+    };
+    if (agent != null) body['agent'] = agent;
+    if (model != null) body['model'] = model;
+    if (messageID != null) body['messageID'] = messageID;
+    final res = await _post('/session/$sessionId/command', body: body);
+    _check(res);
+    return jsonDecode(res.body) as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> runShell(
+    String sessionId, {
+    required String command,
+    String? agent,
+    String? model,
+  }) async {
+    final body = <String, dynamic>{'command': command};
+    if (agent != null) body['agent'] = agent;
+    if (model != null) body['model'] = model;
+    final res = await _post('/session/$sessionId/shell', body: body);
+    _check(res);
+    return jsonDecode(res.body) as Map<String, dynamic>;
+  }
+
+  // --- Commands ---
+  Future<List<Command>> getCommands() async {
+    final res = await _get('/command');
+    _check(res);
+    final list = jsonDecode(res.body) as List<dynamic>;
+    return list.map((e) => Command.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  // --- Files ---
   Future<List<FileNode>> listFiles(String path) async {
     final res = await _get('/file?path=${Uri.encodeComponent(path)}');
     _check(res);
@@ -148,19 +310,50 @@ class OpenCodeApi {
     return FileContent.fromJson(jsonDecode(res.body));
   }
 
+  Future<List<SearchMatch>> searchFiles(String pattern) async {
+    final res = await _get('/find?pattern=${Uri.encodeComponent(pattern)}');
+    _check(res);
+    final list = jsonDecode(res.body) as List<dynamic>;
+    return list.map((e) => SearchMatch.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  Future<List<String>> findFiles(String query, {String? type, int? limit}) async {
+    var path = '/find/file?query=${Uri.encodeComponent(query)}';
+    if (type != null) path += '&type=$type';
+    if (limit != null) path += '&limit=$limit';
+    final res = await _get(path);
+    _check(res);
+    final list = jsonDecode(res.body) as List<dynamic>;
+    return list.map((e) => e.toString()).toList();
+  }
+
+  Future<List<Map<String, dynamic>>> findSymbols(String query) async {
+    final res = await _get('/find/symbol?query=${Uri.encodeComponent(query)}');
+    _check(res);
+    final list = jsonDecode(res.body) as List<dynamic>;
+    return list.map((e) => e as Map<String, dynamic>).toList();
+  }
+
+  // --- Config ---
   Future<Config> getConfig() async {
     final res = await _get('/config');
     _check(res);
     return Config.fromJson(jsonDecode(res.body));
   }
 
-  Future<List<Agent>> getAgents() async {
-    final res = await _get('/agent');
+  Future<Config> patchConfig(Map<String, dynamic> updates) async {
+    final res = await _patch('/config', body: updates);
     _check(res);
-    final list = jsonDecode(res.body) as List<dynamic>;
-    return list.map((e) => Agent.fromJson(e as Map<String, dynamic>)).toList();
+    return Config.fromJson(jsonDecode(res.body));
   }
 
+  Future<Map<String, dynamic>> getConfigProviders() async {
+    final res = await _get('/config/providers');
+    _check(res);
+    return jsonDecode(res.body) as Map<String, dynamic>;
+  }
+
+  // --- Provider ---
   Future<List<Provider>> getProviders() async {
     final res = await _get('/provider');
     _check(res);
@@ -169,10 +362,70 @@ class OpenCodeApi {
     return all.map((e) => Provider.fromJson(e as Map<String, dynamic>)).toList();
   }
 
-  void _check(http.Response res) {
-    if (res.statusCode >= 400) {
-      throw OpenCodeApiException(res.statusCode, res.body);
-    }
+  Future<Map<String, List<ProviderAuthMethod>>> getProviderAuth() async {
+    final res = await _get('/provider/auth');
+    _check(res);
+    final data = jsonDecode(res.body) as Map<String, dynamic>;
+    return data.map((k, v) {
+      final list = (v as List<dynamic>?)?.map((e) => ProviderAuthMethod.fromJson(e as Map<String, dynamic>)).toList() ?? [];
+      return MapEntry(k, list);
+    });
+  }
+
+  Future<bool> setAuth(String id, Map<String, dynamic> body) async {
+    final res = await _put('/auth/$id', body: body);
+    return res.statusCode == 200;
+  }
+
+  // --- Agent ---
+  Future<List<Agent>> getAgents() async {
+    final res = await _get('/agent');
+    _check(res);
+    final list = jsonDecode(res.body) as List<dynamic>;
+    return list.map((e) => Agent.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  // --- LSP, Formatter, MCP ---
+  Future<List<LSPStatus>> getLspStatus() async {
+    final res = await _get('/lsp');
+    _check(res);
+    final list = jsonDecode(res.body) as List<dynamic>;
+    return list.map((e) => LSPStatus.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  Future<List<FormatterStatus>> getFormatterStatus() async {
+    final res = await _get('/formatter');
+    _check(res);
+    final list = jsonDecode(res.body) as List<dynamic>;
+    return list.map((e) => FormatterStatus.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  Future<Map<String, MCPStatus>> getMcpStatus() async {
+    final res = await _get('/mcp');
+    _check(res);
+    final data = jsonDecode(res.body) as Map<String, dynamic>;
+    return data.map((k, v) => MapEntry(k, MCPStatus.fromJson(v as Map<String, dynamic>)));
+  }
+
+  // --- Log ---
+  Future<bool> writeLog(String service, String level, String message, {Map<String, dynamic>? extra}) async {
+    final body = <String, dynamic>{
+      'service': service,
+      'level': level,
+      'message': message,
+    };
+    if (extra != null) body['extra'] = extra;
+    final res = await _post('/log', body: body);
+    return res.statusCode == 200;
+  }
+
+  // --- Experimental Tools ---
+  Future<List<ToolEntry>> getToolIds() async {
+    final res = await _get('/experimental/tool/ids');
+    _check(res);
+    final data = jsonDecode(res.body);
+    final list = data['ids'] as List<dynamic>? ?? [];
+    return list.map((e) => ToolEntry.fromJson(e as Map<String, dynamic>? ?? {'id': e.toString()})).toList();
   }
 }
 

@@ -7,6 +7,7 @@ import '../settings_sheet.dart';
 import 'session_list_screen.dart';
 import 'file_browser_screen.dart';
 import 'project_screen.dart';
+import 'config_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   final ServerEntry entry;
@@ -118,6 +119,68 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
+  Future<void> _showAuthDialog() async {
+    final providerID = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: const Text('设置认证', style: TextStyle(color: AppColors.textPrimary)),
+        content: TextField(
+          autofocus: true,
+          style: const TextStyle(color: AppColors.textPrimary),
+          decoration: const InputDecoration(
+            hintText: 'provider ID (如 openai)',
+            hintStyle: TextStyle(color: AppColors.textTertiary),
+            enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: AppColors.border)),
+            focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: AppColors.borderFocused)),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消', style: TextStyle(color: AppColors.textSecondary))),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+            onPressed: () => Navigator.pop(ctx, ''),
+            child: const Text('确定'),
+          ),
+        ],
+      ),
+    );
+    if (providerID == null || providerID.isEmpty) return;
+    final apiKey = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: const Text('API Key', style: TextStyle(color: AppColors.textPrimary)),
+        content: TextField(
+          autofocus: true,
+          obscureText: true,
+          style: const TextStyle(color: AppColors.textPrimary),
+          decoration: const InputDecoration(
+            hintText: 'sk-...',
+            hintStyle: TextStyle(color: AppColors.textTertiary),
+            enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: AppColors.border)),
+            focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: AppColors.borderFocused)),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消', style: TextStyle(color: AppColors.textSecondary))),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+            onPressed: () => Navigator.pop(ctx, ''),
+            child: const Text('确定'),
+          ),
+        ],
+      ),
+    );
+    if (apiKey == null || apiKey.isEmpty) return;
+    try {
+      await _api.setAuth(providerID, {'apiKey': apiKey});
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('认证已设置')));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('设置认证失败: $e')));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -133,6 +196,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
           IconButton(
             icon: const Icon(Icons.settings, color: AppColors.textSecondary),
             onPressed: _openSettings,
+          ),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert, color: AppColors.textSecondary),
+            onSelected: (v) async {
+              if (v == 'dispose') {
+                try {
+                  await _api.disposeInstance();
+                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('实例已销毁')));
+                } catch (e) {
+                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('销毁失败: $e')));
+                }
+              } else if (v == 'log') {
+                await _api.writeLog('client', 'info', 'Dashboard health check from remote app', extra: {'url': _entry.url});
+                if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('日志已写入')));
+              } else if (v == 'auth') {
+                _showAuthDialog();
+              }
+            },
+            itemBuilder: (_) => [
+              const PopupMenuItem(value: 'dispose', child: ListTile(leading: Icon(Icons.power_settings_new, size: 18), title: Text('销毁实例', style: TextStyle(fontSize: 13)))),
+              const PopupMenuItem(value: 'log', child: ListTile(leading: Icon(Icons.article, size: 18), title: Text('写入诊断日志', style: TextStyle(fontSize: 13)))),
+              const PopupMenuItem(value: 'auth', child: ListTile(leading: Icon(Icons.key, size: 18), title: Text('设置认证', style: TextStyle(fontSize: 13)))),
+            ],
           ),
         ],
       ),
@@ -349,6 +435,10 @@ class _QuickActions extends StatelessWidget {
             const SizedBox(width: 8),
             Expanded(child: _ActionButton(icon: Icons.swap_horiz, label: '切换项目', color: AppColors.warning, onTap: () {
               Navigator.push(context, MaterialPageRoute(builder: (_) => ProjectScreen(entry: entry, api: api)));
+            })),
+            const SizedBox(width: 8),
+            Expanded(child: _ActionButton(icon: Icons.monitor_heart, label: '诊断', color: AppColors.primary, onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => ConfigScreen(entry: entry, api: api)));
             })),
           ],
         ),
