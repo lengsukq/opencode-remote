@@ -396,14 +396,23 @@ class OpenCodeApi {
     _check(res);
     final data = jsonDecode(res.body);
     final all = data['all'] as List<dynamic>? ?? [];
-    final connected = (data['connected'] as List<dynamic>?)?.map((e) => e as String).toSet() ?? {};
-    if (connected.isNotEmpty) {
-      return all
-          .where((e) => connected.contains((e as Map<String, dynamic>)['id'] as String?))
-          .map((e) => Provider.fromJson(e as Map<String, dynamic>))
-          .toList();
-    }
     return all.map((e) => Provider.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  Future<Set<String>> getConnectedProviders() async {
+    final res = await _get('/provider');
+    _check(res);
+    final data = jsonDecode(res.body);
+    final connected = (data['connected'] as List<dynamic>?)?.map((e) => e as String).toSet() ?? {};
+    return connected;
+  }
+
+  Future<Map<String, String>> getProviderDefaultModels() async {
+    final res = await _get('/provider');
+    _check(res);
+    final data = jsonDecode(res.body);
+    final defaults = data['default'] as Map<String, dynamic>? ?? {};
+    return defaults.map((k, v) => MapEntry(k, v.toString()));
   }
 
   Future<Map<String, List<ProviderAuthMethod>>> getProviderAuth() async {
