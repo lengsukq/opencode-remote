@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../models.dart';
 import '../../theme.dart';
 import '../../services/opencode_api.dart';
+import '../../widgets/diff_view.dart';
 import 'chat_screen.dart';
 
 class SessionListScreen extends StatefulWidget {
@@ -360,7 +361,7 @@ class _SessionListScreenState extends State<SessionListScreen> {
       showDialog(
         context: context,
         builder: (ctx) => Dialog(
-          backgroundColor: AppColors.surface,
+          backgroundColor: AppColors.background,
           child: Column(
             mainAxisSize: MainAxisSize.max,
             children: [
@@ -376,40 +377,12 @@ class _SessionListScreenState extends State<SessionListScreen> {
                   padding: const EdgeInsets.all(12),
                   children: diffs.map((d) => Padding(
                     padding: const EdgeInsets.only(bottom: 8),
-                    child: Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: AppColors.surfaceAlt,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: AppColors.border),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                d.status == 'added' ? Icons.add_circle : d.status == 'deleted' ? Icons.remove_circle : Icons.edit,
-                                color: d.status == 'added' ? AppColors.success : d.status == 'deleted' ? AppColors.danger : AppColors.warning,
-                                size: 16,
-                              ),
-                              const SizedBox(width: 6),
-                              Expanded(child: Text(d.filePath, style: const TextStyle(color: AppColors.textPrimary, fontSize: 13, fontFamily: 'monospace'))),
-                            ],
-                          ),
-                          if (d.hunks.isNotEmpty) ...[
-                            const SizedBox(height: 6),
-                            ...d.hunks.take(3).map((h) => Text(
-                              h.content,
-                              style: const TextStyle(color: AppColors.textSecondary, fontSize: 11, fontFamily: 'monospace'),
-                              maxLines: 5,
-                              overflow: TextOverflow.ellipsis,
-                            )),
-                            if (d.hunks.length > 3)
-                              Text('... 还有 ${d.hunks.length - 3} 个 hunk', style: TextStyle(color: AppColors.textTertiary, fontSize: 10)),
-                          ],
-                        ],
-                      ),
+                    child: DiffView(
+                      filePath: d.filePath,
+                      status: d.status,
+                      hunks: d.hunks.map((h) => DiffHunkView.fromContent(
+                        h.oldStart, h.newStart, h.content,
+                      )).toList(),
                     ),
                   )).toList(),
                 ),
