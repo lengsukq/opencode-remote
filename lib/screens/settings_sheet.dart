@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models.dart';
 import '../theme.dart';
 import '../services/storage_service.dart';
+import '../main.dart' show themeNotifier;
 import 'native/dashboard_screen.dart';
 import 'launcher_screen.dart';
 
@@ -21,20 +22,22 @@ class SettingsSheet extends StatefulWidget {
 
 class _SettingsSheetState extends State<SettingsSheet> {
   late AppMode _mode;
+  late ThemeMode _themeMode;
 
   @override
   void initState() {
     super.initState();
     _mode = widget.currentMode;
+    _themeMode = themeNotifier.value;
   }
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).padding.bottom),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -81,10 +84,46 @@ class _SettingsSheetState extends State<SettingsSheet> {
               ],
             ),
           ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('主题', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                const SizedBox(height: 8),
+                _ThemeTile(
+                  icon: Icons.light_mode,
+                  title: '浅色',
+                  selected: _themeMode == ThemeMode.light,
+                  onTap: () => _setTheme(ThemeMode.light),
+                ),
+                const SizedBox(height: 4),
+                _ThemeTile(
+                  icon: Icons.dark_mode,
+                  title: '深色',
+                  selected: _themeMode == ThemeMode.dark,
+                  onTap: () => _setTheme(ThemeMode.dark),
+                ),
+                const SizedBox(height: 4),
+                _ThemeTile(
+                  icon: Icons.settings_brightness,
+                  title: '跟随系统',
+                  selected: _themeMode == ThemeMode.system,
+                  onTap: () => _setTheme(ThemeMode.system),
+                ),
+              ],
+            ),
+          ),
           const SizedBox(height: 8),
         ],
       ),
     );
+  }
+
+  Future<void> _setTheme(ThemeMode mode) async {
+    await StorageService.setThemeMode(mode);
+    themeNotifier.value = mode;
+    setState(() => _themeMode = mode);
   }
 
   Future<void> _switchMode(BuildContext context, AppMode mode) async {
@@ -150,11 +189,58 @@ class _ModeTile extends StatelessWidget {
             if (selected)
               Container(
                 padding: const EdgeInsets.all(4),
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: AppColors.primary,
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(Icons.check, color: Colors.white, size: 12),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ThemeTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _ThemeTile({required this.icon, required this.title, required this.selected, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.primaryLight : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: selected ? AppColors.primary : AppColors.border,
+            width: selected ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: selected ? AppColors.primary : AppColors.textSecondary, size: 20),
+            const SizedBox(width: 10),
+            Text(title, style: TextStyle(
+              color: selected ? AppColors.primary : AppColors.textPrimary,
+              fontSize: 13, fontWeight: FontWeight.w500,
+            )),
+            const Spacer(),
+            if (selected)
+              Container(
+                padding: const EdgeInsets.all(3),
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.check, color: Colors.white, size: 10),
               ),
           ],
         ),

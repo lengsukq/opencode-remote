@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models.dart';
 
@@ -95,5 +96,34 @@ class StorageService {
   static Future<void> setHasLaunched() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_keyHasLaunched, true);
+  }
+
+  static const _keyThemeMode = 'theme_mode';
+
+  static Future<ThemeMode> getThemeMode() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_keyThemeMode);
+    switch (raw) {
+      case 'dark':
+        return ThemeMode.dark;
+      case 'light':
+        return ThemeMode.light;
+      default:
+        return ThemeMode.system;
+    }
+  }
+
+  static Future<void> setThemeMode(ThemeMode mode) async {
+    final prefs = await SharedPreferences.getInstance();
+    String raw;
+    switch (mode) {
+      case ThemeMode.dark:
+        raw = 'dark';
+      case ThemeMode.light:
+        raw = 'light';
+      default:
+        raw = 'system';
+    }
+    await prefs.setString(_keyThemeMode, raw);
   }
 }
