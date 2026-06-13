@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import '../../models.dart';
 import '../../theme.dart';
 import '../../services/opencode_api.dart';
@@ -705,8 +706,13 @@ class _MessageBubble extends StatelessWidget {
           GestureDetector(
             onLongPress: onLongPress,
             child: Container(
-              constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.8),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.85),
+              padding: EdgeInsets.only(
+                left: 14,
+                right: 14,
+                top: isUser ? 10 : 8,
+                bottom: isUser ? 10 : 8,
+              ),
               decoration: BoxDecoration(
                 color: isUser ? AppColors.primary : AppColors.surface,
                 borderRadius: BorderRadius.circular(16).copyWith(
@@ -715,10 +721,40 @@ class _MessageBubble extends StatelessWidget {
                 ),
                 boxShadow: isUser ? null : [BoxShadow(color: AppColors.shadow, blurRadius: 4, offset: const Offset(0, 1))],
               ),
-              child: Text(
-                message.content,
-                style: TextStyle(color: isUser ? Colors.white : AppColors.textPrimary, fontSize: 14),
-              ),
+              child: isUser
+                  ? Text(
+                      message.content,
+                      style: const TextStyle(color: Colors.white, fontSize: 14),
+                    )
+                  : MarkdownBody(
+                      data: message.content,
+                      selectable: true,
+                      styleSheet: MarkdownStyleSheet(
+                        p: const TextStyle(color: AppColors.textPrimary, fontSize: 14, height: 1.5),
+                        h1: TextStyle(color: AppColors.textPrimary, fontSize: 20, fontWeight: FontWeight.bold, height: 1.4),
+                        h2: TextStyle(color: AppColors.textPrimary, fontSize: 17, fontWeight: FontWeight.bold, height: 1.4),
+                        h3: TextStyle(color: AppColors.textPrimary, fontSize: 15, fontWeight: FontWeight.w600, height: 1.4),
+                        code: TextStyle(color: AppColors.textPrimary, fontSize: 12, fontFamily: 'monospace', backgroundColor: AppColors.surfaceAlt),
+                        codeblockDecoration: BoxDecoration(
+                          color: AppColors.surfaceAlt,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        blockquoteDecoration: BoxDecoration(
+                          border: Border(left: BorderSide(color: AppColors.primary, width: 3)),
+                          color: AppColors.surfaceAlt,
+                        ),
+                        listBullet: TextStyle(color: AppColors.textSecondary),
+                        horizontalRuleDecoration: BoxDecoration(
+                          border: Border(top: BorderSide(color: AppColors.border)),
+                        ),
+                        a: const TextStyle(color: AppColors.primary, decoration: TextDecoration.underline),
+                        strong: const TextStyle(fontWeight: FontWeight.bold),
+                        em: const TextStyle(fontStyle: FontStyle.italic),
+                        del: const TextStyle(decoration: TextDecoration.lineThrough),
+                        blockSpacing: 8,
+                        codeblockPadding: EdgeInsets.all(10),
+                      ),
+                    ),
             ),
           ),
           const SizedBox(height: 2),
