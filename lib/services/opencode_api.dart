@@ -232,7 +232,10 @@ class OpenCodeApi {
       {'type': 'text', 'text': content}
     ];
     final body = <String, dynamic>{'parts': bodyParts};
-    if (model != null) body['model'] = model;
+    if (model != null) {
+      final parts = model.split('/');
+      body['model'] = {'providerID': parts[0], 'modelID': parts.sublist(1).join('/')};
+    }
     if (agent != null) body['agent'] = agent;
     if (messageID != null) body['messageID'] = messageID;
 
@@ -246,7 +249,10 @@ class OpenCodeApi {
       {'type': 'text', 'text': content}
     ];
     final body = <String, dynamic>{'parts': bodyParts};
-    if (model != null) body['model'] = model;
+    if (model != null) {
+      final parts = model.split('/');
+      body['model'] = {'providerID': parts[0], 'modelID': parts.sublist(1).join('/')};
+    }
     if (agent != null) body['agent'] = agent;
     final res = await _post('/session/$sessionId/prompt_async', body: body);
     if (res.statusCode != 204) {
@@ -267,7 +273,10 @@ class OpenCodeApi {
       'arguments': arguments,
     };
     if (agent != null) body['agent'] = agent;
-    if (model != null) body['model'] = model;
+    if (model != null) {
+      final parts = model.split('/');
+      body['model'] = {'providerID': parts[0], 'modelID': parts.sublist(1).join('/')};
+    }
     if (messageID != null) body['messageID'] = messageID;
     final res = await _post('/session/$sessionId/command', body: body);
     _check(res);
@@ -282,7 +291,10 @@ class OpenCodeApi {
   }) async {
     final body = <String, dynamic>{'command': command};
     if (agent != null) body['agent'] = agent;
-    if (model != null) body['model'] = model;
+    if (model != null) {
+      final parts = model.split('/');
+      body['model'] = {'providerID': parts[0], 'modelID': parts.sublist(1).join('/')};
+    }
     final res = await _post('/session/$sessionId/shell', body: body);
     _check(res);
     return jsonDecode(res.body) as Map<String, dynamic>;
@@ -359,6 +371,13 @@ class OpenCodeApi {
     _check(res);
     final data = jsonDecode(res.body);
     final all = data['all'] as List<dynamic>? ?? [];
+    final connected = (data['connected'] as List<dynamic>?)?.map((e) => e as String).toSet() ?? {};
+    if (connected.isNotEmpty) {
+      return all
+          .where((e) => connected.contains((e as Map<String, dynamic>)['id'] as String?))
+          .map((e) => Provider.fromJson(e as Map<String, dynamic>))
+          .toList();
+    }
     return all.map((e) => Provider.fromJson(e as Map<String, dynamic>)).toList();
   }
 

@@ -74,12 +74,26 @@ class _ChatScreenState extends State<ChatScreen> {
         widget.api.getAgents(),
         widget.api.getProviders(),
         widget.api.getCommands(),
+        widget.api.getConfigProviders(),
       ]);
+      final msgs = results[0] as List<Message>;
+      final providers = results[2] as List<Provider>;
+      final configData = results[4] as Map<String, dynamic>;
+      final defaults = (configData['default'] as Map<String, dynamic>?)?.map((k, v) => MapEntry(k, v as String? ?? '')) ?? <String, String>{};
+
+      String? autoModel;
+      if (msgs.isNotEmpty) {
+        final last = msgs.lastWhere((m) => m.model != null, orElse: () => msgs.last);
+        autoModel = last.model;
+      }
+      autoModel ??= defaults['build'];
+
       setState(() {
-        _messages = results[0] as List<Message>;
+        _messages = msgs;
         _agents = results[1] as List<Agent>;
-        _providers = results[2] as List<Provider>;
+        _providers = providers;
         _commands = results[3] as List<Command>;
+        _selectedModel ??= autoModel;
         if (_selectedAgent == null && _agents.isNotEmpty) {
           final buildAgent = _agents.where((a) => a.name == 'build').firstOrNull;
           _selectedAgent = buildAgent?.name ?? _agents.first.name;
@@ -262,6 +276,7 @@ class _ChatScreenState extends State<ChatScreen> {
       builder: (ctx) => _ModelPickerSheet(
         providers: _providers,
         selectedId: modelId,
+        defaultModel: _selectedModel,
         onSelect: (fullID) {
           setState(() => _selectedModel = fullID);
           Navigator.pop(ctx);
@@ -774,11 +789,13 @@ class _MessageBubble extends StatelessWidget {
 class _ModelPickerSheet extends StatefulWidget {
   final List<Provider> providers;
   final String? selectedId;
+  final String? defaultModel;
   final ValueChanged<String> onSelect;
 
   const _ModelPickerSheet({
     required this.providers,
     this.selectedId,
+    this.defaultModel,
     required this.onSelect,
   });
 
@@ -872,6 +889,7 @@ class _ModelPickerSheetState extends State<_ModelPickerSheet> {
                       children: _filtered.map((p) => _ProviderGroup(
                         provider: p,
                         selectedId: widget.selectedId,
+                        defaultModel: widget.defaultModel,
                         expanded: _query.isNotEmpty || p.models.any((m) => m.fullID == widget.selectedId),
                         onSelect: widget.onSelect,
                       )).toList(),
@@ -888,12 +906,14 @@ class _ModelPickerSheetState extends State<_ModelPickerSheet> {
 class _ProviderGroup extends StatefulWidget {
   final Provider provider;
   final String? selectedId;
+  final String? defaultModel;
   final bool expanded;
   final ValueChanged<String> onSelect;
 
   const _ProviderGroup({
     required this.provider,
     this.selectedId,
+    this.defaultModel,
     required this.expanded,
     required this.onSelect,
   });

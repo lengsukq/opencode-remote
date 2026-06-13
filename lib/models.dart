@@ -137,6 +137,7 @@ class Message {
   final String content;
   final String? reasoning;
   final int createdAt;
+  final String? model;
 
   Message({
     required this.id,
@@ -144,6 +145,7 @@ class Message {
     required this.content,
     this.reasoning,
     required this.createdAt,
+    this.model,
   });
 
   bool get hasReasoning => reasoning != null && reasoning!.isNotEmpty;
@@ -152,13 +154,32 @@ class Message {
     final time = info['time'] as Map<String, dynamic>?;
     final created = time?['created'] as int? ?? 0;
     final extracted = _extractContent(parts);
+    final model = _extractModel(info);
     return Message(
       id: info['id'] as String? ?? '',
       role: info['role'] as String? ?? 'user',
       content: extracted.content,
       reasoning: extracted.reasoning,
       createdAt: created,
+      model: model,
     );
+  }
+
+  static String? _extractModel(Map<String, dynamic> info) {
+    final role = info['role'] as String?;
+    if (role == 'user') {
+      final m = info['model'] as Map<String, dynamic>?;
+      if (m != null) {
+        final pid = m['providerID'] as String?;
+        final mid = m['modelID'] as String?;
+        if (pid != null && mid != null) return '$pid/$mid';
+      }
+    } else {
+      final pid = info['providerID'] as String?;
+      final mid = info['modelID'] as String?;
+      if (pid != null && mid != null) return '$pid/$mid';
+    }
+    return null;
   }
 
   static _ExtractedContent _extractContent(List<Map<String, dynamic>> parts) {
