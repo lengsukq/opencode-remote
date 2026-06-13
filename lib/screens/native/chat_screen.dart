@@ -1,6 +1,8 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:flutter_highlight/flutter_highlight.dart';
+import 'package:flutter_highlight/themes/github.dart';
 import '../../models.dart';
 import '../../theme.dart';
 import '../../services/opencode_api.dart';
@@ -631,6 +633,62 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 }
 
+// --- Syntax-highlighted Code Block ---
+class _CodeBlockBuilder extends MarkdownElementBuilder {
+  @override
+  Widget? visitElementAfter(element, TextStyle? preferredStyle) {
+    final code = element.textContent;
+    final language = element.attributes['language'] ?? 'plaintext';
+
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.border),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            color: AppColors.border,
+            child: Row(
+              children: [
+                Text(
+                  language,
+                  style: TextStyle(color: AppColors.textSecondary, fontSize: 10, fontFamily: 'monospace'),
+                ),
+                const Spacer(),
+                Builder(
+                  builder: (ctx) => GestureDetector(
+                    onTap: () {
+                      Clipboard.setData(ClipboardData(text: code));
+                      ScaffoldMessenger.of(ctx).showSnackBar(
+                        const SnackBar(content: Text('已复制'), duration: Duration(seconds: 1)),
+                      );
+                    },
+                    child: Icon(Icons.content_copy, size: 13, color: AppColors.textSecondary),
+                  ),
+                ),
+                const SizedBox(width: 4),
+              ],
+            ),
+          ),
+          HighlightView(
+            code,
+            language: language,
+            theme: githubTheme,
+            padding: const EdgeInsets.all(12),
+            textStyle: const TextStyle(fontFamily: 'monospace', fontSize: 12, height: 1.5),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 // --- Reasoning Block ---
 class _ReasoningBlock extends StatefulWidget {
   final String content;
@@ -760,6 +818,9 @@ class _MessageBubble extends StatelessWidget {
                   : MarkdownBody(
                       data: message.content,
                       selectable: true,
+                      builders: {
+                        'code_block': _CodeBlockBuilder(),
+                      },
                       styleSheet: MarkdownStyleSheet(
                         p: const TextStyle(color: AppColors.textPrimary, fontSize: 14, height: 1.5),
                         h1: TextStyle(color: AppColors.textPrimary, fontSize: 20, fontWeight: FontWeight.bold, height: 1.4),
