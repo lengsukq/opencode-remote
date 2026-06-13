@@ -18,7 +18,9 @@
   "commit": null,
   "pr_url": null,
   "subtasks": [],
-  "children": [],
+  "children": [
+    "06-13-code-review-r2"
+  ],
   "parent": null,
   "relatedFiles": [
     "research/clean-code-review.md"

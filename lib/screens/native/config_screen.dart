@@ -79,7 +79,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.surface,
-        title: const Text('����/��������', style: TextStyle(color: AppColors.textPrimary)),
+        title: const Text('添加/更新配置', style: TextStyle(color: AppColors.textPrimary)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -87,7 +87,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
               controller: keyCtrl,
               style: const TextStyle(color: AppColors.textPrimary),
               decoration: const InputDecoration(
-                hintText: '���ü�',
+                hintText: '配置键',
                 hintStyle: TextStyle(color: AppColors.textTertiary),
                 enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: AppColors.border)),
                 focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: AppColors.borderFocused)),
@@ -98,7 +98,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
               controller: valueCtrl,
               style: const TextStyle(color: AppColors.textPrimary),
               decoration: const InputDecoration(
-                hintText: '����ֵ',
+                hintText: '配置值',
                 hintStyle: TextStyle(color: AppColors.textTertiary),
                 enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: AppColors.border)),
                 focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: AppColors.borderFocused)),
@@ -107,11 +107,11 @@ class _ConfigScreenState extends State<ConfigScreen> {
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('ȡ��', style: TextStyle(color: AppColors.textSecondary))),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('取消', style: TextStyle(color: AppColors.textSecondary))),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('����'),
+            child: const Text('保存'),
           ),
         ],
       ),
@@ -120,11 +120,11 @@ class _ConfigScreenState extends State<ConfigScreen> {
     try {
       await widget.api.patchConfig({keyCtrl.text.trim(): valueCtrl.text.trim()});
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('�����Ѹ���')));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('配置已更新')));
         _load();
       }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('����ʧ��: $e')));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('更新失败: $e')));
     }
   }
 
@@ -133,7 +133,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('诊断与配�?),
+        title: const Text('诊断与配置'),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh, color: AppColors.textSecondary),
@@ -157,7 +157,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
                       _sectionHeader('提供商与默认模型'),
                       _providersCard(),
                       const SizedBox(height: 20),
-                      _sectionHeader('工具状�?),
+                      _sectionHeader('工具状态'),
                       _toolsCard(),
                       const SizedBox(height: 20),
                       _sectionHeader('认证方式'),
@@ -211,8 +211,17 @@ class _ConfigScreenState extends State<ConfigScreen> {
           if (data.length > 10)
             Padding(
               padding: const EdgeInsets.only(top: 4),
-              child: Text('... 还有 ${data.length - 10} �?, style: TextStyle(color: AppColors.textTertiary, fontSize: 11)),
+              child: Text('... 还有 ${data.length - 10} 项', style: TextStyle(color: AppColors.textTertiary, fontSize: 11)),
             ),
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              icon: const Icon(Icons.edit, size: 14),
+              label: const Text('编辑', style: TextStyle(fontSize: 12)),
+              onPressed: () => _editConfig(data),
+            ),
+          ),
         ],
       ),
     );
@@ -238,10 +247,10 @@ class _ConfigScreenState extends State<ConfigScreen> {
             padding: const EdgeInsets.only(bottom: 2),
             child: Text('  ${e.key}: ${e.value}', style: TextStyle(color: AppColors.textPrimary, fontSize: 12, fontFamily: 'monospace')),
           )),
-          if (defaults.isEmpty) Text('  无默认模�?, style: TextStyle(color: AppColors.textTertiary, fontSize: 12)),
+          if (defaults.isEmpty) Text('  无默认模型', style: TextStyle(color: AppColors.textTertiary, fontSize: 12)),
           if (providers.isNotEmpty) ...[
             const SizedBox(height: 8),
-            Text('提供�?(${providers.length}):', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+            Text('提供商 (${providers.length}):', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
             const SizedBox(height: 4),
             ...providers.take(10).map((p) {
               final pMap = p as Map<String, dynamic>;
@@ -267,11 +276,11 @@ class _ConfigScreenState extends State<ConfigScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _toolGroup('LSP 服务�?, _lsp.map((l) => _toolEntry(l.name, l.state)).toList()),
+          _toolGroup('LSP 服务器', _lsp.map((l) => _toolEntry(l.name, l.state)).toList()),
           const SizedBox(height: 12),
           _toolGroup('格式化器', _formatters.map((f) => _toolEntry(f.name, f.state)).toList()),
           const SizedBox(height: 12),
-          _toolGroup('MCP 服务�?, _mcp.entries.map((e) => _toolEntry(e.key, e.value.state)).toList()),
+          _toolGroup('MCP 服务器', _mcp.entries.map((e) => _toolEntry(e.key, e.value.state)).toList()),
         ],
       ),
     );
@@ -284,7 +293,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
         Text(title, style: TextStyle(color: AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.w500)),
         const SizedBox(height: 4),
         if (entries.isEmpty)
-          Text('  �?, style: TextStyle(color: AppColors.textTertiary, fontSize: 12))
+          Text('  无', style: TextStyle(color: AppColors.textTertiary, fontSize: 12))
         else
           ...entries,
       ],
@@ -314,7 +323,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
   }
 
   Widget _authCard() {
-    if (_authMethods.isEmpty) return _card('无认证信�?, Icons.info_outline, AppColors.textSecondary);
+    if (_authMethods.isEmpty) return _card('无认证信息', Icons.info_outline, AppColors.textSecondary);
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
