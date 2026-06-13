@@ -75,10 +75,39 @@ Widget build(BuildContext context) {
 
 ## Error Handling
 
-- **Never use empty catch blocks** (`catch (_) {}`) — always log or propagate
-- JSON parsing errors should have fallback defaults, never crash
-- `Future.wait` results must be handled type-safely (use records or individual variables, not unchecked `as` casts)
-- Inconsistent return patterns (some methods throw, some return bool, some ignore) are forbidden — pick one pattern per layer
+- **Never use empty catch blocks** (`catch (_) {}`) — always add `debugPrint` or propagate
+- JSON parsing: use safe helpers (`_safeList`, `_safeMap`) instead of bare `as Type` casts
+- `Future.wait` results must use individual typed `await` calls, never `results[i] as Type`
+- API layer error handling must be consistent: either throw `OpenCodeApiException` (data methods) or return `bool` via `_checkBool` (command methods), never mix silently
+- Example:
+  ```dart
+  // Services layer — throw on error
+  void _check(http.Response res) {
+    if (res.statusCode >= 400) throw ApiException(res.statusCode, res.body);
+  }
+
+  // Command methods — log on error, return bool
+  bool _checkBool(http.Response res) {
+    if (res.statusCode >= 400) { debugPrint('...'); return false; }
+    return true;
+  }
+  ```
+
+## Safe JSON Parsing
+
+- Use `_safeList<T>(json, T.fromJson)` for list responses instead of `jsonDecode(...) as List<dynamic>`
+- Use `_safeMap(json)` for object responses instead of `jsonDecode(...) as Map<String, dynamic>`
+- These helpers are defined in `OpenCodeApi` class; replicate pattern in other services
+
+## Duplicate Code — Fixed Patterns
+
+The following have been unified — do NOT re-introduce duplicates:
+
+| Pattern | Canonical Location |
+|---------|-------------------|
+| Time formatting | `lib/utils/time_format.dart` (`formatRelativeTime`, `formatTime`) |
+| JSON safe parsing | `OpenCodeApi._safeList` / `OpenCodeApi._safeMap` |
+| Theme constants | `AppColors.kDefaultBorderRadius` etc. in `lib/theme.dart` |
 
 ## Code Review Checklist
 
@@ -86,7 +115,7 @@ Widget build(BuildContext context) {
 - [ ] No empty `catch` blocks
 - [ ] No function > 30 lines
 - [ ] No hardcoded magic numbers/colors outside theme
-- [ ] No duplicate `_formatTime` or similar helper functions
+- [ ] No duplicate `_formatTime` or similar helper functions (use `lib/utils/time_format.dart`)
 - [ ] All UI strings centralized (or extracted to constants)
 - [ ] `flutter analyze` passes with zero errors
 
