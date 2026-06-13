@@ -83,7 +83,7 @@ class Project {
   factory Project.fromJson(Map<String, dynamic> json) => Project(
         id: json['id'] as String? ?? '',
         name: json['name'] as String? ?? '',
-        path: json['worktree'] as String? ?? '',
+        path: (json['worktree'] ?? json['path']) as String? ?? '',
       );
 }
 
@@ -417,7 +417,7 @@ class LSPStatus {
   factory LSPStatus.fromJson(Map<String, dynamic> json) => LSPStatus(
         name: json['name'] as String? ?? '',
         state: json['state'] as String? ?? json['status'] as String? ?? 'unknown',
-        version: json['version'] as String?,
+        version: (json['version'] as Object?)?.toString(),
       );
 }
 
@@ -523,9 +523,15 @@ class Part {
   factory Part.fromJson(Map<String, dynamic> json) => Part(
         type: json['type'] as String? ?? '',
         text: json['text'] as String?,
-        state: json['state'] as Map<String, dynamic>?,
-        toolCall: json['toolCall'] as Map<String, dynamic>?,
+        state: _asMap(json['state']),
+        toolCall: _asMap(json['toolCall']),
       );
+
+  static Map<String, dynamic>? _asMap(Object? v) {
+    if (v is Map<String, dynamic>) return v;
+    if (v is Map) return v.map((k, v) => MapEntry(k.toString(), v));
+    return null;
+  }
 }
 
 class FileStatus {
@@ -604,15 +610,10 @@ class SessionMessageResponse {
   factory SessionMessageResponse.fromJson(Map<String, dynamic> json) {
     final infoMap = json['info'] as Map<String, dynamic>? ?? {};
     final partsList = (json['parts'] as List<dynamic>?) ?? [];
-    final time = infoMap['time'] as Map<String, dynamic>?;
+    final parts = partsList.map((p) => Part.fromJson(p as Map<String, dynamic>)).toList();
     return SessionMessageResponse(
-      info: Message(
-        id: infoMap['id'] as String? ?? '',
-        role: infoMap['role'] as String? ?? '',
-        content: '',
-        createdAt: time?['created'] as int? ?? 0,
-      ),
-      parts: partsList.map((p) => Part.fromJson(p as Map<String, dynamic>)).toList(),
+      info: Message.fromInfo(infoMap, partsList.map((p) => p as Map<String, dynamic>).toList()),
+      parts: parts,
     );
   }
 }
