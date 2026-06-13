@@ -236,6 +236,78 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+  void _applyCode(String code, String? language, BuildContext ctx) {
+    final pathCtrl = TextEditingController(
+      text: language != null && language != 'plaintext' ? 'main.$language' : 'output.txt',
+    );
+    showDialog(
+      context: ctx,
+      builder: (ctx2) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: const Text('应用代码到文件', style: TextStyle(color: AppColors.textPrimary)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('将以下代码写入文件：', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+            const SizedBox(height: 6),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceAlt,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                code.length > 200 ? '${code.substring(0, 200)}...' : code,
+                style: const TextStyle(color: AppColors.textPrimary, fontSize: 11, fontFamily: 'monospace'),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: pathCtrl,
+              autofocus: true,
+              style: const TextStyle(color: AppColors.textPrimary, fontSize: 13),
+              decoration: const InputDecoration(
+                labelText: '文件路径',
+                hintText: 'lib/main.dart',
+                labelStyle: TextStyle(color: AppColors.textSecondary),
+                hintStyle: TextStyle(color: AppColors.textTertiary),
+                enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: AppColors.border)),
+                focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: AppColors.borderFocused)),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx2), child: const Text('取消', style: TextStyle(color: AppColors.textSecondary))),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+            onPressed: () async {
+              final path = pathCtrl.text.trim();
+              if (path.isEmpty) return;
+              Navigator.pop(ctx2);
+              try {
+                await widget.api.runShell(widget.session.id, command: 'cat > "$path" << \'EOF\'\n$code\nEOF', agent: _selectedAgent, model: _selectedModel);
+                if (ctx.mounted) {
+                  ScaffoldMessenger.of(ctx).showSnackBar(
+                    SnackBar(content: Text('代码已提交写入 $path'), duration: Duration(seconds: 2)),
+                  );
+                }
+                _refreshMessages();
+                _waitForFirstReply();
+              } catch (e) {
+                if (ctx.mounted) {
+                  ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text('写入失败: $e')));
+                }
+              }
+            },
+            child: const Text('写入'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _refreshMessages() async {
     try {
       final messages = await widget.api.getMessages(widget.session.id);
@@ -550,6 +622,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                     isLatest: isLatest || isSecondLatest,
                                     onLongPress: () => _showMessageActions(_messages[i]),
                                     onToggleReasoning: null,
+                                    onApplyCode: _applyCode,
                                   );
                                 },
                               ),
@@ -680,6 +753,10 @@ class _ChatScreenState extends State<ChatScreen> {
 
 // --- Syntax-highlighted Code Block ---
 class _CodeBlockBuilder extends MarkdownElementBuilder {
+  final void Function(String code, String? language, BuildContext ctx)? onApply;
+
+  _CodeBlockBuilder({this.onApply});
+
   @override
   Widget? visitElementAfter(element, TextStyle? preferredStyle) {
     final code = element.textContent;
@@ -707,17 +784,28 @@ class _CodeBlockBuilder extends MarkdownElementBuilder {
                 ),
                 const Spacer(),
                 Builder(
-                  builder: (ctx) => GestureDetector(
-                    onTap: () {
-                      Clipboard.setData(ClipboardData(text: code));
-                      ScaffoldMessenger.of(ctx).showSnackBar(
-                        const SnackBar(content: Text('已复制'), duration: Duration(seconds: 1)),
-                      );
-                    },
-                    child: Icon(Icons.content_copy, size: 13, color: AppColors.textSecondary),
+                  builder: (ctx) => Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (onApply != null)
+                        GestureDetector(
+                          onTap: () => onApply!(code, language, ctx),
+                          child: Icon(Icons.save_alt, size: 14, color: AppColors.success),
+                        ),
+                      if (onApply != null) const SizedBox(width: 10),
+                      GestureDetector(
+                        onTap: () {
+                          Clipboard.setData(ClipboardData(text: code));
+                          ScaffoldMessenger.of(ctx).showSnackBar(
+                            const SnackBar(content: Text('已复制'), duration: Duration(seconds: 1)),
+                          );
+                        },
+                        child: Icon(Icons.content_copy, size: 13, color: AppColors.textSecondary),
+                      ),
+                      const SizedBox(width: 4),
+                    ],
                   ),
                 ),
-                const SizedBox(width: 4),
               ],
             ),
           ),
@@ -817,12 +905,14 @@ class _MessageBubble extends StatelessWidget {
   final bool isLatest;
   final VoidCallback? onLongPress;
   final VoidCallback? onToggleReasoning;
+  final void Function(String code, String? language, BuildContext ctx)? onApplyCode;
 
   const _MessageBubble({
     required this.message,
     this.isLatest = false,
     this.onLongPress,
     this.onToggleReasoning,
+    this.onApplyCode,
   });
 
   @override
@@ -864,7 +954,7 @@ class _MessageBubble extends StatelessWidget {
                       data: message.content,
                       selectable: true,
                       builders: {
-                        'code_block': _CodeBlockBuilder(),
+                        'code_block': _CodeBlockBuilder(onApply: onApplyCode),
                       },
                       styleSheet: MarkdownStyleSheet(
                         p: const TextStyle(color: AppColors.textPrimary, fontSize: 14, height: 1.5),
