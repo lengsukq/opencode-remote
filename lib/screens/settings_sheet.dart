@@ -3,7 +3,7 @@ import '../models.dart';
 import '../theme.dart';
 import '../services/storage_service.dart';
 import '../main.dart' show themeNotifier;
-import 'native/dashboard_screen.dart';
+import '../widgets/main_scaffold.dart';
 import 'launcher_screen.dart';
 
 class SettingsSheet extends StatefulWidget {
@@ -173,7 +173,7 @@ class _SettingsSheetState extends State<SettingsSheet> {
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(
         builder: (_) => mode == AppMode.native
-            ? DashboardScreen(entry: widget.entry)
+            ? MainScaffold(entry: widget.entry) as Widget
             : LauncherScreen(initialMode: AppMode.webview, initialEntry: widget.entry),
       ),
       (route) => false,

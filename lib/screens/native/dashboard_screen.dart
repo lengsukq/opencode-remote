@@ -11,8 +11,9 @@ import 'config_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   final ServerEntry entry;
+  final OpenCodeApi? api;
 
-  const DashboardScreen({super.key, required this.entry});
+  const DashboardScreen({super.key, required this.entry, this.api});
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -35,6 +36,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _initApi() {
+    if (widget.api != null) {
+      _api = widget.api!;
+      return;
+    }
     _api = OpenCodeApi(
       baseUrl: _entry.url,
       username: _entry.username,

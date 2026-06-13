@@ -4,7 +4,7 @@ import '../theme.dart';
 import '../services/storage_service.dart';
 import 'settings_sheet.dart';
 import 'webview_screen.dart';
-import 'native/dashboard_screen.dart';
+import '../widgets/main_scaffold.dart';
 
 class LauncherScreen extends StatefulWidget {
   final AppMode? initialMode;
@@ -44,7 +44,7 @@ class _LauncherScreenState extends State<LauncherScreen> {
   Future<void> _openServerDirect(ServerEntry entry) async {
     if (!mounted) return;
     final target = _mode == AppMode.native
-        ? DashboardScreen(entry: entry)
+        ? MainScaffold(entry: entry) as Widget
         : WebViewScreen(entry: entry) as Widget;
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => target),

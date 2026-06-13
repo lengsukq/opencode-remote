@@ -5,7 +5,7 @@ import 'services/storage_service.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/launcher_screen.dart';
 import 'screens/webview_screen.dart';
-import 'screens/native/dashboard_screen.dart';
+import 'widgets/main_scaffold.dart';
 
 final themeNotifier = ValueNotifier<ThemeMode>(ThemeMode.system);
 
@@ -123,7 +123,7 @@ class _OpenCodeRemoteState extends State<OpenCodeRemote> {
     }
     switch (widget.initialMode!) {
       case AppMode.native:
-        return DashboardScreen(entry: widget.initialEntry!);
+        return MainScaffold(entry: widget.initialEntry!);
       case AppMode.webview:
         return WebViewScreen(entry: widget.initialEntry!);
     }
