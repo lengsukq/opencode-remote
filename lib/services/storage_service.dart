@@ -14,12 +14,14 @@ class StorageService {
     final raw = prefs.getString(_keyServers);
     if (raw == null) return [];
     try {
-      final list = jsonDecode(raw) as List<dynamic>;
+      final decoded = jsonDecode(raw);
+      final list = decoded is List<dynamic> ? decoded : <dynamic>[];
       return list
-          .map((e) => ServerEntry.fromJson(e as Map<String, dynamic>))
+          .map((e) => e is Map<String, dynamic> ? ServerEntry.fromJson(e) : ServerEntry(name: '', url: ''))
           .toList()
         ..sort((a, b) => b.lastUsed.compareTo(a.lastUsed));
-    } catch (_) {
+    } catch (e) {
+      debugPrint('StorageService.loadServers: $e');
       return [];
     }
   }
@@ -71,7 +73,8 @@ class StorageService {
     final servers = await loadServers();
     try {
       return servers.firstWhere((s) => s.id == id);
-    } catch (_) {
+    } catch (e) {
+      debugPrint('StorageService.getLastSelected: $e');
       return null;
     }
   }

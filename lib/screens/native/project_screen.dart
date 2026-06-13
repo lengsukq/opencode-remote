@@ -29,15 +29,13 @@ class _ProjectScreenState extends State<ProjectScreen> {
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
-      final results = await Future.wait([
-        widget.api.getProjects(),
-        widget.api.getCurrentProject(),
-        widget.api.getVcs(),
-      ]);
+      final projects = await widget.api.getProjects();
+      final current = await widget.api.getCurrentProject();
+      final vcs = await widget.api.getVcs();
       setState(() {
-        _projects = results[0] as List<Project>;
-        _current = results[1] as Project;
-        _vcs = results[2] as VcsInfo?;
+        _projects = projects;
+        _current = current;
+        _vcs = vcs;
         _loading = false;
         _error = null;
       });

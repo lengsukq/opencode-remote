@@ -1,4 +1,5 @@
 ﻿import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models.dart';
 
@@ -17,6 +18,19 @@ class OpenCodeApi {
   }) {
     final bytes = utf8.encode('$username:$password');
     _authHeader = 'Basic ${base64.encode(bytes)}';
+  }
+
+  static List<T> _safeList<T>(dynamic json, T Function(Map<String, dynamic>) fromJson) {
+    if (json is! List) return [];
+    return json.map((e) {
+      if (e is! Map<String, dynamic>) return null;
+      try { return fromJson(e); } catch (err) { debugPrint('OpenCodeApi._safeList: $err'); return null; }
+    }).whereType<T>().toList();
+  }
+
+  static Map<String, dynamic> _safeMap(dynamic json) {
+    if (json is Map<String, dynamic>) return json;
+    return {};
   }
 
   Map<String, String> get _headers => {
@@ -59,53 +73,59 @@ class OpenCodeApi {
     }
   }
 
+  bool _checkBool(http.Response res) {
+    if (res.statusCode >= 400) {
+      debugPrint('OpenCodeApi._checkBool failed: ${res.statusCode} ${res.body}');
+      return false;
+    }
+    return true;
+  }
+
   // --- Global ---
   Future<HealthStatus> getHealth() async {
     final res = await _get('/global/health');
     _check(res);
-    return HealthStatus.fromJson(jsonDecode(res.body));
+    return HealthStatus.fromJson(_safeMap(jsonDecode(res.body)));
   }
 
   // --- Project ---
   Future<Project> getCurrentProject() async {
     final res = await _get('/project/current');
     _check(res);
-    return Project.fromJson(jsonDecode(res.body));
+    return Project.fromJson(_safeMap(jsonDecode(res.body)));
   }
 
   Future<List<Project>> getProjects() async {
     final res = await _get('/project');
     _check(res);
-    final list = jsonDecode(res.body) as List<dynamic>;
-    return list.map((e) => Project.fromJson(e as Map<String, dynamic>)).toList();
+    return _safeList(jsonDecode(res.body), Project.fromJson);
   }
 
   // --- Path & VCS ---
   Future<VcsInfo?> getVcs() async {
     final res = await _get('/vcs');
-    if (res.statusCode != 200) return null;
-    return VcsInfo.fromJson(jsonDecode(res.body));
+    _check(res);
+    return VcsInfo.fromJson(_safeMap(jsonDecode(res.body)));
   }
 
   // --- Path ---
   Future<PathInfo> getPath() async {
     final res = await _get('/path');
     _check(res);
-    return PathInfo.fromJson(jsonDecode(res.body));
+    return PathInfo.fromJson(_safeMap(jsonDecode(res.body)));
   }
 
   // --- Instance ---
   Future<bool> disposeInstance() async {
     final res = await _post('/instance/dispose');
-    return res.statusCode == 200;
+    return _checkBool(res);
   }
 
   // --- Session ---
   Future<List<Session>> getSessions() async {
     final res = await _get('/session');
     _check(res);
-    final list = jsonDecode(res.body) as List<dynamic>;
-    return list.map((e) => Session.fromJson(e as Map<String, dynamic>)).toList();
+    return _safeList(jsonDecode(res.body), Session.fromJson);
   }
 
   Future<Session> createSession({String? parentID, String? title}) async {
@@ -114,23 +134,23 @@ class OpenCodeApi {
     if (title != null) body['title'] = title;
     final res = await _post('/session', body: body);
     _check(res);
-    return Session.fromJson(jsonDecode(res.body));
+    return Session.fromJson(_safeMap(jsonDecode(res.body)));
   }
 
   Future<Session> getSession(String id) async {
     final res = await _get('/session/$id');
     _check(res);
-    return Session.fromJson(jsonDecode(res.body));
+    return Session.fromJson(_safeMap(jsonDecode(res.body)));
   }
 
   Future<bool> deleteSession(String id) async {
     final res = await _delete('/session/$id');
-    return res.statusCode == 200;
+    return _checkBool(res);
   }
 
   Future<bool> abortSession(String id) async {
     final res = await _post('/session/$id/abort');
-    return res.statusCode == 200;
+    return _checkBool(res);
   }
 
   Future<Session> updateSession(String id, {String? title}) async {
@@ -138,14 +158,13 @@ class OpenCodeApi {
     if (title != null) body['title'] = title;
     final res = await _patch('/session/$id', body: body);
     _check(res);
-    return Session.fromJson(jsonDecode(res.body));
+    return Session.fromJson(_safeMap(jsonDecode(res.body)));
   }
 
   Future<List<Session>> getChildSessions(String id) async {
     final res = await _get('/session/$id/children');
     _check(res);
-    final list = jsonDecode(res.body) as List<dynamic>;
-    return list.map((e) => Session.fromJson(e as Map<String, dynamic>)).toList();
+    return _safeList(jsonDecode(res.body), Session.fromJson);
   }
 
   Future<Session> forkSession(String id, {String? messageID}) async {
@@ -153,19 +172,19 @@ class OpenCodeApi {
     if (messageID != null) body['messageID'] = messageID;
     final res = await _post('/session/$id/fork', body: body);
     _check(res);
-    return Session.fromJson(jsonDecode(res.body));
+    return Session.fromJson(_safeMap(jsonDecode(res.body)));
   }
 
   Future<Session> shareSession(String id) async {
     final res = await _post('/session/$id/share');
     _check(res);
-    return Session.fromJson(jsonDecode(res.body));
+    return Session.fromJson(_safeMap(jsonDecode(res.body)));
   }
 
   Future<Session> unshareSession(String id) async {
     final res = await _delete('/session/$id/share');
     _check(res);
-    return Session.fromJson(jsonDecode(res.body));
+    return Session.fromJson(_safeMap(jsonDecode(res.body)));
   }
 
   Future<List<DiffEntry>> getSessionDiff(String id, {String? messageID}) async {
@@ -173,8 +192,7 @@ class OpenCodeApi {
     if (messageID != null) path += '?messageID=$messageID';
     final res = await _get(path);
     _check(res);
-    final list = jsonDecode(res.body) as List<dynamic>;
-    return list.map((e) => DiffEntry.fromJson(e as Map<String, dynamic>)).toList();
+    return _safeList(jsonDecode(res.body), DiffEntry.fromJson);
   }
 
   Future<bool> summarizeSession(String id, {String? providerID, String? modelID}) async {
@@ -182,26 +200,25 @@ class OpenCodeApi {
     if (providerID != null) body['providerID'] = providerID;
     if (modelID != null) body['modelID'] = modelID;
     final res = await _post('/session/$id/summarize', body: body);
-    return res.statusCode == 200;
+    return _checkBool(res);
   }
 
   Future<bool> revertMessage(String id, String messageID, {String? partID}) async {
     final body = <String, dynamic>{'messageID': messageID};
     if (partID != null) body['partID'] = partID;
     final res = await _post('/session/$id/revert', body: body);
-    return res.statusCode == 200;
+    return _checkBool(res);
   }
 
   Future<bool> unrevertMessages(String id) async {
     final res = await _post('/session/$id/unrevert');
-    return res.statusCode == 200;
+    return _checkBool(res);
   }
 
   Future<List<Todo>> getSessionTodo(String id) async {
     final res = await _get('/session/$id/todo');
     _check(res);
-    final list = jsonDecode(res.body) as List<dynamic>;
-    return list.map((e) => Todo.fromJson(e as Map<String, dynamic>)).toList();
+    return _safeList(jsonDecode(res.body), Todo.fromJson);
   }
 
   // --- Messages ---
@@ -226,7 +243,7 @@ class OpenCodeApi {
   Future<SessionMessageResponse> getMessageDetail(String sessionId, String messageId) async {
     final res = await _get('/session/$sessionId/message/$messageId');
     _check(res);
-    return SessionMessageResponse.fromJson(jsonDecode(res.body));
+    return SessionMessageResponse.fromJson(_safeMap(jsonDecode(res.body)));
   }
 
   Future<SessionMessageResponse> sendMessage(
@@ -251,7 +268,7 @@ class OpenCodeApi {
     if (tools != null) body['tools'] = tools;
     final res = await _post('/session/$sessionId/message', body: body);
     _check(res);
-    return SessionMessageResponse.fromJson(jsonDecode(res.body));
+    return SessionMessageResponse.fromJson(_safeMap(jsonDecode(res.body)));
   }
 
   Future<void> sendMessageAsync(String sessionId, String content, {
@@ -295,7 +312,7 @@ class OpenCodeApi {
     if (messageID != null) body['messageID'] = messageID;
     final res = await _post('/session/$sessionId/command', body: body);
     _check(res);
-    return SessionMessageResponse.fromJson(jsonDecode(res.body));
+    return SessionMessageResponse.fromJson(_safeMap(jsonDecode(res.body)));
   }
 
   Future<SessionMessageResponse> runShell(
@@ -309,36 +326,33 @@ class OpenCodeApi {
     if (model != null) body['model'] = model;
     final res = await _post('/session/$sessionId/shell', body: body);
     _check(res);
-    return SessionMessageResponse.fromJson(jsonDecode(res.body));
+    return SessionMessageResponse.fromJson(_safeMap(jsonDecode(res.body)));
   }
 
   // --- Commands ---
   Future<List<Command>> getCommands() async {
     final res = await _get('/command');
     _check(res);
-    final list = jsonDecode(res.body) as List<dynamic>;
-    return list.map((e) => Command.fromJson(e as Map<String, dynamic>)).toList();
+    return _safeList(jsonDecode(res.body), Command.fromJson);
   }
 
   // --- Files ---
   Future<List<FileNode>> listFiles(String path) async {
     final res = await _get('/file?path=${Uri.encodeComponent(path)}');
     _check(res);
-    final list = jsonDecode(res.body) as List<dynamic>;
-    return list.map((e) => FileNode.fromJson(e as Map<String, dynamic>)).toList();
+    return _safeList(jsonDecode(res.body), FileNode.fromJson);
   }
 
   Future<FileContent> readFile(String path) async {
     final res = await _get('/file/content?path=${Uri.encodeComponent(path)}');
     _check(res);
-    return FileContent.fromJson(jsonDecode(res.body));
+    return FileContent.fromJson(_safeMap(jsonDecode(res.body)));
   }
 
   Future<List<SearchMatch>> searchFiles(String pattern) async {
     final res = await _get('/find?pattern=${Uri.encodeComponent(pattern)}');
     _check(res);
-    final list = jsonDecode(res.body) as List<dynamic>;
-    return list.map((e) => SearchMatch.fromJson(e as Map<String, dynamic>)).toList();
+    return _safeList(jsonDecode(res.body), SearchMatch.fromJson);
   }
 
   Future<List<String>> findFiles(String query, {
@@ -354,40 +368,40 @@ class OpenCodeApi {
     if (dirs != null) path += '&dirs=$dirs';
     final res = await _get(path);
     _check(res);
-    final list = jsonDecode(res.body) as List<dynamic>;
+    final data = jsonDecode(res.body);
+    final list = data is List ? data : [];
     return list.map((e) => e.toString()).toList();
   }
 
   Future<List<Symbol>> findSymbols(String query) async {
     final res = await _get('/find/symbol?query=${Uri.encodeComponent(query)}');
     _check(res);
-    final list = jsonDecode(res.body) as List<dynamic>;
-    return list.map((e) => Symbol.fromJson(e as Map<String, dynamic>)).toList();
+    return _safeList(jsonDecode(res.body), Symbol.fromJson);
   }
 
   // --- Config ---
   Future<Config> getConfig() async {
     final res = await _get('/config');
     _check(res);
-    return Config.fromJson(jsonDecode(res.body));
+    return Config.fromJson(_safeMap(jsonDecode(res.body)));
   }
 
   Future<Config> patchConfig(Map<String, dynamic> updates) async {
     final res = await _patch('/config', body: updates);
     _check(res);
-    return Config.fromJson(jsonDecode(res.body));
+    return Config.fromJson(_safeMap(jsonDecode(res.body)));
   }
 
   Future<Map<String, dynamic>> getConfigProviders() async {
     final res = await _get('/config/providers');
     _check(res);
-    return jsonDecode(res.body) as Map<String, dynamic>;
+    return _safeMap(jsonDecode(res.body));
   }
 
   Future<ProviderDefaults> getProviderDefaults() async {
     final res = await _get('/config/providers');
     _check(res);
-    return ProviderDefaults.fromJson(jsonDecode(res.body));
+    return ProviderDefaults.fromJson(_safeMap(jsonDecode(res.body)));
   }
 
   // --- Provider ---
@@ -396,14 +410,14 @@ class OpenCodeApi {
     _check(res);
     final data = jsonDecode(res.body);
     final all = data['all'] as List<dynamic>? ?? [];
-    return all.map((e) => Provider.fromJson(e as Map<String, dynamic>)).toList();
+    return all.map((e) => e is Map<String, dynamic> ? Provider.fromJson(e) : null).whereType<Provider>().toList();
   }
 
   Future<Set<String>> getConnectedProviders() async {
     final res = await _get('/provider');
     _check(res);
     final data = jsonDecode(res.body);
-    final connected = (data['connected'] as List<dynamic>?)?.map((e) => e as String).toSet() ?? {};
+    final connected = (data['connected'] as List<dynamic>?)?.map((e) => e.toString()).toSet() ?? {};
     return connected;
   }
 
@@ -418,46 +432,43 @@ class OpenCodeApi {
   Future<Map<String, List<ProviderAuthMethod>>> getProviderAuth() async {
     final res = await _get('/provider/auth');
     _check(res);
-    final data = jsonDecode(res.body) as Map<String, dynamic>;
+    final data = _safeMap(jsonDecode(res.body));
     return data.map((k, v) {
-      final list = (v as List<dynamic>?)?.map((e) => ProviderAuthMethod.fromJson(e as Map<String, dynamic>)).toList() ?? [];
+      final list = _safeList(v, ProviderAuthMethod.fromJson);
       return MapEntry(k, list);
     });
   }
 
   Future<bool> setAuth(String id, Map<String, dynamic> body) async {
     final res = await _put('/auth/$id', body: body);
-    return res.statusCode == 200;
+    return _checkBool(res);
   }
 
   // --- Agent ---
   Future<List<Agent>> getAgents() async {
     final res = await _get('/agent');
     _check(res);
-    final list = jsonDecode(res.body) as List<dynamic>;
-    return list.map((e) => Agent.fromJson(e as Map<String, dynamic>)).toList();
+    return _safeList(jsonDecode(res.body), Agent.fromJson);
   }
 
   // --- LSP, Formatter, MCP ---
   Future<List<LSPStatus>> getLspStatus() async {
     final res = await _get('/lsp');
     _check(res);
-    final list = jsonDecode(res.body) as List<dynamic>;
-    return list.map((e) => LSPStatus.fromJson(e as Map<String, dynamic>)).toList();
+    return _safeList(jsonDecode(res.body), LSPStatus.fromJson);
   }
 
   Future<List<FormatterStatus>> getFormatterStatus() async {
     final res = await _get('/formatter');
     _check(res);
-    final list = jsonDecode(res.body) as List<dynamic>;
-    return list.map((e) => FormatterStatus.fromJson(e as Map<String, dynamic>)).toList();
+    return _safeList(jsonDecode(res.body), FormatterStatus.fromJson);
   }
 
   Future<Map<String, MCPStatus>> getMcpStatus() async {
     final res = await _get('/mcp');
     _check(res);
-    final data = jsonDecode(res.body) as Map<String, dynamic>;
-    return data.map((k, v) => MapEntry(k, MCPStatus.fromJson(v as Map<String, dynamic>)));
+    final data = _safeMap(jsonDecode(res.body));
+    return data.map((k, v) => MapEntry(k, MCPStatus.fromJson(_safeMap(v))));
   }
 
   // --- Log ---
@@ -469,15 +480,15 @@ class OpenCodeApi {
     };
     if (extra != null) body['extra'] = extra;
     final res = await _post('/log', body: body);
-    return res.statusCode == 200;
+    return _checkBool(res);
   }
 
   // --- Session Status ---
   Future<Map<String, SessionStatus>> getSessionStatuses() async {
     final res = await _get('/session/status');
     _check(res);
-    final data = jsonDecode(res.body) as Map<String, dynamic>;
-    return data.map((k, v) => MapEntry(k, SessionStatus.fromJson(v as Map<String, dynamic>)));
+    final data = _safeMap(jsonDecode(res.body));
+    return data.map((k, v) => MapEntry(k, SessionStatus.fromJson(_safeMap(v))));
   }
 
   // --- Session Init ---
@@ -486,7 +497,7 @@ class OpenCodeApi {
     if (providerID != null) body['providerID'] = providerID;
     if (modelID != null) body['modelID'] = modelID;
     final res = await _post('/session/$id/init', body: body);
-    return res.statusCode == 200;
+    return _checkBool(res);
   }
 
   // --- Session Permissions ---
@@ -494,27 +505,26 @@ class OpenCodeApi {
     final body = <String, dynamic>{'response': response};
     if (remember != null) body['remember'] = remember;
     final res = await _post('/session/$sessionId/permissions/$permissionID', body: body);
-    return res.statusCode == 200;
+    return _checkBool(res);
   }
 
   // --- Provider OAuth ---
   Future<ProviderAuthAuthorization> oauthAuthorize(String id) async {
     final res = await _post('/provider/$id/oauth/authorize');
     _check(res);
-    return ProviderAuthAuthorization.fromJson(jsonDecode(res.body));
+    return ProviderAuthAuthorization.fromJson(_safeMap(jsonDecode(res.body)));
   }
 
   Future<bool> oauthCallback(String id, Map<String, dynamic> body) async {
     final res = await _post('/provider/$id/oauth/callback', body: body);
-    return res.statusCode == 200;
+    return _checkBool(res);
   }
 
   // --- File Status ---
   Future<List<FileStatus>> getFileStatus() async {
     final res = await _get('/file/status');
     _check(res);
-    final list = jsonDecode(res.body) as List<dynamic>;
-    return list.map((e) => FileStatus.fromJson(e as Map<String, dynamic>)).toList();
+    return _safeList(jsonDecode(res.body), FileStatus.fromJson);
   }
 
   // --- MCP ---
@@ -522,20 +532,20 @@ class OpenCodeApi {
     final body = <String, dynamic>{'name': name, 'config': config};
     final res = await _post('/mcp', body: body);
     _check(res);
-    return MCPStatus.fromJson(jsonDecode(res.body));
+    return MCPStatus.fromJson(_safeMap(jsonDecode(res.body)));
   }
 
   // --- Experimental Tool ---
   Future<Map<String, dynamic>> getToolList(String provider, String model) async {
     final res = await _get('/experimental/tool?provider=${Uri.encodeComponent(provider)}&model=${Uri.encodeComponent(model)}');
     _check(res);
-    return jsonDecode(res.body) as Map<String, dynamic>;
+    return _safeMap(jsonDecode(res.body));
   }
 
   Future<ToolIDs> getToolIds() async {
     final res = await _get('/experimental/tool/ids');
     _check(res);
-    return ToolIDs.fromJson(jsonDecode(res.body));
+    return ToolIDs.fromJson(_safeMap(jsonDecode(res.body)));
   }
 }
 

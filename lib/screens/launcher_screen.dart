@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models.dart';
 import '../theme.dart';
 import '../services/storage_service.dart';
+import '../utils/time_format.dart';
 import 'settings_sheet.dart';
 import 'webview_screen.dart';
 import '../widgets/main_scaffold.dart';
@@ -84,16 +85,6 @@ class _LauncherScreenState extends State<LauncherScreen> {
   Future<void> _deleteServer(ServerEntry entry) async {
     await StorageService.delete(entry.id);
     await _reload();
-  }
-
-  String _formatTime(int ms) {
-    final dt = DateTime.fromMillisecondsSinceEpoch(ms);
-    final now = DateTime.now();
-    final diff = now.difference(dt);
-    if (diff.inMinutes < 1) return '刚刚';
-    if (diff.inHours < 1) return '${diff.inMinutes} 分钟前';
-    if (diff.inDays < 1) return '${diff.inHours} 小时前';
-    return '${diff.inDays} 天前';
   }
 
   @override
@@ -199,7 +190,7 @@ class _LauncherScreenState extends State<LauncherScreen> {
           },
           child: _ServerCard(
             entry: entry,
-            timeStr: _formatTime(entry.lastUsed),
+            timeStr: formatRelativeTime(entry.lastUsed),
             onTap: () => _openServer(entry),
             onLongPress: () => _addServer(existing: entry),
           ),

@@ -33,23 +33,21 @@ class _ConfigScreenState extends State<ConfigScreen> {
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
-      final results = await Future.wait([
-        _safeCall(() => widget.api.getConfig()),
-        _safeCall(() => widget.api.getConfigProviders()),
-        _safeCall(() => widget.api.getLspStatus()),
-        _safeCall(() => widget.api.getFormatterStatus()),
-        _safeCall(() => widget.api.getMcpStatus()),
-        _safeCall(() => widget.api.getProviderAuth()),
-      ]);
+      final config = await _safeCall(() => widget.api.getConfig());
+      final configProviders = await _safeCall(() => widget.api.getConfigProviders());
+      final lspRaw = await _safeCall(() => widget.api.getLspStatus());
+      final formattersRaw = await _safeCall(() => widget.api.getFormatterStatus());
+      final mcpRaw = await _safeCall(() => widget.api.getMcpStatus());
+      final authRaw = await _safeCall(() => widget.api.getProviderAuth());
       setState(() {
-        _config = results[0] as Config?;
-        _configProviders = results[1] as Map<String, dynamic>?;
-        _lsp = (results[2] as List<dynamic>?)?.map((e) => LSPStatus.fromJson(e as Map<String, dynamic>)).toList() ?? [];
-        _formatters = (results[3] as List<dynamic>?)?.map((e) => FormatterStatus.fromJson(e as Map<String, dynamic>)).toList() ?? [];
-        final mcpRaw = results[4] as Map<String, dynamic>? ?? {};
-        _mcp = mcpRaw.map((k, v) => MapEntry(k, MCPStatus.fromJson(v as Map<String, dynamic>)));
-        final authRaw = results[5] as Map<String, dynamic>? ?? {};
-        _authMethods = authRaw.map((k, v) {
+        _config = config as Config?;
+        _configProviders = configProviders as Map<String, dynamic>?;
+        _lsp = (lspRaw as List<dynamic>?)?.map((e) => LSPStatus.fromJson(e as Map<String, dynamic>)).toList() ?? [];
+        _formatters = (formattersRaw as List<dynamic>?)?.map((e) => FormatterStatus.fromJson(e as Map<String, dynamic>)).toList() ?? [];
+        final mcpData = mcpRaw as Map<String, dynamic>? ?? {};
+        _mcp = mcpData.map((k, v) => MapEntry(k, MCPStatus.fromJson(v as Map<String, dynamic>)));
+        final authData = authRaw as Map<String, dynamic>? ?? {};
+        _authMethods = authData.map((k, v) {
           final list = (v as List<dynamic>?)?.map((e) => ProviderAuthMethod.fromJson(e as Map<String, dynamic>)).toList() ?? [];
           return MapEntry(k, list);
         });
@@ -67,7 +65,8 @@ class _ConfigScreenState extends State<ConfigScreen> {
   Future<dynamic> _safeCall(Future Function() fn) async {
     try {
       return await fn();
-    } catch (_) {
+    } catch (e) {
+      debugPrint('ConfigScreen._safeCall: $e');
       return null;
     }
   }

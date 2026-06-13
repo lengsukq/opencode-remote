@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 enum EventType {
@@ -75,7 +76,8 @@ class EventService {
         onDone: () => _scheduleReconnect(),
         cancelOnError: false,
       );
-    } catch (_) {
+    } catch (e) {
+      debugPrint('EventService._doConnect: $e');
       _scheduleReconnect();
     }
   }
@@ -102,7 +104,8 @@ class EventService {
     Map<String, dynamic> data;
     try {
       data = jsonDecode(rawData) as Map<String, dynamic>;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('EventService._emitEvent json parse: $e');
       data = {'raw': rawData};
     }
 

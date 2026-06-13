@@ -28,6 +28,17 @@ class AppColors {
 
   static const shadow = Color(0x1A000000);
   static const shadowStrong = Color(0x26000000);
+
+  // 尺寸常量
+  static const double kDefaultBorderRadius = 16;
+  static const double kCardBorderRadius = 12;
+  static const double kSmallBorderRadius = 8;
+  static const double kChipBorderRadius = 6;
+
+  // 间距常量
+  static const EdgeInsets kPaddingScreen = EdgeInsets.all(16);
+  static const EdgeInsets kPaddingCard = EdgeInsets.all(14);
+  static const EdgeInsets kPaddingInput = EdgeInsets.symmetric(horizontal: 16, vertical: 10);
 }
 
 class DarkColors {

@@ -7,6 +7,7 @@ import '../../models.dart';
 import '../../theme.dart';
 import '../../services/opencode_api.dart';
 import '../../services/event_service.dart';
+import '../../utils/time_format.dart';
 
 class ChatScreen extends StatefulWidget {
   final Session session;
@@ -104,16 +105,11 @@ class _ChatScreenState extends State<ChatScreen> {
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
-      final results = await Future.wait([
-        widget.api.getMessages(widget.session.id),
-        widget.api.getAgents(),
-        widget.api.getProviders(),
-        widget.api.getCommands(),
-        widget.api.getConfigProviders(),
-      ]);
-      final msgs = results[0] as List<Message>;
-      final providers = results[2] as List<Provider>;
-      final configData = results[4] as Map<String, dynamic>;
+      final msgs = await widget.api.getMessages(widget.session.id);
+      final agents = await widget.api.getAgents();
+      final providers = await widget.api.getProviders();
+      final commands = await widget.api.getCommands();
+      final configData = await widget.api.getConfigProviders();
       final defaults = (configData['default'] as Map<String, dynamic>?)?.map((k, v) => MapEntry(k, v as String? ?? '')) ?? <String, String>{};
 
       String? autoModel;
@@ -125,9 +121,9 @@ class _ChatScreenState extends State<ChatScreen> {
 
       setState(() {
         _messages = msgs;
-        _agents = results[1] as List<Agent>;
+        _agents = agents;
         _providers = providers;
-        _commands = results[3] as List<Command>;
+        _commands = commands;
         _selectedModel ??= autoModel;
         if (_selectedAgent == null && _agents.isNotEmpty) {
           final buildAgent = _agents.where((a) => a.name == 'build').firstOrNull;
@@ -318,7 +314,9 @@ class _ChatScreenState extends State<ChatScreen> {
         });
         _scrollToBottom();
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('ChatScreen._refreshMessages: $e');
+    }
   }
 
   void _waitForFirstReply() {
@@ -568,9 +566,8 @@ class _ChatScreenState extends State<ChatScreen> {
     final agentColorStr = _agents.where((a) => a.name == agentName).firstOrNull?.color;
     Color? agentColor;
     if (agentColorStr != null && agentColorStr.startsWith('#')) {
-      try {
-        agentColor = Color(int.parse(agentColorStr.replaceFirst('#', '0xFF')));
-      } catch (_) {}
+      final parsed = int.tryParse(agentColorStr.replaceFirst('#', '0xFF'));
+      if (parsed != null) agentColor = Color(parsed);
     }
 
     return CallbackShortcuts(
@@ -918,7 +915,7 @@ class _MessageBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isUser = message.role == 'user';
-    final timeStr = _formatTime(message.createdAt);
+    final timeStr = formatTime(message.createdAt);
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -991,10 +988,6 @@ class _MessageBubble extends StatelessWidget {
     );
   }
 
-  String _formatTime(int ms) {
-    final dt = DateTime.fromMillisecondsSinceEpoch(ms);
-    return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
-  }
 }
 
 // --- Model Picker ---

@@ -45,12 +45,7 @@ class _SessionListScreenState extends State<SessionListScreen> {
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
-      List<Session> sessions;
-      try {
-        sessions = await widget.api.getSessions();
-      } catch (_) {
-        sessions = [];
-      }
+      final sessions = await widget.api.getSessions();
       sessions.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
       setState(() {
         _sessions = sessions;

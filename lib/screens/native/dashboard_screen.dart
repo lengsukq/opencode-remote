@@ -3,6 +3,7 @@ import '../../models.dart';
 import '../../theme.dart';
 import '../../services/storage_service.dart';
 import '../../services/opencode_api.dart';
+import '../../utils/time_format.dart';
 import '../settings_sheet.dart';
 import 'session_list_screen.dart';
 import 'file_browser_screen.dart';
@@ -50,14 +51,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
-      final results = await Future.wait([
-        _api.getHealth(),
-        _api.getSessions(),
-      ]);
-      final sessions = results[1] as List<Session>;
+      final health = await _api.getHealth();
+      final sessions = await _api.getSessions();
       sessions.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
       setState(() {
-        _health = results[0] as HealthStatus;
+        _health = health;
         _recentSessions = sessions.take(5).toList();
         _loading = false;
         _error = null;
@@ -372,7 +370,7 @@ class _SessionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final timeStr = _formatTime(session.updatedAt);
+    final timeStr = formatRelativeTime(session.updatedAt);
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 3),
       child: InkWell(
@@ -483,12 +481,3 @@ class _ActionButton extends StatelessWidget {
   }
 }
 
-String _formatTime(int ms) {
-  final dt = DateTime.fromMillisecondsSinceEpoch(ms);
-  final now = DateTime.now();
-  final diff = now.difference(dt);
-  if (diff.inMinutes < 1) return '刚刚';
-  if (diff.inHours < 1) return '${diff.inMinutes} 分钟前';
-  if (diff.inDays < 1) return '${diff.inHours} 小时前';
-  return '${diff.inDays} 天前';
-}
