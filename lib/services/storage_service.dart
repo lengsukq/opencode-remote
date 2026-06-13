@@ -5,6 +5,8 @@ import '../models.dart';
 class StorageService {
   static const _keyServers = 'servers';
   static const _keyLastId = 'lastSelectedId';
+  static const _keyAppMode = 'app_mode';
+  static const _keyHasLaunched = 'hasLaunched';
 
   static Future<List<ServerEntry>> loadServers() async {
     final prefs = await SharedPreferences.getInstance();
@@ -71,5 +73,27 @@ class StorageService {
     } catch (_) {
       return null;
     }
+  }
+
+  static Future<AppMode> getAppMode() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_keyAppMode);
+    if (raw == 'native') return AppMode.native;
+    return AppMode.webview;
+  }
+
+  static Future<void> setAppMode(AppMode mode) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_keyAppMode, mode == AppMode.native ? 'native' : 'webview');
+  }
+
+  static Future<bool> hasLaunched() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_keyHasLaunched) ?? false;
+  }
+
+  static Future<void> setHasLaunched() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_keyHasLaunched, true);
   }
 }

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import '../models.dart';
+import '../theme.dart';
 import '../services/storage_service.dart';
 import 'launcher_screen.dart';
 
@@ -63,7 +64,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
 
     final selected = await showModalBottomSheet<ServerEntry>(
       context: context,
-      backgroundColor: const Color(0xFF161B22),
+      backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -73,22 +74,22 @@ class _WebViewScreenState extends State<WebViewScreen> {
           children: [
             Padding(
               padding: const EdgeInsets.all(16),
-              child: Text('切换服务器', style: TextStyle(color: Colors.grey[300], fontSize: 16)),
+              child: Text('切换服务器', style: TextStyle(color: AppColors.textPrimary, fontSize: 16)),
             ),
-            const Divider(color: Color(0xFF30363D)),
+            const Divider(),
             ...servers.map((s) => ListTile(
-                  leading: Icon(Icons.computer, color: s.id == _entry.id ? const Color(0xFF6366F1) : Colors.grey[500]),
-                  title: Text(s.name, style: TextStyle(color: s.id == _entry.id ? const Color(0xFF6366F1) : const Color(0xFFE6EDF3))),
-                  subtitle: Text(s.url, style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+                  leading: Icon(Icons.computer, color: s.id == _entry.id ? AppColors.primary : AppColors.textSecondary),
+                  title: Text(s.name, style: TextStyle(color: s.id == _entry.id ? AppColors.primary : AppColors.textPrimary)),
+                  subtitle: Text(s.url, style: TextStyle(color: AppColors.textTertiary, fontSize: 12)),
                   onTap: () => Navigator.pop(ctx, s),
                 )),
-            const Divider(color: Color(0xFF30363D)),
+            const Divider(),
             ListTile(
-              leading: Icon(Icons.add, color: Colors.grey[500]),
-              title: const Text('添加新服务器', style: TextStyle(color: Color(0xFFE6EDF3))),
+              leading: Icon(Icons.add, color: AppColors.textSecondary),
+              title: const Text('添加新服务器', style: TextStyle(color: AppColors.textPrimary)),
               onTap: () {
                 Navigator.pop(ctx);
-                _addNew();
+                WidgetsBinding.instance.addPostFrameCallback((_) => _addNew());
               },
             ),
             const SizedBox(height: 8),
@@ -138,12 +139,11 @@ class _WebViewScreenState extends State<WebViewScreen> {
     return PopScope(
       canPop: true,
       child: Scaffold(
-        backgroundColor: const Color(0xFF0D1117),
+        backgroundColor: AppColors.background,
         appBar: AppBar(
-          backgroundColor: const Color(0xFF161B22),
-          title: Text(_entry.name, style: const TextStyle(color: Color(0xFFE6EDF3), fontSize: 16)),
+          title: Text(_entry.name, style: const TextStyle(color: AppColors.textPrimary, fontSize: 16)),
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Color(0xFF8B949E)),
+            icon: const Icon(Icons.arrow_back, color: AppColors.textSecondary),
             onPressed: _backToLauncher,
           ),
           actions: [
@@ -152,16 +152,16 @@ class _WebViewScreenState extends State<WebViewScreen> {
                 padding: EdgeInsets.symmetric(horizontal: 12),
                 child: SizedBox(
                   width: 18, height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF6366F1)),
+                  child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
                 ),
               ),
             IconButton(
-              icon: const Icon(Icons.swap_horiz, color: Color(0xFF8B949E)),
+              icon: const Icon(Icons.swap_horiz, color: AppColors.textSecondary),
               tooltip: '切换服务器',
               onPressed: _switchServer,
             ),
             IconButton(
-              icon: const Icon(Icons.refresh, color: Color(0xFF8B949E)),
+              icon: const Icon(Icons.refresh, color: AppColors.textSecondary),
               onPressed: () => _controller.reload(),
             ),
           ],
@@ -179,14 +179,16 @@ class _EditDialog extends StatefulWidget {
 
 class _EditDialogState extends State<_EditDialog> {
   final _nameCtrl = TextEditingController();
-  final _urlCtrl = TextEditingController(text: 'http://');
+  final _hostCtrl = TextEditingController();
+  final _portCtrl = TextEditingController(text: '4096');
   final _userCtrl = TextEditingController(text: 'opencode');
   final _passCtrl = TextEditingController();
 
   @override
   void dispose() {
     _nameCtrl.dispose();
-    _urlCtrl.dispose();
+    _hostCtrl.dispose();
+    _portCtrl.dispose();
     _userCtrl.dispose();
     _passCtrl.dispose();
     super.dispose();
@@ -195,15 +197,17 @@ class _EditDialogState extends State<_EditDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      backgroundColor: const Color(0xFF161B22),
-      title: const Text('添加服务器', style: TextStyle(color: Color(0xFFE6EDF3))),
+      backgroundColor: AppColors.surface,
+      title: const Text('添加服务器', style: TextStyle(color: AppColors.textPrimary)),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             _field('名称', '家里PC', _nameCtrl),
             const SizedBox(height: 12),
-            _field('地址', 'http://10.10.10.216:4096', _urlCtrl),
+            _field('地址', '10.10.10.216', _hostCtrl, keyboardType: TextInputType.url),
+            const SizedBox(height: 12),
+            _field('端口', '4096', _portCtrl, keyboardType: TextInputType.number),
             const SizedBox(height: 12),
             _field('用户名', 'opencode', _userCtrl),
             const SizedBox(height: 12),
@@ -212,13 +216,21 @@ class _EditDialogState extends State<_EditDialog> {
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消', style: TextStyle(color: Colors.grey))),
+        TextButton(
+          onPressed: () {
+            FocusScope.of(context).unfocus();
+            Navigator.pop(context);
+          },
+          child: const Text('取消', style: TextStyle(color: AppColors.textSecondary)),
+        ),
         FilledButton(
-          style: FilledButton.styleFrom(backgroundColor: const Color(0xFF6366F1)),
+          style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
           onPressed: () {
             final name = _nameCtrl.text.trim();
-            final url = _urlCtrl.text.trim();
-            if (name.isEmpty || url.isEmpty) return;
+            final host = _hostCtrl.text.trim();
+            final port = _portCtrl.text.trim();
+            if (name.isEmpty || host.isEmpty) return;
+            final url = 'http://$host${port.isNotEmpty ? ':$port' : ''}';
             Navigator.pop(context, ServerEntry(name: name, url: url, username: _userCtrl.text.trim(), password: _passCtrl.text));
           },
           child: const Text('保存'),
@@ -227,18 +239,19 @@ class _EditDialogState extends State<_EditDialog> {
     );
   }
 
-  Widget _field(String label, String hint, TextEditingController ctrl, {bool obscure = false}) {
+  Widget _field(String label, String hint, TextEditingController ctrl, {bool obscure = false, TextInputType? keyboardType}) {
     return TextField(
       controller: ctrl,
       obscureText: obscure,
-      style: const TextStyle(color: Color(0xFFE6EDF3)),
+      keyboardType: keyboardType,
+      style: const TextStyle(color: AppColors.textPrimary),
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
-        labelStyle: const TextStyle(color: Color(0xFF8B949E)),
-        hintStyle: const TextStyle(color: Color(0xFF30363D)),
-        enabledBorder: const OutlineInputBorder(borderSide: BorderSide(color: Color(0xFF30363D))),
-        focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: Color(0xFF6366F1))),
+        labelStyle: const TextStyle(color: AppColors.textSecondary),
+        hintStyle: TextStyle(color: AppColors.textTertiary),
+        enabledBorder: const OutlineInputBorder(borderSide: BorderSide(color: AppColors.border)),
+        focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: AppColors.borderFocused)),
       ),
     );
   }

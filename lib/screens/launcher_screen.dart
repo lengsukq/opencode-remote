@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 import '../models.dart';
+import '../theme.dart';
 import '../services/storage_service.dart';
+import 'settings_sheet.dart';
 import 'webview_screen.dart';
+import 'native/dashboard_screen.dart';
 
 class LauncherScreen extends StatefulWidget {
-  const LauncherScreen({super.key});
+  final AppMode? initialMode;
+  final ServerEntry? initialEntry;
+
+  const LauncherScreen({super.key, this.initialMode, this.initialEntry});
 
   @override
   State<LauncherScreen> createState() => _LauncherScreenState();
@@ -13,10 +19,17 @@ class LauncherScreen extends StatefulWidget {
 class _LauncherScreenState extends State<LauncherScreen> {
   List<ServerEntry> _servers = [];
   bool _loading = true;
+  late AppMode _mode;
 
   @override
   void initState() {
     super.initState();
+    _mode = widget.initialMode ?? AppMode.webview;
+    if (widget.initialEntry != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _openServerDirect(widget.initialEntry!);
+      });
+    }
     _reload();
   }
 
@@ -28,13 +41,36 @@ class _LauncherScreenState extends State<LauncherScreen> {
     });
   }
 
+  Future<void> _openServerDirect(ServerEntry entry) async {
+    if (!mounted) return;
+    final target = _mode == AppMode.native
+        ? DashboardScreen(entry: entry)
+        : WebViewScreen(entry: entry) as Widget;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => target),
+      (route) => false,
+    );
+  }
+
   Future<void> _openServer(ServerEntry entry) async {
     entry.lastUsed = DateTime.now().millisecondsSinceEpoch;
     await StorageService.addOrUpdate(entry);
     await StorageService.setLastSelectedId(entry.id);
     if (!mounted) return;
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => WebViewScreen(entry: entry)),
+    await _openServerDirect(entry);
+  }
+
+  void _openSettings() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => SettingsSheet(
+        entry: _servers.isNotEmpty ? _servers.first : ServerEntry(name: '', url: ''),
+        currentMode: _mode,
+      ),
     );
   }
 
@@ -63,48 +99,51 @@ class _LauncherScreenState extends State<LauncherScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D1117),
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: Row(
+          children: [
+            const Text('OpenCode Remote'),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: _mode == AppMode.native
+                    ? AppColors.primaryLight
+                    : const Color(0xFFE8F5E9),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                _mode == AppMode.native ? '原生' : 'WebView',
+                style: TextStyle(
+                  fontSize: 10,
+                  color: _mode == AppMode.native ? AppColors.primary : AppColors.success,
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings, color: AppColors.textSecondary),
+            tooltip: '设置',
+            onPressed: _openSettings,
+          ),
+        ],
+      ),
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF6366F1).withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(Icons.code, color: Color(0xFF6366F1), size: 28),
-                  ),
-                  const SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('OpenCode',
-                          style: TextStyle(
-                              color: Colors.grey[100],
-                              fontSize: 22,
-                              fontWeight: FontWeight.w600)),
-                      Text('远程控制',
-                          style: TextStyle(color: Colors.grey[500], fontSize: 13)),
-                    ],
-                  ),
-                ],
-              ),
-            ),
             const SizedBox(height: 16),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Text('服务器', style: TextStyle(color: Colors.grey[400], fontSize: 12)),
+              child: Text('服务器', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
             ),
             const SizedBox(height: 8),
             Expanded(
               child: _loading
-                  ? const Center(child: CircularProgressIndicator(color: Color(0xFF6366F1)))
+                  ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
                   : _servers.isEmpty
                       ? _emptyState()
                       : _serverList(),
@@ -113,7 +152,7 @@ class _LauncherScreenState extends State<LauncherScreen> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: const Color(0xFF6366F1),
+        backgroundColor: AppColors.primary,
         onPressed: () => _addServer(),
         child: const Icon(Icons.add, color: Colors.white),
       ),
@@ -125,11 +164,11 @@ class _LauncherScreenState extends State<LauncherScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.dns_outlined, size: 48, color: Colors.grey[700]),
+          Icon(Icons.dns_outlined, size: 48, color: AppColors.textTertiary),
           const SizedBox(height: 16),
-          Text('还没有服务器', style: TextStyle(color: Colors.grey[500], fontSize: 15)),
+          Text('还没有服务器', style: TextStyle(color: AppColors.textSecondary, fontSize: 15)),
           const SizedBox(height: 8),
-          Text('点击 + 添加', style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+          Text('点击 + 添加', style: TextStyle(color: AppColors.textTertiary, fontSize: 13)),
         ],
       ),
     );
@@ -149,7 +188,7 @@ class _LauncherScreenState extends State<LauncherScreen> {
             padding: const EdgeInsets.only(right: 20),
             margin: const EdgeInsets.symmetric(vertical: 4),
             decoration: BoxDecoration(
-              color: Colors.red.shade900,
+              color: AppColors.danger,
               borderRadius: BorderRadius.circular(12),
             ),
             child: const Icon(Icons.delete, color: Colors.white),
@@ -189,12 +228,7 @@ class _ServerCard extends StatelessWidget {
     final host = uri != null && uri.host.isNotEmpty ? '${uri.host}:${uri.port}' : entry.url;
 
     return Card(
-      color: const Color(0xFF161B22),
       margin: const EdgeInsets.symmetric(vertical: 4),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: Color(0xFF30363D)),
-      ),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: onTap,
@@ -207,10 +241,10 @@ class _ServerCard extends StatelessWidget {
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF6366F1).withValues(alpha: 0.12),
+                  color: AppColors.primaryLight,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(Icons.computer, color: Color(0xFF6366F1), size: 22),
+                child: const Icon(Icons.computer, color: AppColors.primary, size: 22),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -219,19 +253,19 @@ class _ServerCard extends StatelessWidget {
                   children: [
                     Text(entry.name,
                         style: const TextStyle(
-                            color: Color(0xFFE6EDF3),
+                            color: AppColors.textPrimary,
                             fontSize: 15,
                             fontWeight: FontWeight.w500)),
                     const SizedBox(height: 3),
                     Text(host,
-                        style: TextStyle(color: Colors.grey[500], fontSize: 12)),
+                        style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
                     const SizedBox(height: 2),
                     Text('最后使用: $timeStr',
-                        style: TextStyle(color: Colors.grey[600], fontSize: 11)),
+                        style: TextStyle(color: AppColors.textTertiary, fontSize: 11)),
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right, color: Colors.grey[600], size: 20),
+              Icon(Icons.chevron_right, color: AppColors.textTertiary, size: 20),
             ],
           ),
         ),
@@ -241,43 +275,52 @@ class _ServerCard extends StatelessWidget {
 }
 
 Future<ServerEntry?> _showEditDialog(BuildContext context, {ServerEntry? entry}) async {
+  final uri = entry != null ? Uri.tryParse(entry.url) : null;
   final nameCtrl = TextEditingController(text: entry?.name ?? '');
-  final urlCtrl = TextEditingController(text: entry?.url ?? 'http://');
+  final hostCtrl = TextEditingController(text: uri?.host.isNotEmpty == true ? uri!.host : '');
+  final portCtrl = TextEditingController(text: uri != null && uri.port > 0 ? uri.port.toString() : '4096');
   final userCtrl = TextEditingController(text: entry?.username ?? 'opencode');
   final passCtrl = TextEditingController(text: entry?.password ?? '');
 
   final result = await showDialog<ServerEntry>(
     context: context,
     builder: (ctx) => AlertDialog(
-      backgroundColor: const Color(0xFF161B22),
+      backgroundColor: AppColors.surface,
       title: Text(entry == null ? '添加服务器' : '编辑服务器',
-          style: const TextStyle(color: Color(0xFFE6EDF3))),
+          style: const TextStyle(color: AppColors.textPrimary)),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: nameCtrl,
-              style: const TextStyle(color: Color(0xFFE6EDF3)),
+              style: const TextStyle(color: AppColors.textPrimary),
               decoration: _inputDec('名称', '家里PC'),
             ),
             const SizedBox(height: 12),
             TextField(
-              controller: urlCtrl,
-              style: const TextStyle(color: Color(0xFFE6EDF3)),
-              decoration: _inputDec('地址', 'http://10.10.10.216:4096'),
+              controller: hostCtrl,
+              style: const TextStyle(color: AppColors.textPrimary),
+              decoration: _inputDec('地址', '10.10.10.216'),
               keyboardType: TextInputType.url,
             ),
             const SizedBox(height: 12),
             TextField(
+              controller: portCtrl,
+              style: const TextStyle(color: AppColors.textPrimary),
+              decoration: _inputDec('端口', '4096'),
+              keyboardType: TextInputType.number,
+            ),
+            const SizedBox(height: 12),
+            TextField(
               controller: userCtrl,
-              style: const TextStyle(color: Color(0xFFE6EDF3)),
+              style: const TextStyle(color: AppColors.textPrimary),
               decoration: _inputDec('用户名', 'opencode'),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: passCtrl,
-              style: const TextStyle(color: Color(0xFFE6EDF3)),
+              style: const TextStyle(color: AppColors.textPrimary),
               decoration: _inputDec('密码', ''),
               obscureText: true,
             ),
@@ -286,15 +329,20 @@ Future<ServerEntry?> _showEditDialog(BuildContext context, {ServerEntry? entry})
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.pop(ctx),
-          child: const Text('取消', style: TextStyle(color: Colors.grey)),
+          onPressed: () {
+            FocusScope.of(ctx).unfocus();
+            Navigator.pop(ctx);
+          },
+          child: const Text('取消', style: TextStyle(color: AppColors.textSecondary)),
         ),
         FilledButton(
-          style: FilledButton.styleFrom(backgroundColor: const Color(0xFF6366F1)),
+          style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
           onPressed: () {
             final name = nameCtrl.text.trim();
-            final url = urlCtrl.text.trim();
-            if (name.isEmpty || url.isEmpty) return;
+            final host = hostCtrl.text.trim();
+            final port = portCtrl.text.trim();
+            if (name.isEmpty || host.isEmpty) return;
+            final url = 'http://$host${port.isNotEmpty ? ':$port' : ''}';
             Navigator.pop(
               ctx,
               (entry ?? ServerEntry(name: name, url: url)).copyWith(
@@ -311,7 +359,8 @@ Future<ServerEntry?> _showEditDialog(BuildContext context, {ServerEntry? entry})
     ),
   );
   nameCtrl.dispose();
-  urlCtrl.dispose();
+  hostCtrl.dispose();
+  portCtrl.dispose();
   userCtrl.dispose();
   passCtrl.dispose();
   return result;
@@ -321,11 +370,11 @@ InputDecoration _inputDec(String label, String hint) {
   return InputDecoration(
     labelText: label,
     hintText: hint,
-    labelStyle: const TextStyle(color: Color(0xFF8B949E)),
-    hintStyle: const TextStyle(color: Color(0xFF30363D)),
+    labelStyle: const TextStyle(color: AppColors.textSecondary),
+    hintStyle: TextStyle(color: AppColors.textTertiary),
     enabledBorder: const OutlineInputBorder(
-        borderSide: BorderSide(color: Color(0xFF30363D))),
+        borderSide: BorderSide(color: AppColors.border)),
     focusedBorder: const OutlineInputBorder(
-        borderSide: BorderSide(color: Color(0xFF6366F1))),
+        borderSide: BorderSide(color: AppColors.borderFocused)),
   );
 }

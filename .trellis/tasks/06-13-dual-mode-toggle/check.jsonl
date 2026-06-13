@@ -1,0 +1,5 @@
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Lint rules, naming conventions, testing standards"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Verify new widgets follow existing theming patterns"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Verify null safety and type conventions"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Verify service layer follows static-class pattern"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Verify API error handling follows spec"}
