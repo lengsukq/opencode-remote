@@ -46,3 +46,8 @@ app.*.map.json
 
 # opencode source (reference only, do not modify)
 /opencode-dev/
+
+# Android signing keystore (generated locally, do not upload)
+/config/keystore/
+*.keystore
+key.properties
