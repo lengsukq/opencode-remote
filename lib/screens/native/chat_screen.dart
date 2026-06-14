@@ -179,13 +179,20 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _load() async {
-    setState(() => _loading = true);
+    if (mounted) setState(() => _loading = true);
     try {
-      final msgs = await widget.api.getMessages(widget.session.id);
-      final agents = await widget.api.getAgents();
-      final providers = await widget.api.getProviders();
-      final commands = await widget.api.getCommands();
-      final configData = await widget.api.getConfigProviders();
+      final results = await Future.wait([
+        widget.api.getMessages(widget.session.id),
+        widget.api.getAgents(),
+        widget.api.getProviders(),
+        widget.api.getCommands(),
+        widget.api.getConfigProviders(),
+      ]);
+      final msgs = results[0] as List<Message>;
+      final agents = results[1] as List<Agent>;
+      final providers = results[2] as List<Provider>;
+      final commands = results[3] as List<Command>;
+      final configData = results[4] as Map<String, dynamic>;
       final rawDefaults = configData['default'];
       final defaults = (rawDefaults is Map)
           ? (rawDefaults as Map<String, dynamic>).map((k, v) => MapEntry(k, v?.toString() ?? ''))
@@ -198,6 +205,7 @@ class _ChatScreenState extends State<ChatScreen> {
       }
       autoModel ??= defaults['build'];
 
+      if (!mounted) return;
       setState(() {
         _messages = msgs;
         _agents = agents;
@@ -213,6 +221,7 @@ class _ChatScreenState extends State<ChatScreen> {
       });
       _scrollToBottom();
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _loading = false;
         _error = e.toString();
