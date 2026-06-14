@@ -281,7 +281,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
           const SizedBox(height: 12),
           _toolGroup('格式化器', _formatters.map((f) => _toolEntry(f.name, f.enabled ? 'enabled' : 'disabled')).toList()),
           const SizedBox(height: 12),
-          _toolGroup('MCP 服务器', _mcp.entries.map((e) => _toolEntry(e.key, e.value.state)).toList()),
+          _toolGroup('MCP 服务器', _mcp.entries.map((e) => _toolEntry(e.key, e.value.status)).toList()),
         ],
       ),
     );
