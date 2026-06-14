@@ -168,7 +168,11 @@ class _ChatScreenState extends State<ChatScreen> {
         final args = parts.skip(1).toList();
         await widget.api.executeCommand(widget.session.id, command: cmd, arguments: args, agent: _selectedAgent, model: _selectedModel);
       } else {
-        await widget.api.sendMessage(widget.session.id, content: text, agent: _selectedAgent, model: _selectedModel);
+        try {
+          await widget.api.sendMessageAsync(widget.session.id, text, agent: _selectedAgent, model: _selectedModel);
+        } catch (_) {
+          await widget.api.sendMessage(widget.session.id, content: text, agent: _selectedAgent, model: _selectedModel);
+        }
       }
       await _refreshMessages();
     } catch (e) {

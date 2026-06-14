@@ -283,16 +283,22 @@ class OpenCodeApi {
       {'type': 'text', 'text': content}
     ];
     final body = <String, dynamic>{'parts': bodyParts};
-    if (model != null) body['model'] = model;
+    if (model != null) body['model'] = _modelRef(model);
     if (agent != null) body['agent'] = agent;
     if (messageID != null) body['messageID'] = messageID;
     if (noReply != null) body['noReply'] = noReply;
     if (system != null) body['system'] = system;
     if (tools != null) body['tools'] = tools;
     final res = await _post('/session/$sessionId/prompt_async', body: body);
-    if (res.statusCode != 204) {
+    if (res.statusCode != 204 && res.statusCode != 200) {
       throw OpenCodeApiException(res.statusCode, res.body);
     }
+  }
+
+  static Map<String, String>? _modelRef(String model) {
+    final parts = model.split('/');
+    if (parts.length == 2) return {'providerID': parts[0], 'modelID': parts[1]};
+    return null;
   }
 
   Future<SessionMessageResponse> executeCommand(
