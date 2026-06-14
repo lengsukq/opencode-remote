@@ -591,11 +591,27 @@ class _ChatScreenState extends State<ChatScreen> {
                     Text('Parts:', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
                     const SizedBox(height: 4),
                     ...parts.take(10).map((p) {
-                      final pMap = p;
+                      final summary = switch (p.type) {
+                        'text' => p.text ?? '',
+                        'reasoning' => p.reasoningText ?? '',
+                        'tool' => '${p.tool?.tool ?? ''}: ${p.tool?.stateStatus ?? ''}',
+                        'file' => p.file?.filename ?? p.file?.url ?? '',
+                        'subtask' => '${p.subtask?.agent ?? ''}: ${p.subtask?.description ?? ''}',
+                        'step-start' => '',
+                        'step-finish' => p.stepFinish?.reason ?? '',
+                        'snapshot' => '',
+                        'patch' => '${p.patch?.files.length ?? 0} files',
+                        'agent' => p.agent?.name ?? '',
+                        'retry' => 'attempt ${p.retry?.attempt}',
+                        'compaction' => p.compaction?.auto == true ? 'auto' : '',
+                        _ => '',
+                      };
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 4),
                         child: Text(
-                          '  [${pMap.type}]: ${(pMap.text ?? pMap.toString()).substring(0, (pMap.text ?? pMap.toString()).length.clamp(0, 100))}',
+                          '  [${p.type}] ${summary}',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                           style: const TextStyle(color: AppColors.textPrimary, fontSize: 11, fontFamily: 'monospace'),
                         ),
                       );
@@ -699,6 +715,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                   return _MessageBubble(
                                     message: _messages[i],
                                     isLatest: isLatest || isSecondLatest,
+                                    streamingText: _streamingDeltas.isNotEmpty && isLatest && !_messages[i].content.endsWith('\n') ? _streamingDeltas.values.join() : null,
                                     onLongPress: () => _showMessageActions(_messages[i]),
                                     onToggleReasoning: null,
                                     onApplyCode: _applyCode,
@@ -982,6 +999,7 @@ class _ReasoningBlockState extends State<_ReasoningBlock> {
 class _MessageBubble extends StatelessWidget {
   final Message message;
   final bool isLatest;
+  final String? streamingText;
   final VoidCallback? onLongPress;
   final VoidCallback? onToggleReasoning;
   final void Function(String code, String? language, BuildContext ctx)? onApplyCode;
@@ -989,6 +1007,7 @@ class _MessageBubble extends StatelessWidget {
   const _MessageBubble({
     required this.message,
     this.isLatest = false,
+    this.streamingText,
     this.onLongPress,
     this.onToggleReasoning,
     this.onApplyCode,
@@ -999,6 +1018,8 @@ class _MessageBubble extends StatelessWidget {
     final isUser = message.role == 'user';
     final timeStr = formatTime(message.createdAt);
 
+    final displayContent = streamingText != null ? '${message.content}\n$streamingText' : message.content;
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Column(
@@ -1006,6 +1027,19 @@ class _MessageBubble extends StatelessWidget {
         children: [
           if (!isUser && message.hasReasoning)
             _ReasoningBlock(content: message.reasoning!, isLatest: isLatest),
+          if (!isUser && message.cost > 0)
+            Container(
+              margin: const EdgeInsets.only(bottom: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: AppColors.success.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                '\$' + message.cost.toStringAsFixed(4),
+                style: TextStyle(color: AppColors.success, fontSize: 10, fontFamily: 'monospace'),
+              ),
+            ),
           GestureDetector(
             onLongPress: onLongPress,
             child: Container(
@@ -1030,7 +1064,7 @@ class _MessageBubble extends StatelessWidget {
                       style: const TextStyle(color: Colors.white, fontSize: 14),
                     )
                   : MarkdownBody(
-                      data: message.content,
+                      data: displayContent,
                       selectable: true,
                       builders: {
                         'code_block': _CodeBlockBuilder(onApply: onApplyCode),
