@@ -1,0 +1,3 @@
+{"file": "opencode-dev/packages/opencode/src/server/routes/instance/httpapi/handlers/event.ts", "reason": "Reference: server SSE handler implementation"}
+{"file": "opencode-dev/packages/opencode/src/event-v2-bridge.ts", "reason": "Reference: event publishing system"}
+{"file": "opencode-dev/packages/core/src/session/event.ts", "reason": "Reference: event type definitions"}

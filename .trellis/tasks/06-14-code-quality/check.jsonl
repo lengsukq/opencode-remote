@@ -1,0 +1,4 @@
+{"file": "lib/services/opencode_api.dart", "reason": "Merged provider calls, optimized requests"}
+{"file": "lib/models.dart", "reason": "toJson/copyWith additions"}
+{"file": "lib/screens/native/chat_screen.dart", "reason": "mounted checks, parallel await"}
+{"file": "lib/services/event_service.dart", "reason": "Stream subscription management"}

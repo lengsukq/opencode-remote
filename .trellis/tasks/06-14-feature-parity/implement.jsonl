@@ -1,0 +1,4 @@
+{"file": "opencode-dev/packages/ui/src/components/message-part.tsx", "reason": "Reference: tool call rendering and part visualization"}
+{"file": "opencode-dev/packages/app/src/components/prompt-input/attachments.ts", "reason": "Reference: file attachment implementation"}
+{"file": "opencode-dev/packages/app/src/components/prompt-input/history.ts", "reason": "Reference: prompt history implementation"}
+{"file": "opencode-dev/packages/app/src/pages/session/composer/session-permission-dock.tsx", "reason": "Reference: permission request UI"}

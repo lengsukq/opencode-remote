@@ -1,0 +1,3 @@
+{"file": "opencode-dev/packages/sdk/js/src/v2/gen/types.gen.ts", "reason": "Reference: all TS model types for field alignment"}
+{"file": "opencode-dev/packages/core/src/v1/session.ts", "reason": "Reference: core Session/Message schema definitions"}
+{"file": "opencode-dev/packages/opencode/src/session/prompt.ts", "reason": "Reference: PromptInput and Part schemas"}

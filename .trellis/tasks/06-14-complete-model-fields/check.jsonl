@@ -1,0 +1,2 @@
+{"file": "lib/models.dart", "reason": "All model field additions verified here"}
+{"file": "lib/services/opencode_api.dart", "reason": "API methods using updated models"}

@@ -1,0 +1,2 @@
+{"file": "lib/services/event_service.dart", "reason": "SSE parsing and event type mapping"}
+{"file": "lib/screens/native/chat_screen.dart", "reason": "Event consumption and UI updates"}
