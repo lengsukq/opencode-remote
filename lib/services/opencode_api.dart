@@ -520,8 +520,8 @@ class OpenCodeApi {
   }
 
   // --- Provider OAuth ---
-  Future<ProviderAuthAuthorization> oauthAuthorize(String id) async {
-    final res = await _post('/provider/$id/oauth/authorize');
+  Future<ProviderAuthAuthorization> oauthAuthorize(String id, {required int method}) async {
+    final res = await _post('/provider/$id/oauth/authorize', body: {'method': method});
     _check(res);
     return ProviderAuthAuthorization.fromJson(_safeMap(jsonDecode(res.body)));
   }

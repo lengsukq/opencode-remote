@@ -391,9 +391,7 @@ class _SessionListScreenState extends State<SessionListScreen> {
                     child: DiffView(
                       filePath: d.filePath,
                       status: d.status,
-                      hunks: d.hunks.map((h) => DiffHunkView.fromContent(
-                        h.oldStart, h.newStart, h.content,
-                      )).toList(),
+                      hunks: [DiffHunkView.fromContent(0, 0, d.patch ?? '+${d.additions} -${d.deletions}')],
                     ),
                   )).toList(),
                 ),

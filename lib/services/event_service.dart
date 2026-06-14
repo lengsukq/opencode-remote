@@ -7,6 +7,9 @@ enum EventType {
   messageNew,
   sessionUpdated,
   sessionStatus,
+  messagePartDelta,
+  permissionAsked,
+  questionAsked,
   unknown,
 }
 
@@ -82,24 +85,19 @@ class EventService {
     }
   }
 
-  String? _currentEvent;
   final _dataBuffer = StringBuffer();
 
   void _onLine(String line) {
-    if (line.startsWith('event: ')) {
-      _currentEvent = line.substring(7).trim();
-    } else if (line.startsWith('data: ')) {
+    if (line.startsWith('data: ')) {
       _dataBuffer.write(line.substring(6));
-    } else if (line.isEmpty && _currentEvent != null) {
+    } else if (line.isEmpty && _dataBuffer.isNotEmpty) {
       _emitEvent();
     }
   }
 
   void _emitEvent() {
-    final eventType = _currentEvent ?? '';
     final rawData = _dataBuffer.toString().trim();
     _dataBuffer.clear();
-    _currentEvent = null;
 
     Map<String, dynamic> data;
     try {
@@ -107,22 +105,36 @@ class EventService {
       data = decoded is Map<String, dynamic> ? decoded : {'raw': rawData, 'decoded': decoded};
     } catch (e) {
       debugPrint('EventService._emitEvent json parse: $e');
-      data = {'raw': rawData};
+      return;
     }
 
-    EventType type;
-    if (eventType == 'message.new') {
-      type = EventType.messageNew;
-    } else if (eventType == 'session.updated') {
-      type = EventType.sessionUpdated;
-    } else if (eventType == 'session.status') {
-      type = EventType.sessionStatus;
-    } else {
-      type = EventType.unknown;
-    }
+    final payload = data['payload'];
+    final payloadType = payload is Map ? payload['type'] as String? : null;
+    final eventType = payloadType ?? data['type'] as String? ?? '';
 
+    final type = _eventTypeFromString(eventType);
     if (!_cancelled) {
       _controller.add(ServerEvent(type: type, data: data, rawType: eventType));
+    }
+  }
+
+  EventType _eventTypeFromString(String type) {
+    switch (type) {
+      case 'message.updated':
+      case 'message.new':
+        return EventType.messageNew;
+      case 'session.updated':
+        return EventType.sessionUpdated;
+      case 'session.status':
+        return EventType.sessionStatus;
+      case 'message.part.delta':
+        return EventType.messagePartDelta;
+      case 'permission.asked':
+        return EventType.permissionAsked;
+      case 'question.asked':
+        return EventType.questionAsked;
+      default:
+        return EventType.unknown;
     }
   }
 

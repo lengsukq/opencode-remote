@@ -1,4 +1,5 @@
-﻿import 'package:flutter/material.dart';
+﻿import 'dart:async';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_highlight/flutter_highlight.dart';
@@ -40,6 +41,7 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _showCommands = false;
   List<Command> _filteredCommands = [];
   EventService? _eventService;
+  StreamSubscription<ServerEvent>? _eventSub;
 
   @override
   void initState() {
@@ -68,11 +70,13 @@ class _ChatScreenState extends State<ChatScreen> {
     _inputCtrl.removeListener(_onInputChanged);
     _inputCtrl.dispose();
     _scrollCtrl.dispose();
+    _eventSub?.cancel();
     _eventService?.dispose();
     super.dispose();
   }
 
   void _connectEvents() {
+    _eventSub?.cancel();
     _eventService?.dispose();
     _eventService = EventService(
       baseUrl: widget.entry.url,
@@ -80,11 +84,15 @@ class _ChatScreenState extends State<ChatScreen> {
       password: widget.entry.password,
     );
     _eventService!.connect();
-    _eventService!.events.listen((event) {
-      if (event.type == EventType.messageNew || event.type == EventType.sessionUpdated) {
-        _refreshMessages();
-      }
-    });
+    _eventSub = _eventService!.events.listen(
+      (event) {
+        if (event.type == EventType.messageNew || event.type == EventType.sessionUpdated) {
+          _refreshMessages();
+        }
+      },
+      onError: (e) => debugPrint('ChatScreen event error: $e'),
+      cancelOnError: false,
+    );
   }
 
   void _onInputChanged() {

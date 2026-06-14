@@ -279,7 +279,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
         children: [
           _toolGroup('LSP 服务器', _lsp.map((l) => _toolEntry(l.name, l.state)).toList()),
           const SizedBox(height: 12),
-          _toolGroup('格式化器', _formatters.map((f) => _toolEntry(f.name, f.state)).toList()),
+          _toolGroup('格式化器', _formatters.map((f) => _toolEntry(f.name, f.enabled ? 'enabled' : 'disabled')).toList()),
           const SizedBox(height: 12),
           _toolGroup('MCP 服务器', _mcp.entries.map((e) => _toolEntry(e.key, e.value.state)).toList()),
         ],
@@ -342,7 +342,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
               Text(e.key, style: TextStyle(color: AppColors.textPrimary, fontSize: 13, fontWeight: FontWeight.w500)),
               ...e.value.map((a) => Padding(
                 padding: const EdgeInsets.only(left: 12, top: 2),
-                child: Text('类型: ${a.type}${a.url != null ? ', URL: ${a.url}' : ''}', style: TextStyle(color: AppColors.textSecondary, fontSize: 11, fontFamily: 'monospace')),
+                child: Text('类型: ${a.type}${a.label.isNotEmpty ? ', 标签: ${a.label}' : ''}', style: TextStyle(color: AppColors.textSecondary, fontSize: 11, fontFamily: 'monospace')),
               )),
             ],
           ),

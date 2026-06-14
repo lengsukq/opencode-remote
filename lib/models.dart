@@ -323,7 +323,9 @@ class Provider {
     final id = json['id'] as String? ?? '';
     final name = json['name'] as String? ?? id;
     final rawModels = json['models'];
-    final modelsList = rawModels is List ? rawModels : <dynamic>[];
+    final modelsList = rawModels is List
+        ? rawModels
+        : rawModels is Map ? rawModels.values.toList() : <dynamic>[];
     final models = modelsList.map((e) =>
       ProviderModel.fromJson(e is Map<String, dynamic> ? e : {}, providerID: id)
     ).toList();
@@ -354,32 +356,24 @@ class Command {
 class DiffEntry {
   final String filePath;
   final String status;
-  final List<DiffHunk> hunks;
+  final int additions;
+  final int deletions;
+  final String? patch;
 
-  DiffEntry({required this.filePath, required this.status, required this.hunks});
+  DiffEntry({
+    required this.filePath,
+    required this.status,
+    this.additions = 0,
+    this.deletions = 0,
+    this.patch,
+  });
 
-  factory DiffEntry.fromJson(Map<String, dynamic> json) {
-    final rawHunks = json['hunks'];
-    final hunksList = rawHunks is List ? rawHunks : <dynamic>[];
-    return DiffEntry(
-      filePath: json['filePath'] as String? ?? json['path'] as String? ?? '',
-      status: json['status'] as String? ?? 'modified',
-      hunks: hunksList.map((e) => DiffHunk.fromJson(e is Map<String, dynamic> ? e : {})).toList(),
-    );
-  }
-}
-
-class DiffHunk {
-  final int oldStart;
-  final int newStart;
-  final String content;
-
-  DiffHunk({required this.oldStart, required this.newStart, required this.content});
-
-  factory DiffHunk.fromJson(Map<String, dynamic> json) => DiffHunk(
-        oldStart: json['oldStart'] as int? ?? 0,
-        newStart: json['newStart'] as int? ?? 0,
-        content: json['content'] as String? ?? '',
+  factory DiffEntry.fromJson(Map<String, dynamic> json) => DiffEntry(
+        filePath: json['file'] as String? ?? json['filePath'] as String? ?? json['path'] as String? ?? '',
+        status: json['status'] as String? ?? 'modified',
+        additions: json['additions'] as int? ?? 0,
+        deletions: json['deletions'] as int? ?? 0,
+        patch: json['patch'] as String?,
       );
 }
 
@@ -399,10 +393,12 @@ class SearchMatch {
   factory SearchMatch.fromJson(Map<String, dynamic> json) {
     final rawSubs = json['submatches'];
     final subs = rawSubs is List ? rawSubs : <dynamic>[];
+    final rawPath = json['path'];
+    final rawLines = json['lines'];
     return SearchMatch(
-      path: json['path'] as String? ?? '',
+      path: rawPath is Map ? rawPath['text'] as String? ?? '' : rawPath as String? ?? '',
       lineNumber: json['line_number'] as int? ?? 0,
-      lines: json['lines'] as String? ?? '',
+      lines: rawLines is Map ? rawLines['text'] as String? ?? '' : rawLines as String? ?? '',
       submatches: subs.map((e) => SearchSubmatch.fromJson(e is Map<String, dynamic> ? e : {})).toList(),
     );
   }
@@ -415,11 +411,14 @@ class SearchSubmatch {
 
   SearchSubmatch({required this.match, required this.start, required this.end});
 
-  factory SearchSubmatch.fromJson(Map<String, dynamic> json) => SearchSubmatch(
-        match: json['match'] as String? ?? '',
-        start: json['start'] as int? ?? 0,
-        end: json['end'] as int? ?? 0,
-      );
+  factory SearchSubmatch.fromJson(Map<String, dynamic> json) {
+    final rawMatch = json['match'];
+    return SearchSubmatch(
+      match: rawMatch is Map ? rawMatch['text'] as String? ?? '' : rawMatch as String? ?? '',
+      start: json['start'] as int? ?? 0,
+      end: json['end'] as int? ?? 0,
+    );
+  }
 }
 
 class LSPStatus {
@@ -438,13 +437,13 @@ class LSPStatus {
 
 class FormatterStatus {
   final String name;
-  final String state;
+  final bool enabled;
 
-  FormatterStatus({required this.name, required this.state});
+  FormatterStatus({required this.name, required this.enabled});
 
   factory FormatterStatus.fromJson(Map<String, dynamic> json) => FormatterStatus(
         name: json['name'] as String? ?? '',
-        state: json['state'] as String? ?? json['status'] as String? ?? 'unknown',
+        enabled: json['enabled'] as bool? ?? false,
       );
 }
 
@@ -462,13 +461,13 @@ class MCPStatus {
 
 class ProviderAuthMethod {
   final String type;
-  final String? url;
+  final String label;
 
-  ProviderAuthMethod({required this.type, this.url});
+  ProviderAuthMethod({required this.type, required this.label});
 
   factory ProviderAuthMethod.fromJson(Map<String, dynamic> json) => ProviderAuthMethod(
         type: json['type'] as String? ?? '',
-        url: json['url'] as String?,
+        label: json['label'] as String? ?? '',
       );
 }
 
@@ -489,16 +488,16 @@ class ToolEntry {
 class Todo {
   final String id;
   final String task;
-  final bool done;
-  final bool resolved;
+  final String status;
 
-  Todo({required this.id, required this.task, this.done = false, this.resolved = false});
+  Todo({required this.id, required this.task, this.status = 'pending'});
+
+  bool get done => status == 'completed' || status == 'resolved';
 
   factory Todo.fromJson(Map<String, dynamic> json) => Todo(
         id: json['id'] as String? ?? '',
-        task: json['task'] as String? ?? '',
-        done: json['done'] as bool? ?? json['completed'] as bool? ?? false,
-        resolved: json['resolved'] as bool? ?? false,
+        task: json['content'] as String? ?? json['task'] as String? ?? '',
+        status: json['status'] as String? ?? 'pending',
       );
 }
 
@@ -585,7 +584,9 @@ class ProviderDefaults {
 
   factory ProviderDefaults.fromJson(Map<String, dynamic> json) {
     final rawProviders = json['providers'];
-    final providersList = rawProviders is List ? rawProviders : <dynamic>[];
+    final providersList = rawProviders is List
+        ? rawProviders
+        : rawProviders is Map ? rawProviders.values.toList() : <dynamic>[];
     final rawDefaults = json['default'];
     final defaults = rawDefaults is Map ? Map<String, dynamic>.from(rawDefaults) : <String, dynamic>{};
     return ProviderDefaults(
@@ -596,14 +597,16 @@ class ProviderDefaults {
 }
 
 class ProviderAuthAuthorization {
-  final String? url;
-  final String? codeVerifier;
+  final String url;
+  final String method;
+  final String? instructions;
 
-  ProviderAuthAuthorization({this.url, this.codeVerifier});
+  ProviderAuthAuthorization({required this.url, required this.method, this.instructions});
 
   factory ProviderAuthAuthorization.fromJson(Map<String, dynamic> json) => ProviderAuthAuthorization(
-        url: json['url'] as String?,
-        codeVerifier: json['codeVerifier'] as String?,
+        url: json['url'] as String? ?? '',
+        method: json['method'] as String? ?? '',
+        instructions: json['instructions'] as String?,
       );
 }
 
