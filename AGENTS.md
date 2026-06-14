@@ -19,3 +19,7 @@ If you're using Codex or another agent-capable tool, additional project-scoped h
 Managed by Trellis. Edits outside this block are preserved; edits inside may be overwritten by a future `trellis update`.
 
 <!-- TRELLIS:END -->
+
+# opencode-dev (Reference Only)
+
+`opencode-dev/` contains the opencode server source code. This is for **reference only** — you may read it to understand API behavior, types, or server logic, but you must **never modify** any files under this directory.
