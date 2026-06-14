@@ -9,6 +9,7 @@ import 'session_list_screen.dart';
 import 'file_browser_screen.dart';
 import 'project_screen.dart';
 import 'config_screen.dart';
+import 'chat_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   final ServerEntry entry;
@@ -373,13 +374,13 @@ class _SessionCard extends StatelessWidget {
     final timeStr = formatRelativeTime(session.updatedAt);
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 3),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () {
-          Navigator.push(context, MaterialPageRoute(
-            builder: (_) => SessionListScreen(entry: entry, api: api),
-          ));
-        },
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () {
+            Navigator.push(context, MaterialPageRoute(
+              builder: (_) => ChatScreen(session: session, entry: entry, api: api),
+            ));
+          },
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: Row(

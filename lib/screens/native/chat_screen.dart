@@ -110,7 +110,10 @@ class _ChatScreenState extends State<ChatScreen> {
       final providers = await widget.api.getProviders();
       final commands = await widget.api.getCommands();
       final configData = await widget.api.getConfigProviders();
-      final defaults = (configData['default'] as Map<String, dynamic>?)?.map((k, v) => MapEntry(k, v as String? ?? '')) ?? <String, String>{};
+      final rawDefaults = configData['default'];
+      final defaults = (rawDefaults is Map)
+          ? (rawDefaults as Map<String, dynamic>).map((k, v) => MapEntry(k, v?.toString() ?? ''))
+          : <String, String>{};
 
       String? autoModel;
       if (msgs.isNotEmpty) {
@@ -165,10 +168,9 @@ class _ChatScreenState extends State<ChatScreen> {
         final args = parts.skip(1).toList();
         await widget.api.executeCommand(widget.session.id, command: cmd, arguments: args, agent: _selectedAgent, model: _selectedModel);
       } else {
-        await widget.api.sendMessageAsync(widget.session.id, text, agent: _selectedAgent, model: _selectedModel);
+        await widget.api.sendMessage(widget.session.id, content: text, agent: _selectedAgent, model: _selectedModel);
       }
       await _refreshMessages();
-      _waitForFirstReply();
     } catch (e) {
       if (mounted) {
         showDialog(

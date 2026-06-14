@@ -103,7 +103,8 @@ class EventService {
 
     Map<String, dynamic> data;
     try {
-      data = jsonDecode(rawData) as Map<String, dynamic>;
+      final decoded = jsonDecode(rawData);
+      data = decoded is Map<String, dynamic> ? decoded : {'raw': rawData, 'decoded': decoded};
     } catch (e) {
       debugPrint('EventService._emitEvent json parse: $e');
       data = {'raw': rawData};

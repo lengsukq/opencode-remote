@@ -230,10 +230,10 @@ class OpenCodeApi {
     if (data is List) {
       return data.map((e) {
         final info = e['info'] as Map<String, dynamic>? ?? {};
-        final parts = (e['parts'] as List<dynamic>?)
-                ?.map((p) => p as Map<String, dynamic>)
-                .toList() ??
-            [];
+        final rawParts = e['parts'];
+        final parts = (rawParts is List)
+            ? rawParts.map((p) => (p is Map<String, dynamic>) ? p : <String, dynamic>{}).toList()
+            : <Map<String, dynamic>>[];
         return Message.fromInfo(info, parts);
       }).toList();
     }
@@ -409,7 +409,8 @@ class OpenCodeApi {
     final res = await _get('/provider');
     _check(res);
     final data = jsonDecode(res.body);
-    final all = data['all'] as List<dynamic>? ?? [];
+    final rawAll = data is Map ? data['all'] : null;
+    final all = (rawAll is List) ? rawAll : <dynamic>[];
     return all.map((e) => e is Map<String, dynamic> ? Provider.fromJson(e) : null).whereType<Provider>().toList();
   }
 
@@ -417,7 +418,10 @@ class OpenCodeApi {
     final res = await _get('/provider');
     _check(res);
     final data = jsonDecode(res.body);
-    final connected = (data['connected'] as List<dynamic>?)?.map((e) => e.toString()).toSet() ?? {};
+    final rawConnected = data is Map ? data['connected'] : null;
+    final connected = (rawConnected is List)
+        ? rawConnected.map((e) => e.toString()).toSet()
+        : <String>{};
     return connected;
   }
 
@@ -425,7 +429,8 @@ class OpenCodeApi {
     final res = await _get('/provider');
     _check(res);
     final data = jsonDecode(res.body);
-    final defaults = data['default'] as Map<String, dynamic>? ?? {};
+    final rawDefaults = data is Map ? data['default'] : null;
+    final defaults = (rawDefaults is Map) ? Map<String, dynamic>.from(rawDefaults) : <String, dynamic>{};
     return defaults.map((k, v) => MapEntry(k, v.toString()));
   }
 

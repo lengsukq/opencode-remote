@@ -80,11 +80,19 @@ class Project {
 
   Project({required this.id, required this.name, required this.path});
 
-  factory Project.fromJson(Map<String, dynamic> json) => Project(
-        id: json['id'] as String? ?? '',
-        name: json['name'] as String? ?? '',
-        path: (json['worktree'] ?? json['path']) as String? ?? '',
-      );
+  factory Project.fromJson(Map<String, dynamic> json) {
+    final path = (json['worktree'] ?? json['path']) as String? ?? '';
+    return Project(
+      id: json['id'] as String? ?? '',
+      name: _nameFromJson(json['name'] as String?, path),
+      path: path,
+    );
+  }
+
+  static String _nameFromJson(String? name, String path) {
+    if (name != null && name.isNotEmpty) return name;
+    return path.split(RegExp(r'[/\\]')).lastWhere((s) => s.isNotEmpty, orElse: () => '');
+  }
 }
 
 class VcsInfo {
@@ -314,9 +322,10 @@ class Provider {
   factory Provider.fromJson(Map<String, dynamic> json) {
     final id = json['id'] as String? ?? '';
     final name = json['name'] as String? ?? id;
-    final modelsList = json['models'] as List<dynamic>? ?? [];
+    final rawModels = json['models'];
+    final modelsList = rawModels is List ? rawModels : <dynamic>[];
     final models = modelsList.map((e) =>
-      ProviderModel.fromJson(e as Map<String, dynamic>, providerID: id)
+      ProviderModel.fromJson(e is Map<String, dynamic> ? e : {}, providerID: id)
     ).toList();
     return Provider(id: id, name: name, models: models);
   }
@@ -330,12 +339,16 @@ class Command {
 
   Command({required this.id, required this.title, this.description, this.arguments});
 
-  factory Command.fromJson(Map<String, dynamic> json) => Command(
-        id: json['id'] as String? ?? '',
-        title: json['title'] as String? ?? '',
-        description: json['description'] as String?,
-        arguments: (json['arguments'] as List<dynamic>?)?.map((e) => e.toString()).toList(),
-      );
+  factory Command.fromJson(Map<String, dynamic> json) {
+    final rawArgs = json['arguments'];
+    final arguments = rawArgs is List ? rawArgs.map((e) => e.toString()).toList() : null;
+    return Command(
+      id: json['id'] as String? ?? '',
+      title: json['title'] as String? ?? '',
+      description: json['description'] as String?,
+      arguments: arguments,
+    );
+  }
 }
 
 class DiffEntry {
@@ -346,11 +359,12 @@ class DiffEntry {
   DiffEntry({required this.filePath, required this.status, required this.hunks});
 
   factory DiffEntry.fromJson(Map<String, dynamic> json) {
-    final hunksList = (json['hunks'] as List<dynamic>?) ?? [];
+    final rawHunks = json['hunks'];
+    final hunksList = rawHunks is List ? rawHunks : <dynamic>[];
     return DiffEntry(
       filePath: json['filePath'] as String? ?? json['path'] as String? ?? '',
       status: json['status'] as String? ?? 'modified',
-      hunks: hunksList.map((e) => DiffHunk.fromJson(e as Map<String, dynamic>)).toList(),
+      hunks: hunksList.map((e) => DiffHunk.fromJson(e is Map<String, dynamic> ? e : {})).toList(),
     );
   }
 }
@@ -383,12 +397,13 @@ class SearchMatch {
   });
 
   factory SearchMatch.fromJson(Map<String, dynamic> json) {
-    final subs = (json['submatches'] as List<dynamic>?) ?? [];
+    final rawSubs = json['submatches'];
+    final subs = rawSubs is List ? rawSubs : <dynamic>[];
     return SearchMatch(
       path: json['path'] as String? ?? '',
       lineNumber: json['line_number'] as int? ?? 0,
       lines: json['lines'] as String? ?? '',
-      submatches: subs.map((e) => SearchSubmatch.fromJson(e as Map<String, dynamic>)).toList(),
+      submatches: subs.map((e) => SearchSubmatch.fromJson(e is Map<String, dynamic> ? e : {})).toList(),
     );
   }
 }
@@ -569,10 +584,12 @@ class ProviderDefaults {
   ProviderDefaults({required this.providers, required this.defaultModels});
 
   factory ProviderDefaults.fromJson(Map<String, dynamic> json) {
-    final providersList = json['providers'] as List<dynamic>? ?? [];
-    final defaults = json['default'] as Map<String, dynamic>? ?? {};
+    final rawProviders = json['providers'];
+    final providersList = rawProviders is List ? rawProviders : <dynamic>[];
+    final rawDefaults = json['default'];
+    final defaults = rawDefaults is Map ? Map<String, dynamic>.from(rawDefaults) : <String, dynamic>{};
     return ProviderDefaults(
-      providers: providersList.map((e) => Provider.fromJson(e as Map<String, dynamic>)).toList(),
+      providers: providersList.map((e) => Provider.fromJson(e is Map<String, dynamic> ? e : {})).toList(),
       defaultModels: defaults.map((k, v) => MapEntry(k, v.toString())),
     );
   }
@@ -596,7 +613,8 @@ class ToolIDs {
   ToolIDs({required this.ids});
 
   factory ToolIDs.fromJson(Map<String, dynamic> json) {
-    final list = json['ids'] as List<dynamic>? ?? [];
+    final rawIDs = json['ids'];
+    final list = rawIDs is List ? rawIDs : <dynamic>[];
     return ToolIDs(ids: list.map((e) => e.toString()).toList());
   }
 }
@@ -609,10 +627,12 @@ class SessionMessageResponse {
 
   factory SessionMessageResponse.fromJson(Map<String, dynamic> json) {
     final infoMap = json['info'] as Map<String, dynamic>? ?? {};
-    final partsList = (json['parts'] as List<dynamic>?) ?? [];
-    final parts = partsList.map((p) => Part.fromJson(p as Map<String, dynamic>)).toList();
+    final rawParts = json['parts'];
+    final partsList = (rawParts is List) ? rawParts : <dynamic>[];
+    final maps = partsList.map((p) => p is Map<String, dynamic> ? p : <String, dynamic>{}).toList();
+    final parts = maps.map((m) => Part.fromJson(m)).toList();
     return SessionMessageResponse(
-      info: Message.fromInfo(infoMap, partsList.map((p) => p as Map<String, dynamic>).toList()),
+      info: Message.fromInfo(infoMap, maps),
       parts: parts,
     );
   }

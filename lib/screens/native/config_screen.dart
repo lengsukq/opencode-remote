@@ -40,15 +40,15 @@ class _ConfigScreenState extends State<ConfigScreen> {
       final mcpRaw = await _safeCall(() => widget.api.getMcpStatus());
       final authRaw = await _safeCall(() => widget.api.getProviderAuth());
       setState(() {
-        _config = config as Config?;
-        _configProviders = configProviders as Map<String, dynamic>?;
-        _lsp = (lspRaw as List<dynamic>?)?.map((e) => LSPStatus.fromJson(e as Map<String, dynamic>)).toList() ?? [];
-        _formatters = (formattersRaw as List<dynamic>?)?.map((e) => FormatterStatus.fromJson(e as Map<String, dynamic>)).toList() ?? [];
-        final mcpData = mcpRaw as Map<String, dynamic>? ?? {};
-        _mcp = mcpData.map((k, v) => MapEntry(k, MCPStatus.fromJson(v as Map<String, dynamic>)));
-        final authData = authRaw as Map<String, dynamic>? ?? {};
+        _config = config is Config ? config : null;
+        _configProviders = configProviders is Map<String, dynamic> ? configProviders : null;
+        _lsp = (lspRaw is List ? lspRaw.map((e) => LSPStatus.fromJson(e is Map<String, dynamic> ? e : {})).toList() : []);
+        _formatters = (formattersRaw is List ? formattersRaw.map((e) => FormatterStatus.fromJson(e is Map<String, dynamic> ? e : {})).toList() : []);
+        final mcpData = mcpRaw is Map<String, dynamic> ? mcpRaw : <String, dynamic>{};
+        _mcp = mcpData.map((k, v) => MapEntry(k, MCPStatus.fromJson(v is Map<String, dynamic> ? v : {})));
+        final authData = authRaw is Map<String, dynamic> ? authRaw : <String, dynamic>{};
         _authMethods = authData.map((k, v) {
-          final list = (v as List<dynamic>?)?.map((e) => ProviderAuthMethod.fromJson(e as Map<String, dynamic>)).toList() ?? [];
+          final list = v is List ? v.map((e) => ProviderAuthMethod.fromJson(e is Map<String, dynamic> ? e : {})).toList() : <ProviderAuthMethod>[];
           return MapEntry(k, list);
         });
         _loading = false;
@@ -228,8 +228,10 @@ class _ConfigScreenState extends State<ConfigScreen> {
 
   Widget _providersCard() {
     if (_configProviders == null) return _card('加载失败', Icons.error, AppColors.danger);
-    final providers = _configProviders!['providers'] as List<dynamic>? ?? [];
-    final defaults = _configProviders!['default'] as Map<String, dynamic>? ?? {};
+    final rawProviders = _configProviders!['providers'];
+    final rawDefaults = _configProviders!['default'];
+    final providers = rawProviders is List ? rawProviders : <dynamic>[];
+    final defaults = rawDefaults is Map ? Map<String, dynamic>.from(rawDefaults) : <String, dynamic>{};
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -252,7 +254,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
             Text('提供商 (${providers.length}):', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
             const SizedBox(height: 4),
             ...providers.take(10).map((p) {
-              final pMap = p as Map<String, dynamic>;
+              final pMap = p is Map<String, dynamic> ? p : <String, dynamic>{};
               return Padding(
                 padding: const EdgeInsets.only(bottom: 2),
                 child: Text('  ${pMap['id'] ?? pMap['name'] ?? '?'}', style: TextStyle(color: AppColors.textPrimary, fontSize: 12, fontFamily: 'monospace')),
