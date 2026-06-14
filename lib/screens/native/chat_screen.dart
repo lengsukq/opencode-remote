@@ -42,6 +42,7 @@ class _ChatScreenState extends State<ChatScreen> {
   List<Command> _filteredCommands = [];
   EventService? _eventService;
   StreamSubscription<ServerEvent>? _eventSub;
+  final Map<String, String> _streamingDeltas = {};
 
   @override
   void initState() {
@@ -86,12 +87,79 @@ class _ChatScreenState extends State<ChatScreen> {
     _eventService!.connect();
     _eventSub = _eventService!.events.listen(
       (event) {
-        if (event.type == EventType.messageNew || event.type == EventType.sessionUpdated) {
-          _refreshMessages();
+        switch (event.type) {
+          case EventType.messageNew:
+          case EventType.sessionUpdated:
+            _streamingDeltas.clear();
+            _refreshMessages();
+          case EventType.messagePartDelta:
+            _handleDelta(event.data);
+          case EventType.permissionAsked:
+            _handlePermission(event.data);
+          case EventType.questionAsked:
+            _handleQuestion(event.data);
+          default:
+            break;
         }
       },
       onError: (e) => debugPrint('ChatScreen event error: $e'),
       cancelOnError: false,
+    );
+  }
+
+  void _handleDelta(Map<String, dynamic> data) {
+    final props = (data['payload'] is Map ? data['payload']['properties'] : data['properties']) as Map<String, dynamic>?;
+    if (props == null) return;
+    final partID = props['partID'] as String?;
+    final field = props['field'] as String?;
+    final delta = props['delta'] as String?;
+    if (partID == null || field != 'text' || delta == null) return;
+    final key = partID;
+    _streamingDeltas[key] = (_streamingDeltas[key] ?? '') + delta;
+    if (mounted) setState(() {});
+  }
+
+  void _handlePermission(Map<String, dynamic> data) {
+    if (!mounted) return;
+    final props = (data['payload'] is Map ? data['payload']['properties'] : data['properties']) as Map<String, dynamic>?;
+    if (props == null) return;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: Text('权限请求', style: TextStyle(color: AppColors.textPrimary)),
+        content: Text('${props['message'] ?? '允许此操作？'}', style: TextStyle(color: AppColors.textSecondary)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('拒绝', style: TextStyle(color: AppColors.danger))),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('允许'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _handleQuestion(Map<String, dynamic> data) {
+    if (!mounted) return;
+    final props = (data['payload'] is Map ? data['payload']['properties'] : data['properties']) as Map<String, dynamic>?;
+    if (props == null) return;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: Text('问题', style: TextStyle(color: AppColors.textPrimary)),
+        content: Text('${props['message'] ?? props['question'] ?? ''}', style: TextStyle(color: AppColors.textSecondary)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('取消', style: TextStyle(color: AppColors.textSecondary))),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('确定'),
+          ),
+        ],
+      ),
     );
   }
 
