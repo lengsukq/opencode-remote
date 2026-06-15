@@ -1,3 +1,0 @@
-{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Lint rules, naming conventions, testing standards"}
-{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Dart null safety conventions"}
-{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Widget decomposition patterns"}

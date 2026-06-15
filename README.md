@@ -18,11 +18,32 @@
 |---|---|---|---|
 | iOS 毛玻璃风格 | 服务器状态 + 最近会话 | 列表 + 新建/删除 | 消息发送 |
 
+## ADB 无线连接（Android 11+）
+
+1. 手机开启「开发者选项」→「无线调试」，进入配对界面
+2. 电脑端配对（仅首次）：
+   ```bash
+   adb pair <ip>:<port>   # 输入配对码
+   ```
+3. 连接设备：
+   ```bash
+   adb connect <ip>:<port>
+   ```
+
+连接成功后即可 `flutter run` 部署到手机，无需 USB 线。
+
 ## 快速开始
 
-1. 在电脑上启动 opencode 服务器：
+1. 在电脑上启动 opencode：
+
+   Web 模式（无密码，自动打开浏览器）：
    ```bash
-   opencode serve [--port 4096]
+   opencode web
+   ```
+
+   或 Server 模式（无 IP 限制，手机可访问）：
+   ```bash
+   opencode serve --hostname 0.0.0.0
    ```
 
 2. 手机和电脑在同一局域网，打开 App，点击 **+** 添加服务器
