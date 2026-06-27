@@ -12,8 +12,9 @@ import '../../widgets/app_states.dart';
 class ConfigScreen extends StatefulWidget {
   final ServerEntry entry;
   final OpenCodeApi api;
+  final Project? activeProject;
 
-  const ConfigScreen({super.key, required this.entry, required this.api});
+  const ConfigScreen({super.key, required this.entry, required this.api, this.activeProject});
 
   @override
   State<ConfigScreen> createState() => _ConfigScreenState();

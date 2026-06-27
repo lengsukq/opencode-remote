@@ -10,8 +10,9 @@ import '../../widgets/app_states.dart';
 class FileBrowserScreen extends StatefulWidget {
   final ServerEntry entry;
   final OpenCodeApi api;
+  final Project? activeProject;
 
-  const FileBrowserScreen({super.key, required this.entry, required this.api});
+  const FileBrowserScreen({super.key, required this.entry, required this.api, this.activeProject});
 
   @override
   State<FileBrowserScreen> createState() => _FileBrowserScreenState();
@@ -68,6 +69,14 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
     super.dispose();
   }
 
+  @override
+  void didUpdateWidget(FileBrowserScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.activeProject?.id != widget.activeProject?.id) {
+      _loadRoot();
+    }
+  }
+
   List<_TreeNode> _flatten(List<_TreeNode> nodes) {
     final result = <_TreeNode>[];
     for (final n in nodes) {
@@ -84,16 +93,17 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
   Future<void> _loadRoot() async {
     setState(() => _loading = true);
     try {
-      final files = await widget.api.listFiles('');
+      final initialPath = widget.activeProject?.path ?? '';
+      final files = await widget.api.listFiles(initialPath);
       final rootNode = _TreeNode(
-        node: FileNode(name: '/', path: '', type: 'directory'),
+        node: FileNode(name: initialPath.isNotEmpty ? initialPath.split('/').last : '/', path: initialPath, type: 'directory'),
         depth: -1,
         expanded: true,
       );
       rootNode.setChildren(files.where((f) => f.type == 'directory').map((f) => _TreeNode(node: f, depth: 0)).toList()
         ..addAll(files.where((f) => f.type != 'directory').map((f) => _TreeNode(node: f, depth: 0))));
       _roots = [rootNode];
-      _currentPath = '';
+      _currentPath = initialPath;
       _loading = false;
       _error = null;
     } catch (e) {
@@ -336,7 +346,9 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
               onPressed: () {},
             )
           : null,
-      title: Text(_currentPath.isEmpty ? S.fileBrowser : _currentPath.split('/').last),
+      title: Text(_currentPath.isEmpty
+          ? (widget.activeProject != null ? '${widget.activeProject!.name} / ${S.fileBrowser}' : S.fileBrowser)
+          : _currentPath.split('/').last),
       actions: [
         IconButton(
           icon: const Icon(Icons.refresh, color: AppColors.textSecondary),
@@ -494,7 +506,7 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
 
   Widget _emptySearch() {
     return Center(
-      child: Text('输入搜索关键词', style: TextStyle(color: AppColors.textTertiary, fontSize: 14)),
+      child: Text(S.searchKeyword, style: TextStyle(color: AppColors.textTertiary, fontSize: 14)),
     );
   }
 

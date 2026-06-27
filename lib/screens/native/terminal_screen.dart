@@ -6,8 +6,9 @@ import '../../services/opencode_api.dart';
 class TerminalScreen extends StatefulWidget {
   final ServerEntry entry;
   final OpenCodeApi api;
+  final Project? activeProject;
 
-  const TerminalScreen({super.key, required this.entry, required this.api});
+  const TerminalScreen({super.key, required this.entry, required this.api, this.activeProject});
 
   @override
   State<TerminalScreen> createState() => _TerminalScreenState();

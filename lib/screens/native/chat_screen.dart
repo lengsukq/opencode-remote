@@ -214,6 +214,27 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+  String _getProjectName() {
+    final dir = widget.api.directory;
+    if (dir == null || dir.isEmpty) return '';
+    return dir.split(RegExp(r'[/\\]')).lastWhere((s) => s.isNotEmpty, orElse: () => '');
+  }
+
+  Widget _buildTitle() {
+    final title = widget.session.title.isNotEmpty ? widget.session.title : 'Session';
+    final projectName = _getProjectName();
+    if (projectName.isEmpty) {
+      return Text(title);
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: const TextStyle(fontSize: 16)),
+        Text(projectName, style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+      ],
+    );
+  }
+
   // --- Data loading ---
 
   Future<void> _load() async {
@@ -813,7 +834,7 @@ class _ChatScreenState extends State<ChatScreen> {
         child: Scaffold(
           backgroundColor: AppColors.background,
           appBar: AppBar(
-            title: Text(widget.session.title.isNotEmpty ? widget.session.title : 'Session'),
+            title: _buildTitle(),
             actions: [
               IconButton(icon: const Icon(Icons.terminal, color: AppColors.textSecondary), tooltip: 'Shell Command', onPressed: _runShell),
               IconButton(icon: const Icon(Icons.refresh, color: AppColors.textSecondary), onPressed: _load),

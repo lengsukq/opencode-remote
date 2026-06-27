@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models.dart';
+import '../../strings.dart';
 import '../../theme.dart';
 import '../../services/storage_service.dart';
 import '../../services/opencode_api.dart';
@@ -19,8 +20,9 @@ import 'chat_screen.dart';
 class DashboardScreen extends StatefulWidget {
   final ServerEntry entry;
   final OpenCodeApi? api;
+  final Project? activeProject;
 
-  const DashboardScreen({super.key, required this.entry, this.api});
+  const DashboardScreen({super.key, required this.entry, this.api, this.activeProject});
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -42,6 +44,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _load();
   }
 
+  @override
+  void didUpdateWidget(DashboardScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.activeProject?.id != widget.activeProject?.id) {
+      _load();
+    }
+  }
+
   void _initApi() {
     if (widget.api != null) {
       _api = widget.api!;
@@ -60,9 +70,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final health = await _api.getHealth();
       final sessions = await _api.getSessions();
       sessions.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+      List<Session> filtered;
+      if (widget.activeProject != null) {
+        final projDir = widget.activeProject!.path;
+        filtered = sessions
+            .where((s) => s.directory == projDir || s.projectId == widget.activeProject!.id)
+            .take(5)
+            .toList();
+      } else {
+        filtered = sessions.take(5).toList();
+      }
       setState(() {
         _health = health;
-        _recentSessions = sessions.take(5).toList();
+        _recentSessions = filtered;
         _loading = false;
         _error = null;
       });
@@ -149,7 +169,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Dashboard'),
+        title: Text(widget.activeProject != null ? 'Dashboard - ${widget.activeProject!.name}' : S.dashboard),
         actions: [
           IconButton(
             icon: const Icon(Icons.swap_horiz, color: AppColors.textSecondary),
@@ -223,6 +243,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       padding: const EdgeInsets.all(16),
       children: [
         _StatusCard(health: _health, url: widget.entry.url),
+        if (widget.activeProject != null) ...[
+          const SizedBox(height: 16),
+          _buildProjectContextCard(),
+        ],
         const SizedBox(height: 20),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -230,22 +254,70 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Text('最近会话', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
             TextButton(
               onPressed: () => Navigator.push(context, MaterialPageRoute(
-                builder: (_) => SessionListScreen(entry: widget.entry, api: _api),
+                builder: (_) => SessionListScreen(entry: widget.entry, api: _api, activeProject: widget.activeProject),
               )),
               child: const Text('查看全部', style: TextStyle(color: AppColors.primary, fontSize: 12)),
             ),
           ],
         ),
         const SizedBox(height: 8),
-        ..._recentSessions.map((s) => _SessionCard(session: s, api: _api, entry: widget.entry)),
+        ..._recentSessions.map((s) => _SessionCard(session: s, api: _api, entry: widget.entry, activeProject: widget.activeProject)),
         if (_recentSessions.isEmpty)
           Padding(
             padding: const EdgeInsets.all(20),
-            child: Text('暂无会话', style: TextStyle(color: AppColors.textTertiary, fontSize: 13)),
+            child: Text(
+              widget.activeProject != null ? "'${widget.activeProject!.name}' ${S.noSessions}" : S.noSessions,
+              style: TextStyle(color: AppColors.textTertiary, fontSize: 13),
+            ),
           ),
         const SizedBox(height: 20),
-        _QuickActions(api: _api, entry: widget.entry),
+        _QuickActions(api: _api, entry: widget.entry, activeProject: widget.activeProject),
       ],
+    );
+  }
+
+  Widget _buildProjectContextCard() {
+    final project = widget.activeProject!;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppColors.kDefaultBorderRadius),
+        border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(color: AppColors.shadow, blurRadius: 10, offset: const Offset(0, 2)),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppColors.primaryLight,
+              borderRadius: BorderRadius.circular(AppColors.kCardBorderRadius),
+            ),
+            child: const Icon(Icons.folder, color: AppColors.primary, size: 22),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  project.name,
+                  style: const TextStyle(color: AppColors.textPrimary, fontSize: 15, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  project.path,
+                  style: TextStyle(color: AppColors.textTertiary, fontSize: 11),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -325,8 +397,9 @@ class _SessionCard extends StatelessWidget {
   final Session session;
   final OpenCodeApi api;
   final ServerEntry entry;
+  final Project? activeProject;
 
-  const _SessionCard({required this.session, required this.api, required this.entry});
+  const _SessionCard({required this.session, required this.api, required this.entry, this.activeProject});
 
   @override
   Widget build(BuildContext context) {
@@ -380,8 +453,9 @@ class _SessionCard extends StatelessWidget {
 class _QuickActions extends StatelessWidget {
   final OpenCodeApi api;
   final ServerEntry entry;
+  final Project? activeProject;
 
-  const _QuickActions({required this.api, required this.entry});
+  const _QuickActions({required this.api, required this.entry, this.activeProject});
 
   @override
   Widget build(BuildContext context) {
@@ -393,11 +467,11 @@ class _QuickActions extends StatelessWidget {
         Row(
           children: [
             Expanded(child: _ActionButton(icon: Icons.add, label: '新建会话', color: AppColors.primary, onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => SessionListScreen(entry: entry, api: api)));
+              Navigator.push(context, MaterialPageRoute(builder: (_) => SessionListScreen(entry: entry, api: api, activeProject: activeProject)));
             })),
             const SizedBox(width: 8),
             Expanded(child: _ActionButton(icon: Icons.folder, label: '文件浏览', color: AppColors.success, onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => FileBrowserScreen(entry: entry, api: api)));
+              Navigator.push(context, MaterialPageRoute(builder: (_) => FileBrowserScreen(entry: entry, api: api, activeProject: activeProject)));
             })),
             const SizedBox(width: 8),
             Expanded(child: _ActionButton(icon: Icons.swap_horiz, label: '切换项目', color: AppColors.warning, onTap: () {
@@ -444,4 +518,3 @@ class _ActionButton extends StatelessWidget {
     );
   }
 }
-

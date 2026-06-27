@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models.dart';
+import '../../strings.dart';
 import '../../theme.dart';
 import '../../services/opencode_api.dart';
 import '../../widgets/diff_view.dart';
@@ -13,8 +14,9 @@ import '../../widgets/app_states.dart';
 class SessionListScreen extends StatefulWidget {
   final ServerEntry entry;
   final OpenCodeApi api;
+  final Project? activeProject;
 
-  const SessionListScreen({super.key, required this.entry, required this.api});
+  const SessionListScreen({super.key, required this.entry, required this.api, this.activeProject});
 
   @override
   State<SessionListScreen> createState() => _SessionListScreenState();
@@ -45,6 +47,14 @@ class _SessionListScreenState extends State<SessionListScreen> {
   void dispose() {
     _searchCtrl.dispose();
     super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(SessionListScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.activeProject?.id != widget.activeProject?.id) {
+      _load();
+    }
   }
 
   Future<void> _load() async {
@@ -175,7 +185,7 @@ class _SessionListScreenState extends State<SessionListScreen> {
               else
                 ...children.map((c) => ListTile(
                   title: Text(c.title.isNotEmpty ? c.title : '未命名', style: TextStyle(color: AppColors.textPrimary, fontSize: 13)),
-                  subtitle: Text('${c.status}', style: TextStyle(color: AppColors.textTertiary, fontSize: 11)),
+                  subtitle: Text(c.status, style: TextStyle(color: AppColors.textTertiary, fontSize: 11)),
                 )),
             ],
           ),
@@ -395,7 +405,7 @@ class _SessionListScreenState extends State<SessionListScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('会话列表'),
+        title: Text(widget.activeProject != null ? '${widget.activeProject!.name} / 会话' : '会话列表'),
         actions: [
           IconButton(
             icon: Icon(_searching ? Icons.search_off : Icons.search, color: AppColors.textSecondary),
@@ -454,7 +464,19 @@ class _SessionListScreenState extends State<SessionListScreen> {
                   : _error != null
                       ? Center(child: Text(_error!, style: TextStyle(color: AppColors.textSecondary)))
                       : displaySessions.isEmpty
-                          ? Center(child: Text(_searching ? '无匹配会话' : '暂无会话', style: TextStyle(color: AppColors.textTertiary)))
+                          ? Center(
+                              child: Padding(
+                                padding: const EdgeInsets.all(20),
+                                child: Text(
+                                  _searching
+                                      ? S.noMatchingSessions
+                                      : widget.activeProject != null
+                                          ? "'${widget.activeProject!.name}' 中${S.noSessions}"
+                                          : S.noSessions,
+                                  style: TextStyle(color: AppColors.textTertiary),
+                                ),
+                              ),
+                            )
                           : ListView.builder(
                               padding: const EdgeInsets.all(12),
                               itemCount: displaySessions.length,

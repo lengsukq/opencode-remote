@@ -1,0 +1,10 @@
+{
+  "created": "2026-06-27T20:08:00+08:00",
+  "status": "completed",
+  "title": "Spec Compliance Review",
+  "scope": "lib/",
+  "branch": null,
+  "base_branch": null,
+  "tags": ["spec", "compliance", "refactor"],
+  "estimated_days": 5
+}

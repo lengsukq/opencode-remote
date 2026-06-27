@@ -113,13 +113,28 @@ class S {
 
   // === Project ===
   static const project = '项目';
+  static const addProject = '添加项目';
   static const currentProject = '当前项目';
   static const allProjects = '所有项目';
   static const noProjects = '暂无项目';
   static const path = '路径';
+  static const projectPathHint = '输入项目目录路径';
+  static const add = '添加';
+  static const pathNotEmpty = '路径不能为空';
+  static const addFailed = '添加失败';
   static const id = 'ID';
   static const switchToProject = '切换到该项目';
   static const switchedTo = '已切换到:';
+  static const allSessions = '全部会话';
+  static const noActiveProject = '选择一个项目开始';
+  static const closeProject = '关闭项目';
+  static const confirmCloseProject = '确定关闭该项目？';
+  static const projectAdded = '项目已添加';
+  static const projectRemoved = '项目已关闭';
+  static const searchProjects = '搜索项目...';
+  static const workspaces = '分支';
+  static const switchBranch = '切换分支';
+  static const noWorkspaces = '无分支信息';
 
   // === File Browser ===
   static const fileBrowser = '文件浏览';

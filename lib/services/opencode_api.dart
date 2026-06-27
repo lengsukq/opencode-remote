@@ -106,6 +106,19 @@ class OpenCodeApi {
     return _safeList(jsonDecode(res.body), Project.fromJson);
   }
 
+  /// Add a project by registering its directory on the server.
+  Future<Project> addProject(String worktree) async {
+    final res = await _post('/project', body: {'worktree': worktree});
+    _check(res);
+    return Project.fromJson(_safeMap(jsonDecode(res.body)));
+  }
+
+  /// Remove (unregister) a project by its ID.
+  Future<void> removeProject(String id) async {
+    final res = await _delete('/project/$id');
+    _check(res);
+  }
+
   // --- Path & VCS ---
   Future<VcsInfo?> getVcs() async {
     final res = await _get('/vcs');

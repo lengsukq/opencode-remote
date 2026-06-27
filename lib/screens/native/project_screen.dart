@@ -6,6 +6,8 @@ import '../../widgets/app_card.dart';
 import '../../widgets/app_bottom_sheet.dart';
 import '../../widgets/app_snackbar.dart';
 import '../../widgets/app_states.dart';
+import '../../widgets/app_input_decoration.dart';
+import '../../widgets/workspace_list.dart';
 
 class ProjectScreen extends StatefulWidget {
   final ServerEntry entry;
@@ -19,15 +21,43 @@ class ProjectScreen extends StatefulWidget {
 
 class _ProjectScreenState extends State<ProjectScreen> {
   List<Project> _projects = [];
+  List<Project> _filteredProjects = [];
   Project? _current;
   VcsInfo? _vcs;
   bool _loading = true;
   String? _error;
+  final _searchCtrl = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _load();
+    _searchCtrl.addListener(_onSearchChanged);
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.removeListener(_onSearchChanged);
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged() {
+    _applyFilter();
+  }
+
+  void _applyFilter() {
+    final query = _searchCtrl.text.trim().toLowerCase();
+    setState(() {
+      if (query.isEmpty) {
+        _filteredProjects = List.from(_projects);
+      } else {
+        _filteredProjects = _projects.where((p) =>
+          p.name.toLowerCase().contains(query) ||
+          p.path.toLowerCase().contains(query)
+        ).toList();
+      }
+    });
   }
 
   Future<void> _load() async {
@@ -43,12 +73,53 @@ class _ProjectScreenState extends State<ProjectScreen> {
         _loading = false;
         _error = null;
       });
+      _applyFilter();
     } catch (e) {
       setState(() {
         _loading = false;
         _error = e.toString();
       });
     }
+  }
+
+  Future<void> _removeProject(Project project) async {
+    // Try API call; if unavailable, do local removal
+    try {
+      await widget.api.removeProject(project.id);
+    } catch (_) {
+      // removeProject not available on server; do local removal
+    }
+    setState(() {
+      _projects.removeWhere((p) => p.id == project.id);
+      _filteredProjects.removeWhere((p) => p.id == project.id);
+      if (_current?.id == project.id) {
+        _current = null;
+        widget.api.directory = null;
+      }
+    });
+  }
+
+  Future<bool> _confirmRemoveProject(Project project) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: const Text('关闭项目', style: TextStyle(color: AppColors.textPrimary)),
+        content: Text('确定关闭项目"${project.name}"？', style: TextStyle(color: AppColors.textSecondary)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('取消', style: TextStyle(color: AppColors.textSecondary)),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('关闭'),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
   }
 
   @override
@@ -68,36 +139,154 @@ class _ProjectScreenState extends State<ProjectScreen> {
           ? const AppLoadingIndicator()
           : _error != null
               ? Center(child: Text(_error!, style: TextStyle(color: AppColors.textSecondary)))
-              : ListView(
-                  padding: const EdgeInsets.all(16),
+              : Column(
                   children: [
-                    if (_current != null) ...[
-                      Text('当前项目', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-                      const SizedBox(height: 8),
-                      _ProjectCard(
-                        project: _current!,
-                        isCurrent: true,
-                        vcs: _vcs,
-                      ),
-                      const SizedBox(height: 24),
-                    ],
-                    Text('所有项目', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-                    const SizedBox(height: 8),
-                    ..._projects.map((p) => Padding(
-                      padding: const EdgeInsets.only(bottom: 6),
-                      child: _ProjectCard(
-                        project: p,
-                        isCurrent: _current?.id == p.id,
-                        onTap: () => _showProjectDetail(p),
-                      ),
-                    )),
-                    if (_projects.isEmpty)
-                      Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: Text('暂无项目', style: TextStyle(color: AppColors.textTertiary)),
-                      ),
+                    _buildSearchBar(),
+                    Expanded(child: _buildProjectList()),
                   ],
                 ),
+    );
+  }
+
+  Widget _buildSearchBar() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      color: AppColors.background,
+      child: TextField(
+        controller: _searchCtrl,
+        style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
+        decoration: AppInputDecoration.search(
+          hintText: '搜索项目...',
+          prefixIcon: const Icon(Icons.search, color: AppColors.textSecondary, size: 20),
+          suffixIcon: _searchCtrl.text.isNotEmpty
+              ? IconButton(
+                  icon: Icon(Icons.clear, color: AppColors.textSecondary, size: 18),
+                  onPressed: () {
+                    _searchCtrl.clear();
+                  },
+                )
+              : null,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProjectList() {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        if (_current != null) ...[
+          Text('当前项目', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+          const SizedBox(height: 8),
+          _ProjectCard(
+            project: _current!,
+            isCurrent: true,
+            vcs: _vcs,
+            onLongPress: () => _handleLongPress(_current!),
+          ),
+          const SizedBox(height: 24),
+        ],
+        Text('所有项目', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+        const SizedBox(height: 8),
+        ..._buildProjectCards(),
+        if (_filteredProjects.isEmpty && _searchCtrl.text.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Text('无匹配项目', style: TextStyle(color: AppColors.textTertiary)),
+          ),
+        if (_projects.isEmpty)
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Text('暂无项目', style: TextStyle(color: AppColors.textTertiary)),
+          ),
+        if (_vcs != null) ...[
+          const SizedBox(height: 24),
+          WorkspaceList(api: widget.api, currentBranch: _vcs!.branch),
+        ],
+      ],
+    );
+  }
+
+  List<Widget> _buildProjectCards() {
+    final items = _filteredProjects
+        .where((p) => _current?.id != p.id)
+        .toList();
+    if (items.length < 2) {
+      return items.map((p) => Padding(
+        padding: const EdgeInsets.only(bottom: 6),
+        child: _ProjectCard(
+          key: ValueKey(p.id),
+          project: p,
+          isCurrent: false,
+          onTap: () => _showProjectDetail(p),
+          onLongPress: () => _handleLongPress(p),
+        ),
+      )).toList();
+    }
+    // Use ReorderableListView for 2+ non-current projects
+    return [
+      ReorderableListView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        buildDefaultDragHandles: false,
+        itemCount: items.length,
+        itemBuilder: (ctx, i) {
+          final p = items[i];
+          return _ProjectCard(
+            key: ValueKey(p.id),
+            project: p,
+            isCurrent: false,
+            onTap: () => _showProjectDetail(p),
+            onLongPress: () => _handleLongPress(p),
+            dragIndex: i,
+          );
+        },
+        onReorderItem: (oldIndex, newIndex) {
+          setState(() {
+            if (oldIndex < newIndex) newIndex--;
+            final item = items.removeAt(oldIndex);
+            items.insert(newIndex, item);
+            // Update the full _projects list preserving order
+            final nonCurrent = _projects
+                .where((p) => _current?.id != p.id)
+                .toList();
+            final updatedProjects = _projects
+                .where((p) => _current?.id == p.id)
+                .toList();
+            updatedProjects.addAll(nonCurrent);
+            _projects = updatedProjects;
+            _applyFilter();
+          });
+        },
+      ),
+    ];
+  }
+
+  void _handleLongPress(Project project) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: Text('项目: ${project.name}', style: const TextStyle(color: AppColors.textPrimary, fontSize: 16)),
+        content: Text('关闭项目将从列表中移除', style: TextStyle(color: AppColors.textSecondary)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消', style: TextStyle(color: AppColors.textSecondary)),
+          ),
+          FilledButton.icon(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
+            icon: const Icon(Icons.close, size: 16),
+            label: const Text('关闭项目'),
+            onPressed: () {
+              Navigator.pop(ctx);
+              _confirmRemoveProject(project).then((confirmed) {
+                if (confirmed) _removeProject(project);
+              });
+            },
+          ),
+        ],
+      ),
     );
   }
 
@@ -160,36 +349,53 @@ class _ProjectCard extends StatelessWidget {
   final bool isCurrent;
   final VcsInfo? vcs;
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
+  final int? dragIndex;
 
   const _ProjectCard({
+    super.key,
     required this.project,
     required this.isCurrent,
     this.vcs,
     this.onTap,
+    this.onLongPress,
+    this.dragIndex,
   });
 
   @override
   Widget build(BuildContext context) {
-    return AppCard(
+    final iconWidget = Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: isCurrent ? AppColors.primaryLight : AppColors.surfaceAlt,
+        borderRadius: BorderRadius.circular(AppColors.kCardBorderRadius),
+      ),
+      child: Icon(
+        isCurrent ? Icons.folder : Icons.folder_outlined,
+        color: isCurrent ? AppColors.primary : AppColors.textSecondary,
+        size: 20,
+      ),
+    );
+
+    final card = AppCard(
       borderColor: isCurrent ? AppColors.primary : null,
       boxShadow: [
         BoxShadow(color: AppColors.shadow, blurRadius: 4, offset: const Offset(0, 1)),
       ],
-      onTap: onTap,
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: isCurrent ? AppColors.primaryLight : AppColors.surfaceAlt,
-              borderRadius: BorderRadius.circular(AppColors.kCardBorderRadius),
+          if (dragIndex != null)
+            ReorderableDragStartListener(
+              index: dragIndex!,
+              child: Padding(
+                padding: const EdgeInsets.only(right: 4),
+                child: Icon(Icons.drag_handle, color: AppColors.textTertiary, size: 20),
+              ),
             ),
-            child: Icon(
-              isCurrent ? Icons.folder : Icons.folder_outlined,
-              color: isCurrent ? AppColors.primary : AppColors.textSecondary,
-              size: 20,
-            ),
-          ),
+          if (dragIndex != null)
+            ReorderableDragStartListener(index: dragIndex!, child: iconWidget)
+          else
+            iconWidget,
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -246,6 +452,12 @@ class _ProjectCard extends StatelessWidget {
             Icon(Icons.chevron_right, color: AppColors.textTertiary, size: 18),
         ],
       ),
+    );
+
+    return GestureDetector(
+      onTap: onTap,
+      onLongPress: onLongPress,
+      child: card,
     );
   }
 }

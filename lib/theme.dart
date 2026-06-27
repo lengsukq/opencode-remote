@@ -42,6 +42,10 @@ class AppColors {
   static const EdgeInsets kPaddingCard = EdgeInsets.all(14);
   static const EdgeInsets kPaddingInput = EdgeInsets.symmetric(horizontal: 16, vertical: 10);
 
+  // Project avatar colors
+  static const avatarBg = Color(0xFFE8E8ED);
+  static const avatarText = Color(0xFF636366);
+
   // Terminal colors
   static const terminalBg = Color(0xFF1A1A1A);
   static const terminalText = Color(0xFFD4D4D4);
@@ -75,6 +79,10 @@ class DarkColors {
 
   static const shadow = Color(0x33000000);
   static const shadowStrong = Color(0x4C000000);
+
+  // Project avatar colors
+  static const avatarBg = Color(0xFF3A3A3C);
+  static const avatarText = Color(0xFFA1A1A6);
 
   // Terminal colors
   static const terminalBg = Color(0xFF1A1A1A);
