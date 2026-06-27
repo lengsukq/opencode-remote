@@ -2,16 +2,59 @@
 
 ## Patterns Used
 
-### Private Sub-Widgets
-Inline helper widgets defined as private classes in the same file:
+### Extracted Widget Files
+Once a screen file exceeds 700 lines, extract UI components into separate widget files:
+- `ChatInputBar`, `AgentBar`, `CommandSuggestions`, `AttachmentPreview` in `lib/widgets/`
+- Screen-specific extracted widgets stay in `lib/screens/native/` (e.g., `MessageBubble`, `ToolPartWidget`)
+- Extracted widgets are **public classes** that receive all dependencies via constructor parameters
+
+### Private Sub-Widgets (Inline)
+Use inline private classes for small widgets (≤ 50 lines) used by only one screen:
 - `_ServerCard` in `launcher_screen.dart`
 - `_EditDialog` in `webview_screen.dart`
-- `_inputDec` as a function returning `InputDecoration`
+
+### Extraction Threshold
+| Condition | Action |
+|-----------|--------|
+| Private widget ≤ 50 lines, used by 1 screen | Keep inline |
+| Private widget > 50 lines | Extract to own file |
+| Pattern appears in 2+ screens | Extract to `lib/widgets/` |
+
+### Clean Code Widget Pattern
+```dart
+// GOOD: extracted widget with explicit constructor params
+class ChatInputBar extends StatelessWidget {
+  final TextEditingController controller;
+  final bool shellMode;
+  final bool sending;
+  final VoidCallback onSend;
+
+  const ChatInputBar({
+    super.key,
+    required this.controller,
+    required this.shellMode,
+    required this.sending,
+    required this.onSend,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // ... pure presentation logic only
+  }
+}
+```
+
+### What NOT to put in extracted widgets
+- ❌ API calls (`widget.api.xxx()`)
+- ❌ `setState()` — use callbacks instead
+- ❌ StatefulWidget unless absolutely needed for local UI state (e.g., `_expanded` toggle)
+- ❌ Business logic (data transformation, validation)
 
 ### StatefulWidget vs StatelessWidget
 - `StatefulWidget` for screens with mutable state
 - `StatelessWidget` for pure-presentation widgets
 - Never mix business logic into widget build methods
+- Prefer `StatelessWidget` + callbacks over `StatefulWidget` whenever possible
 
 ## Theming
 

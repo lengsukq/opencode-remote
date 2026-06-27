@@ -23,6 +23,7 @@ These guides help you **ask the right questions before coding**.
 |-------|---------|-------------|
 | [Code Reuse Thinking Guide](./code-reuse-thinking-guide.md) | Identify patterns and reduce duplication | When you notice repeated patterns |
 | [Cross-Layer Thinking Guide](./cross-layer-thinking-guide.md) | Think through data flow across layers | Features spanning multiple layers |
+| [Clean Code Patterns Guide](./clean-code-patterns.md) | File structure, method length, error handling patterns | **Every coding session** — before writing code |
 
 ---
 
@@ -46,6 +47,17 @@ These guides help you **ask the right questions before coding**.
 - [ ] **You're creating a new utility/helper function** ← Search first!
 
 → Read [Code Reuse Thinking Guide](./code-reuse-thinking-guide.md)
+
+### Before Every Coding Session
+
+- [ ] File will be ≤ 700 lines?
+- [ ] Each method ≤ 30 lines?
+- [ ] No empty `catch` blocks?
+- [ ] All `setState` after `await` guarded by `mounted`?
+- [ ] All JSON `as` casts nullable (`as Type? ?? default`)?
+- [ ] `dispose()` properly cleans up?
+
+→ Read [Clean Code Patterns Guide](./clean-code-patterns.md)
 
 ---
 

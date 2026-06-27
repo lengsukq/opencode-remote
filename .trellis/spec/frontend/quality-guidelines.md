@@ -21,6 +21,47 @@
 - Single method should not exceed **30 lines** (excluding blank lines and braces)
 - Widget `build()` methods should not exceed **30 lines** — break into extracted widgets or helper methods
 - Dialog/sheet builder closures should be extracted into named methods or separate widgets
+- Async methods that exceed 30 lines should be split: data fetching vs. state assignment
+
+### Method Splitting Pattern
+
+```dart
+// BAD: 40-line method mixing fetch + state
+Future<void> _load() async {
+  setState(() => _loading = true);
+  try {
+    final msgs = await api.getMessages(id);    // 5 lines
+    final agents = await api.getAgents();       // ...mixed...
+    // ... 25 more lines of parsing + setState ...
+  } catch (e) { ... }
+}
+
+// GOOD: separated concerns
+Future<void> _load() async {                    // 10 lines
+  setState(() => _loading = true);
+  try {
+    final data = await _loadAllData();
+    if (mounted) _applyLoadedData(data);
+  } catch (e) { setState(() { _error = ...; }); }
+}
+
+Future<_LoadData> _loadAllData() async { ... }  // 10 lines - pure fetch
+void _applyLoadedData(_LoadData data) { ... }   // 10 lines - pure state assign
+```
+
+### State Class Member Limit
+- A `State<X>` class should have **≤ 20 member variables**
+- Categories that count toward the limit:
+  - Data lists/maps (e.g., `_messages`, `_agents`)
+  - Controllers (e.g., `_inputCtrl`, `_scrollCtrl`)
+  - Flags (e.g., `_loading`, `_sending`, `_shellMode`)
+  - State objects (e.g., `_eventService`, `_todos`)
+- If exceeded, extract related members into domain-specific groups:
+  ```dart
+  // Instead of 30 fields in state, group into manager helpers
+  class _AttachmentManager { List<_Attachment> attachments; ... }
+  class _InputHistoryManager { List<String> history; int index; ... }
+  ```
 
 ## Build Method Decomposition
 
