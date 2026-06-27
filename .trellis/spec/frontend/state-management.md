@@ -35,7 +35,7 @@ A well-structured `State` class:
 | Metric | Healthy | Needs Refactor |
 |--------|---------|----------------|
 | Member variables | ≤ 20 | > 20 |
-| Lines of code per file | ≤ 700 | > 700 |
+| Lines of code per file | ≤ 500 | > 500 |
 | Methods > 30 lines | 0 | 1+ |
 
 ### When to Extract Managers

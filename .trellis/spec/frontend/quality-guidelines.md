@@ -155,6 +155,7 @@ The following have been unified — do NOT re-introduce duplicates:
 - [ ] No `as` cast without fallback on JSON-decoded values
 - [ ] No empty `catch` blocks
 - [ ] No function > 30 lines
+- [ ] No file exceeds **500 lines** (one purpose per file)
 - [ ] No hardcoded magic numbers/colors outside theme
 - [ ] No duplicate `_formatTime` or similar helper functions (use `lib/utils/time_format.dart`)
 - [ ] All UI strings centralized (or extracted to constants)

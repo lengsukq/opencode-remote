@@ -45,11 +45,20 @@ lib/
 
 ## Clean Code Rules
 
-### File Size
-- **Max 700 lines** per file (exceptions: `models.dart` at ~1100 lines)
-- Screen files that exceed 700 lines MUST be split:
-  - Extract UI widgets into `screens/<screen>/` subdirectory or `widgets/`
+### File Size — One File, One Purpose
+- **Hard limit**: Most files must be **≤ 500 lines**
+- **Rare exceptions**: Data model files (`models.dart`) or generated code may exceed this, but only with clear justification in a comment at the top
+- A file that exceeds 500 lines MUST be split:
+  - Extract UI widgets into `lib/widgets/` or screen subdirectory
   - Extract business logic into manager classes or data classes
+  - Extract unrelated types into their own files
+
+### One Concept Per File
+A file should serve **exactly one purpose**. Signs of concept mixing:
+- File contains **3+ widget classes** → split into separate files
+- File contains both **data models and UI widgets** → split
+- File contains **State class + unrelated helper classes** → extract helpers
+- File contains code for **two different screens** → split by screen
 
 ### Widget Extraction Threshold
 - A private widget class (`_Foo`) should remain in the screen file if ≤ 50 lines
@@ -64,15 +73,16 @@ lib/
 ### Example: When to extract
 
 ```dart
-// lib/screens/native/chat_screen.dart — BAD: 1240 lines, 23 state vars
+// lib/screens/native/chat_screen.dart — BAD: 1240 lines, 7 concepts in 1 file
+// Concepts mixed: chat logic, input bar, agent bar, attachments, todos, revert, commands
 // → Split into:
-//   lib/screens/native/chat_screen.dart          (700 lines, state + core logic)
-//   lib/widgets/chat_input_bar.dart               (input bar widget)
-//   lib/widgets/agent_bar.dart                    (agent/model bar)
-//   lib/widgets/attachment_preview.dart           (attachment strip)
-//   lib/widgets/command_suggestions.dart           (command list)
-//   lib/widgets/todo_banner.dart                  (todo progress)
-//   lib/widgets/revert_banner.dart                (revert undo)
+//   lib/screens/native/chat_screen.dart          (≤500 lines, core chat logic only)
+//   lib/widgets/chat_input_bar.dart               (1 file, 1 purpose: input bar)
+//   lib/widgets/agent_bar.dart                    (1 file, 1 purpose: agent/model bar)
+//   lib/widgets/attachment_preview.dart           (1 file, 1 purpose: attachment strip)
+//   lib/widgets/command_suggestions.dart           (1 file, 1 purpose: command list)
+//   lib/widgets/todo_banner.dart                  (1 file, 1 purpose: todo progress)
+//   lib/widgets/revert_banner.dart                (1 file, 1 purpose: revert undo)
 ```
 
 ## Platform Separation

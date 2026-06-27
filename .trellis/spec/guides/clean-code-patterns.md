@@ -6,13 +6,17 @@
 
 ## File Organization
 
-### Rule: One Concept Per File
+### Rule: One File, One Purpose
 
-A file should contain one primary concept plus its immediate helpers. Extract when:
+A file must serve **exactly one purpose**. If you can't describe what a file does in a single sentence without using "and", it needs splitting.
 
-- File > 700 lines → split
-- File has 3+ widget classes → split
-- `State` class has 20+ members → extract helpers
+Extract when:
+
+- File **> 500 lines** → split (models.dart is the only allowed exception)
+- File has **3+ public classes** → split
+- File mixes **data models + UI widgets** → split
+- File contains **State class + unrelated helper classes** → extract helpers
+- `State` class has **20+ members** → extract helpers
 
 ### Rule: Widget Extraction
 
@@ -161,7 +165,8 @@ final b = await f2();
 Before committing, verify:
 
 - [ ] `flutter analyze` passes with **zero errors**
-- [ ] No file exceeds **700 lines**
+- [ ] No file exceeds **500 lines** (rare exceptions justified in comment)
+- [ ] File has **one clear purpose** (no mixing of unrelated concepts)
 - [ ] No method exceeds **30 lines**
 - [ ] `State` class has **≤ 20 member variables**
 - [ ] No empty `catch` blocks

@@ -50,7 +50,7 @@ These guides help you **ask the right questions before coding**.
 
 ### Before Every Coding Session
 
-- [ ] File will be ≤ 700 lines?
+- [ ] File will be ≤ 500 lines with one clear purpose?
 - [ ] Each method ≤ 30 lines?
 - [ ] No empty `catch` blocks?
 - [ ] All `setState` after `await` guarded by `mounted`?
