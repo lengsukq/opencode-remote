@@ -54,7 +54,7 @@ class EventService {
   Future<void> _doConnect() async {
     if (_cancelled) return;
     try {
-      final uri = Uri.parse('$baseUrl/event');
+      final uri = Uri.parse('$baseUrl/global/event');
       final request = http.Request('GET', uri);
       request.headers['Authorization'] = _authHeader;
       request.headers['Accept'] = 'text/event-stream';
@@ -80,7 +80,7 @@ class EventService {
         cancelOnError: false,
       );
     } catch (e) {
-      debugPrint('EventService._doConnect: $e');
+      _log('EventService._doConnect: $e');
       _scheduleReconnect();
     }
   }
@@ -104,7 +104,7 @@ class EventService {
       final decoded = jsonDecode(rawData);
       data = decoded is Map<String, dynamic> ? decoded : {'raw': rawData, 'decoded': decoded};
     } catch (e) {
-      debugPrint('EventService._emitEvent json parse: $e');
+      _log('EventService._emitEvent json parse: $e');
       return;
     }
 
@@ -160,5 +160,11 @@ class EventService {
   void dispose() {
     disconnect();
     _controller.close();
+  }
+
+  void _log(String message) {
+    // debugPrint is acceptable in non-production builds
+    // ignore: use_debug_print_in_production
+    debugPrint(message);
   }
 }

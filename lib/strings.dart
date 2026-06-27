@@ -163,6 +163,15 @@ class S {
   static const waiting = '等待';
   static const diagnostics = '诊断';
 
+  static const revertMessage = 'Revert Message';
+  static const viewDetails = 'View Details';
+  static const forkFromHere = 'Fork from Here';
+  static const restoreReverted = 'Restore Reverted';
+  static const shellCommand = 'Shell Command';
+  static const image = 'Image';
+  static const camera = 'Camera';
+  static const file = 'File';
+
   // === Config ===
   static const diagnosticsAndConfig = '诊断与配置';
   static const addUpdateConfig = '添加/更新配置';
@@ -177,6 +186,47 @@ class S {
   static const noDefaultModel = '无默认模型';
   static const noAuthInfo = '无认证信息';
   static const authSet = '认证已设置';
+
+  // === Dashboard ===
+  static const recentSessions = '最近会话';
+  static const viewAll = '查看全部';
+  static const quickActions = '快捷操作';
+  static const connected = '已连接';
+  static const unableToConnect = '无法连接';
+  static const online = '在线';
+  static const offline = '离线';
+  static const logWritten = '日志已写入';
+  static const disposeInstance = '销毁实例';
+  static const writeDiagnosticLog = '写入诊断日志';
+  static String disposeFailed(Object e) => '销毁失败: $e';
+
+  // === Auth ===
+  static const setAuth = '设置认证';
+  static const providerIdHint = 'provider ID (如 openai)';
+  static const apiKey = 'API Key';
+  static const apiKeyHint = 'sk-...';
+  static String setAuthFailed(Object e) => '设置认证失败: $e';
+
+  // === Session (additional) ===
+  static const unnamed = '未命名';
+  static const newTitle = '新标题';
+  static const stopSharing = '停止分享';
+  static const noDiffs = '暂无差异';
+  static const deleteSession = '删除会话';
+  static const forkSession = '分叉会话';
+  static const forkSessionConfirm = '从最新消息分叉一个新会话？';
+  static const forkedAsNew = '已分叉为新会话';
+  static const summarizeDone = '总结完成';
+  static String diffTitle(Object title) => '差异: $title';
+  static String diffFailed(Object e) => '获取差异失败: $e';
+  static String summarizeFailed(Object e) => '总结失败: $e';
+  static String forkFailed(Object e) => '分叉失败: $e';
+  static String confirmDeleteSession(Object title) => '确定删除"$title"？';
+  static String deleteFailed(Object e) => '删除失败: $e';
+  static String unshareFailed(Object e) => '取消失败: $e';
+  static String childSessionsFailed(Object e) => '获取子会话失败: $e';
+  static String todoFailed(Object e) => '获取待办失败: $e';
+  static String renameFailed(Object e) => '重命名失败: $e';
 
   // === Onboarding ===
   static const appTitle = 'OpenCode Remote';

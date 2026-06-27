@@ -23,6 +23,7 @@ class AppColors {
   static const textTertiary = Color(0xFFC7C7CC);
 
   static const success = Color(0xFF34C759);
+  static const successLight = Color(0xFFE8F5E9);
   static const danger = Color(0xFFFF3B30);
   static const warning = Color(0xFFFF9500);
   static const info = Color(0xFF007AFF);
@@ -49,11 +50,16 @@ class AppColors {
   // Terminal colors
   static const terminalBg = Color(0xFF1A1A1A);
   static const terminalText = Color(0xFFD4D4D4);
+  static const terminalBgLight = Color(0xFF1E1E1E);
+  static const terminalTextLight = Color(0xFFCCCCCC);
   static const terminalInput = Color(0xFF98C379);
   static const terminalError = Color(0xFFE06C75);
   static const terminalPrompt = Color(0xFF61AFEF);
   static const terminalIcon = Color(0xFF888888);
   static const terminalInputBg = Color(0xFF252526);
+
+  // Overlay colors for image/text overlays
+  static const overlayDark = Color(0xDD000000);
 }
 
 class DarkColors {

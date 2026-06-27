@@ -17,7 +17,7 @@ class OnboardingScreen extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFFF0F0F3), Color(0xFFE8E8ED)],
+            colors: [AppColors.surfaceAlt, AppColors.avatarBg],
           ),
         ),
         child: SafeArea(
@@ -36,7 +36,7 @@ class OnboardingScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.6),
+        color: AppColors.surface.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
@@ -148,7 +148,7 @@ class _ModeOption extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.7),
+          color: AppColors.surface.withValues(alpha: 0.7),
           borderRadius: BorderRadius.circular(AppColors.kMediumBorderRadius),
           boxShadow: [
             BoxShadow(

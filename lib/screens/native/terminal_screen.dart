@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models.dart';
 import '../../theme.dart';
+import '../../strings.dart';
 import '../../services/opencode_api.dart';
 
 class TerminalScreen extends StatefulWidget {
@@ -97,8 +98,8 @@ class _TerminalScreenState extends State<TerminalScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = isDarkMode(context);
-    final bgColor = isDark ? AppColors.terminalBg : const Color(0xFF1E1E1E);
-    final textColor = isDark ? AppColors.terminalText : const Color(0xFFCCCCCC);
+    final bgColor = isDark ? AppColors.terminalBg : AppColors.terminalBgLight;
+    final textColor = isDark ? AppColors.terminalText : AppColors.terminalTextLight;
     final inputColor = AppColors.terminalInput;
     final errorColor = AppColors.terminalError;
     const promptColor = AppColors.terminalPrompt;
@@ -109,7 +110,7 @@ class _TerminalScreenState extends State<TerminalScreen> {
         backgroundColor: bgColor,
         foregroundColor: textColor,
         elevation: 0,
-        title: const Text('Terminal', style: TextStyle(fontFamily: 'monospace', fontSize: 14)),
+        title: Text(S.terminal, style: const TextStyle(fontFamily: 'monospace', fontSize: 14)),
         actions: [
           IconButton(
             icon: const Icon(Icons.delete_outline, color: AppColors.terminalIcon, size: 20),

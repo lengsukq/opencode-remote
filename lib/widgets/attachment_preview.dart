@@ -67,6 +67,7 @@ class AttachmentPreview extends StatelessWidget {
     try {
       return base64Decode(dataUri.substring(comma + 1));
     } catch (e) {
+      // ignore: use_debug_print_in_production
       debugPrint('AttachmentPreview._dataUriBytes: $e');
       return Uint8List(0);
     }

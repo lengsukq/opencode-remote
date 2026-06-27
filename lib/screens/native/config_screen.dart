@@ -73,6 +73,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
     try {
       return await fn();
     } catch (e) {
+      // ignore: use_debug_print_in_production
       debugPrint('ConfigScreen._safeCall: $e');
       return null;
     }

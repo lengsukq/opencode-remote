@@ -20,18 +20,28 @@ class OpenCodeApi {
     _authHeader = 'Basic ${base64.encode(bytes)}';
   }
 
+  // ====================================================================
+  // HTTP Helpers (private)
+  // ====================================================================
+
   static List<T> _safeList<T>(dynamic json, T Function(Map<String, dynamic>) fromJson) {
     if (json is! List) return [];
     return json.map((e) {
       if (e is! Map<String, dynamic>) return null;
-      try { return fromJson(e); } catch (err) { debugPrint('OpenCodeApi._safeList: $err'); return null; }
+      try { return fromJson(e); } catch (err) { _log('OpenCodeApi._safeList: $err'); return null; }
     }).whereType<T>().toList();
   }
 
   static Map<String, dynamic> _safeMap(dynamic json) {
     if (json is Map<String, dynamic>) return json;
-    debugPrint('OpenCodeApi._safeMap: expected Map<String,dynamic>, got ${json.runtimeType}: $json');
+    _log('OpenCodeApi._safeMap: expected Map<String,dynamic>, got ${json.runtimeType}: $json');
     return {};
+  }
+
+  static void _log(String message) {
+    // debugPrint is acceptable in non-production builds
+    // ignore: use_debug_print_in_production
+    debugPrint(message);
   }
 
   Map<String, String> get _headers => {
@@ -86,14 +96,18 @@ class OpenCodeApi {
     if (value != null) body[key] = value;
   }
 
-  // --- Global ---
+  // ====================================================================
+  // Global / Health
+  // ====================================================================
   Future<HealthStatus> getHealth() async {
     final res = await _get('/global/health');
     _check(res);
     return HealthStatus.fromJson(_safeMap(jsonDecode(res.body)));
   }
 
-  // --- Project ---
+  // ====================================================================
+  // Project
+  // ====================================================================
   Future<Project> getCurrentProject() async {
     final res = await _get('/project/current');
     _check(res);
@@ -133,13 +147,18 @@ class OpenCodeApi {
     return PathInfo.fromJson(_safeMap(jsonDecode(res.body)));
   }
 
-  // --- Instance ---
+  // ====================================================================
+  // Instance
+  // ====================================================================
   Future<void> disposeInstance() async {
     final res = await _post('/instance/dispose');
     _check(res);
   }
 
-  // --- Session ---
+  // ====================================================================
+  // Session
+  // ====================================================================
+  // --- CRUD ---
   Future<List<Session>> getSessions() async {
     final res = await _get('/session');
     _check(res);
@@ -178,6 +197,8 @@ class OpenCodeApi {
     _check(res);
     return Session.fromJson(_safeMap(jsonDecode(res.body)));
   }
+
+  // --- Actions ---
 
   Future<List<Session>> getChildSessions(String id) async {
     final res = await _get('/session/$id/children');
@@ -239,7 +260,9 @@ class OpenCodeApi {
     return _safeList(jsonDecode(res.body), Todo.fromJson);
   }
 
-  // --- Messages ---
+  // ====================================================================
+  // Messages
+  // ====================================================================
   Future<List<Message>> getMessages(String sessionId, {int? limit}) async {
     final query = limit != null ? '?limit=$limit' : '';
     final res = await _get('/session/$sessionId/message$query');
@@ -320,6 +343,10 @@ class OpenCodeApi {
     return null;
   }
 
+  // ====================================================================
+  // Terminal / Shell
+  // ====================================================================
+
   Future<SessionMessageResponse> executeCommand(
     String sessionId, {
     required String command,
@@ -354,14 +381,18 @@ class OpenCodeApi {
     return SessionMessageResponse.fromJson(_safeMap(jsonDecode(res.body)));
   }
 
-  // --- Commands ---
+  // ====================================================================
+  // Commands
+  // ====================================================================
   Future<List<Command>> getCommands() async {
     final res = await _get('/command');
     _check(res);
     return _safeList(jsonDecode(res.body), Command.fromJson);
   }
 
-  // --- Files ---
+  // ====================================================================
+  // Files
+  // ====================================================================
   Future<List<FileNode>> listFiles(String path) async {
     final res = await _get('/file?path=${Uri.encodeComponent(path)}');
     _check(res);
@@ -404,7 +435,9 @@ class OpenCodeApi {
     return _safeList(jsonDecode(res.body), Symbol.fromJson);
   }
 
-  // --- Config ---
+  // ====================================================================
+  // Config
+  // ====================================================================
   Future<Config> getConfig() async {
     final res = await _get('/config');
     _check(res);
@@ -429,7 +462,7 @@ class OpenCodeApi {
     return ProviderDefaults.fromJson(_safeMap(jsonDecode(res.body)));
   }
 
-  // --- Provider ---
+  // === Providers & Auth ===
   Future<List<Provider>> getProviders() async {
     final res = await _get('/provider');
     _check(res);
@@ -461,14 +494,16 @@ class OpenCodeApi {
     _check(res);
   }
 
-  // --- Agent ---
+  // --- Agents ---
   Future<List<Agent>> getAgents() async {
     final res = await _get('/agent');
     _check(res);
     return _safeList(jsonDecode(res.body), Agent.fromJson);
   }
 
-  // --- LSP, Formatter, MCP ---
+  // ====================================================================
+  // Extensions (LSP / Formatter / MCP)
+  // ====================================================================
   Future<List<LSPStatus>> getLspStatus() async {
     final res = await _get('/lsp');
     _check(res);
@@ -488,7 +523,9 @@ class OpenCodeApi {
     return data.map((k, v) => MapEntry(k, MCPStatus.fromJson(_safeMap(v))));
   }
 
-  // --- Log ---
+  // ====================================================================
+  // Log
+  // ====================================================================
   Future<void> writeLog(String service, String level, String message, {Map<String, dynamic>? extra}) async {
     final body = <String, dynamic>{
       'service': service,
@@ -552,7 +589,9 @@ class OpenCodeApi {
     return MCPStatus.fromJson(_safeMap(jsonDecode(res.body)));
   }
 
-  // --- Experimental Tool ---
+  // ====================================================================
+  // Experimental
+  // ====================================================================
   Future<Map<String, dynamic>> getToolList(String provider, String model) async {
     final res = await _get('/experimental/tool?provider=${Uri.encodeComponent(provider)}&model=${Uri.encodeComponent(model)}');
     _check(res);

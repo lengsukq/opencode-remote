@@ -21,7 +21,7 @@ class StorageService {
           .toList()
         ..sort((a, b) => b.lastUsed.compareTo(a.lastUsed));
     } catch (e) {
-      debugPrint('StorageService.loadServers: $e — raw: ${raw.substring(0, raw.length.clamp(0, 500))}');
+      _log('StorageService.loadServers: $e — raw: ${raw.substring(0, raw.length.clamp(0, 500))}');
       return [];
     }
   }
@@ -74,7 +74,7 @@ class StorageService {
     try {
       return servers.firstWhere((s) => s.id == id);
     } catch (e) {
-      debugPrint('StorageService.getLastSelected: $e (lastId: $id)');
+      _log('StorageService.getLastSelected: $e (lastId: $id)');
       return null;
     }
   }
@@ -128,5 +128,11 @@ class StorageService {
         raw = 'system';
     }
     await prefs.setString(_keyThemeMode, raw);
+  }
+
+  static void _log(String message) {
+    // debugPrint is acceptable in non-production builds
+    // ignore: use_debug_print_in_production
+    debugPrint(message);
   }
 }

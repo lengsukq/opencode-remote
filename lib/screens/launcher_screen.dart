@@ -106,7 +106,7 @@ class _LauncherScreenState extends State<LauncherScreen> {
               decoration: BoxDecoration(
                 color: _mode == AppMode.native
                     ? AppColors.primaryLight
-                    : const Color(0xFFE8F5E9),
+                    : AppColors.successLight,
                 borderRadius: BorderRadius.circular(AppColors.kChipBorderRadius),
               ),
               child: Text(
@@ -150,7 +150,7 @@ class _LauncherScreenState extends State<LauncherScreen> {
       floatingActionButton: FloatingActionButton(
         backgroundColor: AppColors.primary,
         onPressed: () => _addServer(),
-        child: const Icon(Icons.add, color: Colors.white),
+        child: const Icon(Icons.add, color: AppColors.surface),
       ),
     );
   }
@@ -187,7 +187,7 @@ class _LauncherScreenState extends State<LauncherScreen> {
               color: AppColors.danger,
               borderRadius: BorderRadius.circular(AppColors.kCardBorderRadius),
             ),
-            child: const Icon(Icons.delete, color: Colors.white),
+            child: const Icon(Icons.delete, color: AppColors.surface),
           ),
           confirmDismiss: (_) async {
             await _deleteServer(entry);

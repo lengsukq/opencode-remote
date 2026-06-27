@@ -114,7 +114,7 @@ class MessageBubble extends StatelessWidget {
     if (isUser) {
       return Text(
         message.content,
-        style: const TextStyle(color: Colors.white, fontSize: 14),
+        style: const TextStyle(color: AppColors.surface, fontSize: 14),
       );
     }
     return MarkdownBody(

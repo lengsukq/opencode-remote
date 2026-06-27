@@ -37,7 +37,7 @@ class AppSnackBar {
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message, style: const TextStyle(color: Colors.white)),
+        content: Text(message, style: const TextStyle(color: AppColors.surface)),
         backgroundColor: AppColors.danger,
         duration: duration,
         behavior: SnackBarBehavior.floating,
@@ -54,7 +54,7 @@ class AppSnackBar {
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message, style: const TextStyle(color: Colors.white)),
+        content: Text(message, style: const TextStyle(color: AppColors.surface)),
         backgroundColor: AppColors.success,
         duration: duration,
         behavior: SnackBarBehavior.floating,

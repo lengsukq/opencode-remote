@@ -55,10 +55,10 @@ class FilePartsRow extends StatelessWidget {
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
                                 begin: Alignment.bottomCenter, end: Alignment.topCenter,
-                                colors: [Colors.black87, Colors.transparent],
+                                colors: [AppColors.overlayDark, Colors.transparent],
                               ),
                             ),
-                            child: Text(displayName, style: const TextStyle(color: Colors.white, fontSize: 10)),
+                            child: Text(displayName, style: const TextStyle(color: AppColors.surface, fontSize: 10)),
                           ),
                         ),
                       ],
