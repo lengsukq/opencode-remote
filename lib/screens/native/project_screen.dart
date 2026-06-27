@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../models.dart';
 import '../../theme.dart';
 import '../../services/opencode_api.dart';
+import '../../widgets/app_card.dart';
 
 class ProjectScreen extends StatefulWidget {
   final ServerEntry entry;
@@ -102,7 +103,7 @@ class _ProjectScreenState extends State<ProjectScreen> {
       context: context,
       backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppColors.kDefaultBorderRadius)),
       ),
       builder: (ctx) => SafeArea(
         child: Padding(
@@ -170,91 +171,81 @@ class _ProjectCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return AppCard(
+      borderColor: isCurrent ? AppColors.primary : null,
+      boxShadow: [
+        BoxShadow(color: AppColors.shadow, blurRadius: 4, offset: const Offset(0, 1)),
+      ],
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isCurrent ? AppColors.primary : AppColors.border,
-            width: isCurrent ? 1.5 : 1,
-          ),
-          boxShadow: [
-            BoxShadow(color: AppColors.shadow, blurRadius: 4, offset: const Offset(0, 1)),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: isCurrent ? AppColors.primaryLight : AppColors.surfaceAlt,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(
-                isCurrent ? Icons.folder : Icons.folder_outlined,
-                color: isCurrent ? AppColors.primary : AppColors.textSecondary,
-                size: 20,
-              ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: isCurrent ? AppColors.primaryLight : AppColors.surfaceAlt,
+              borderRadius: BorderRadius.circular(AppColors.kCardBorderRadius),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          project.name,
-                          style: const TextStyle(color: AppColors.textPrimary, fontSize: 14, fontWeight: FontWeight.w500),
-                          overflow: TextOverflow.ellipsis,
-                        ),
+            child: Icon(
+              isCurrent ? Icons.folder : Icons.folder_outlined,
+              color: isCurrent ? AppColors.primary : AppColors.textSecondary,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        project.name,
+                        style: const TextStyle(color: AppColors.textPrimary, fontSize: 14, fontWeight: FontWeight.w500),
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      if (isCurrent) ...[
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                          decoration: BoxDecoration(
-                            color: AppColors.primaryLight,
-                            borderRadius: BorderRadius.circular(3),
-                          ),
-                          child: const Text('当前', style: TextStyle(color: AppColors.primary, fontSize: 9)),
+                    ),
+                    if (isCurrent) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryLight,
+                          borderRadius: BorderRadius.circular(AppColors.kCardBorderRadius),
                         ),
-                      ],
+                        child: const Text('当前', style: TextStyle(color: AppColors.primary, fontSize: 9)),
+                      ),
                     ],
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    project.path,
-                    style: TextStyle(color: AppColors.textTertiary, fontSize: 11),
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  ],
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  project.path,
+                  style: TextStyle(color: AppColors.textTertiary, fontSize: 11),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          if (vcs != null && isCurrent)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: AppColors.success.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(AppColors.kCardBorderRadius),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.call_split, color: AppColors.success, size: 10),
+                  const SizedBox(width: 3),
+                  Text(vcs!.branch ?? 'main', style: const TextStyle(color: AppColors.success, fontSize: 10)),
                 ],
               ),
             ),
-            if (vcs != null && isCurrent)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: AppColors.success.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.call_split, color: AppColors.success, size: 10),
-                    const SizedBox(width: 3),
-                    Text(vcs!.branch ?? 'main', style: const TextStyle(color: AppColors.success, fontSize: 10)),
-                  ],
-                ),
-              ),
-            if (onTap != null)
-              Icon(Icons.chevron_right, color: AppColors.textTertiary, size: 18),
-          ],
-        ),
+          if (onTap != null)
+            Icon(Icons.chevron_right, color: AppColors.textTertiary, size: 18),
+        ],
       ),
     );
   }

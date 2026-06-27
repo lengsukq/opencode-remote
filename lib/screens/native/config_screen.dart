@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../models.dart';
 import '../../theme.dart';
 import '../../services/opencode_api.dart';
+import '../../widgets/app_card.dart';
+import '../../widgets/app_input_decoration.dart';
 
 class ConfigScreen extends StatefulWidget {
   final ServerEntry entry;
@@ -85,23 +87,13 @@ class _ConfigScreenState extends State<ConfigScreen> {
             TextField(
               controller: keyCtrl,
               style: const TextStyle(color: AppColors.textPrimary),
-              decoration: const InputDecoration(
-                hintText: '配置键',
-                hintStyle: TextStyle(color: AppColors.textTertiary),
-                enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: AppColors.border)),
-                focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: AppColors.borderFocused)),
-              ),
+              decoration: AppInputDecoration.standard(hintText: '配置键'),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: valueCtrl,
               style: const TextStyle(color: AppColors.textPrimary),
-              decoration: const InputDecoration(
-                hintText: '配置值',
-                hintStyle: TextStyle(color: AppColors.textTertiary),
-                enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: AppColors.border)),
-                focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: AppColors.borderFocused)),
-              ),
+              decoration: AppInputDecoration.standard(hintText: '配置值'),
             ),
           ],
         ),
@@ -179,13 +171,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
     if (_config == null) return _card('加载配置失败', Icons.error, AppColors.danger);
     final data = _config!.data;
     final entries = data.entries.take(10).toList();
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
-      ),
+    return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -232,13 +218,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
     final rawDefaults = _configProviders!['default'];
     final providers = rawProviders is List ? rawProviders : <dynamic>[];
     final defaults = rawDefaults is Map ? Map<String, dynamic>.from(rawDefaults) : <String, dynamic>{};
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
-      ),
+    return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -267,13 +247,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
   }
 
   Widget _toolsCard() {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
-      ),
+    return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -325,13 +299,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
 
   Widget _authCard() {
     if (_authMethods.isEmpty) return _card('无认证信息', Icons.info_outline, AppColors.textSecondary);
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
-      ),
+    return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: _authMethods.entries.map((e) => Padding(
@@ -352,13 +320,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
   }
 
   Widget _card(String text, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
-      ),
+    return AppCard(
       child: Row(
         children: [
           Icon(icon, color: color, size: 18),

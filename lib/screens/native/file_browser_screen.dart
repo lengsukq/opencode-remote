@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../models.dart';
 import '../../theme.dart';
 import '../../services/opencode_api.dart';
+import '../../widgets/app_full_screen_dialog.dart';
 
 class FileBrowserScreen extends StatefulWidget {
   final ServerEntry entry;
@@ -138,30 +139,14 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
     try {
       final content = await widget.api.readFile(node.path);
       if (!mounted) return;
-      showDialog(
-        context: context,
-        builder: (ctx) => Dialog(
-          backgroundColor: AppColors.surface,
-          child: Column(
-            mainAxisSize: MainAxisSize.max,
-            children: [
-              AppBar(
-                title: Text(node.name, style: const TextStyle(color: AppColors.textPrimary, fontSize: 14)),
-                leading: IconButton(
-                  icon: const Icon(Icons.close, color: AppColors.textSecondary),
-                  onPressed: () => Navigator.pop(ctx),
-                ),
-              ),
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: SelectableText(
-                    content.content,
-                    style: const TextStyle(color: AppColors.textPrimary, fontSize: 12, fontFamily: 'monospace'),
-                  ),
-                ),
-              ),
-            ],
+      await AppFullScreenDialog.show(
+        context,
+        title: node.name,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: SelectableText(
+            content.content,
+            style: const TextStyle(color: AppColors.textPrimary, fontSize: 12, fontFamily: 'monospace'),
           ),
         ),
       );
@@ -178,36 +163,23 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
   }
 
   void _showImagePreview(FileNode node) {
-    showDialog(
-      context: context,
-      builder: (ctx) => Dialog(
-        backgroundColor: AppColors.surface,
+    AppFullScreenDialog.show(
+      context,
+      title: node.name,
+      expandContent: false,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
           children: [
-            AppBar(
-              title: Text(node.name, style: const TextStyle(color: AppColors.textPrimary, fontSize: 14)),
-              leading: IconButton(
-                icon: const Icon(Icons.close, color: AppColors.textSecondary),
-                onPressed: () => Navigator.pop(ctx),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                children: [
-                  Icon(Icons.image, size: 64, color: AppColors.textTertiary),
-                  const SizedBox(height: 12),
-                  Text(node.name, style: TextStyle(color: AppColors.textPrimary, fontSize: 14)),
-                  if (node.size != null) ...[
-                    const SizedBox(height: 4),
-                    Text('${node.size} bytes', style: TextStyle(color: AppColors.textTertiary, fontSize: 12)),
-                  ],
-                  const SizedBox(height: 16),
-                  Text('图片预览需要在服务端配置后可用', style: TextStyle(color: AppColors.textSecondary, fontSize: 13), textAlign: TextAlign.center),
-                ],
-              ),
-            ),
+            Icon(Icons.image, size: 64, color: AppColors.textTertiary),
+            const SizedBox(height: 12),
+            Text(node.name, style: TextStyle(color: AppColors.textPrimary, fontSize: 14)),
+            if (node.size != null) ...[
+              const SizedBox(height: 4),
+              Text('${node.size} bytes', style: TextStyle(color: AppColors.textTertiary, fontSize: 12)),
+            ],
+            const SizedBox(height: 16),
+            Text('图片预览需要在服务端配置后可用', style: TextStyle(color: AppColors.textSecondary, fontSize: 13), textAlign: TextAlign.center),
           ],
         ),
       ),
@@ -220,32 +192,19 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
     final isImage = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg'].contains(ext);
     if (isImage) {
       if (!mounted) return;
-      showDialog(
-        context: context,
-        builder: (ctx) => Dialog(
-          backgroundColor: AppColors.surface,
+      await AppFullScreenDialog.show(
+        context,
+        title: name,
+        expandContent: false,
+        child: Padding(
+          padding: const EdgeInsets.all(20),
           child: Column(
-            mainAxisSize: MainAxisSize.min,
             children: [
-              AppBar(
-                title: Text(name, style: const TextStyle(color: AppColors.textPrimary, fontSize: 14)),
-                leading: IconButton(
-                  icon: const Icon(Icons.close, color: AppColors.textSecondary),
-                  onPressed: () => Navigator.pop(ctx),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  children: [
-                    Icon(Icons.image, size: 64, color: AppColors.textTertiary),
-                    const SizedBox(height: 12),
-                    Text(name, style: TextStyle(color: AppColors.textPrimary, fontSize: 14)),
-                    const SizedBox(height: 16),
-                    Text('图片预览需要在服务端配置后可用', style: TextStyle(color: AppColors.textSecondary, fontSize: 13), textAlign: TextAlign.center),
-                  ],
-                ),
-              ),
+              Icon(Icons.image, size: 64, color: AppColors.textTertiary),
+              const SizedBox(height: 12),
+              Text(name, style: TextStyle(color: AppColors.textPrimary, fontSize: 14)),
+              const SizedBox(height: 16),
+              Text('图片预览需要在服务端配置后可用', style: TextStyle(color: AppColors.textSecondary, fontSize: 13), textAlign: TextAlign.center),
             ],
           ),
         ),
@@ -255,30 +214,14 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
     try {
       final content = await widget.api.readFile(path);
       if (!mounted) return;
-      showDialog(
-        context: context,
-        builder: (ctx) => Dialog(
-          backgroundColor: AppColors.surface,
-          child: Column(
-            mainAxisSize: MainAxisSize.max,
-            children: [
-              AppBar(
-                title: Text(name, style: const TextStyle(color: AppColors.textPrimary, fontSize: 14)),
-                leading: IconButton(
-                  icon: const Icon(Icons.close, color: AppColors.textSecondary),
-                  onPressed: () => Navigator.pop(ctx),
-                ),
-              ),
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: SelectableText(
-                    content.content,
-                    style: const TextStyle(color: AppColors.textPrimary, fontSize: 12, fontFamily: 'monospace'),
-                  ),
-                ),
-              ),
-            ],
+      await AppFullScreenDialog.show(
+        context,
+        title: name,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: SelectableText(
+            content.content,
+            style: const TextStyle(color: AppColors.textPrimary, fontSize: 12, fontFamily: 'monospace'),
           ),
         ),
       );

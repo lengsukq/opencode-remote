@@ -4,8 +4,8 @@ import '../theme.dart';
 import '../services/storage_service.dart';
 import '../main.dart' show themeNotifier;
 import '../widgets/main_scaffold.dart';
+import '../widgets/app_card.dart';
 import 'launcher_screen.dart';
-
 class SettingsSheet extends StatefulWidget {
   final ServerEntry entry;
   final AppMode currentMode;
@@ -37,7 +37,7 @@ class _SettingsSheetState extends State<SettingsSheet> {
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).padding.bottom),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(AppColors.kDefaultBorderRadius)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -47,7 +47,7 @@ class _SettingsSheetState extends State<SettingsSheet> {
             width: 36, height: 4,
             decoration: BoxDecoration(
               color: AppColors.textTertiary,
-              borderRadius: BorderRadius.circular(2),
+              borderRadius: BorderRadius.circular(AppColors.kChipBorderRadius),
             ),
           ),
           Padding(
@@ -121,20 +121,15 @@ class _SettingsSheetState extends State<SettingsSheet> {
               children: [
                 Text('关于', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
                 const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: Colors.transparent,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.border),
-                  ),
+                AppCard(
+                  color: Colors.transparent,
                   child: Row(
                     children: [
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
                           color: AppColors.primaryLight,
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(AppColors.kSmallBorderRadius),
                         ),
                         child: const Icon(Icons.code, color: AppColors.primary, size: 20),
                       ),
@@ -198,45 +193,37 @@ class _ModeTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return AppCard(
+      padding: const EdgeInsets.all(14),
+      color: selected ? AppColors.primaryLight : Colors.transparent,
+      borderColor: selected ? AppColors.primary : null,
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: selected ? AppColors.primaryLight : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: selected ? AppColors.primary : AppColors.border,
-            width: selected ? 1.5 : 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: selected ? AppColors.primary : AppColors.textSecondary, size: 22),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: TextStyle(
-                    color: selected ? AppColors.primary : AppColors.textPrimary,
-                    fontSize: 14, fontWeight: FontWeight.w500,
-                  )),
-                  Text(subtitle, style: TextStyle(color: AppColors.textTertiary, fontSize: 11)),
-                ],
-              ),
+      child: Row(
+        children: [
+          Icon(icon, color: selected ? AppColors.primary : AppColors.textSecondary, size: 22),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: TextStyle(
+                  color: selected ? AppColors.primary : AppColors.textPrimary,
+                  fontSize: 14, fontWeight: FontWeight.w500,
+                )),
+                Text(subtitle, style: TextStyle(color: AppColors.textTertiary, fontSize: 11)),
+              ],
             ),
-            if (selected)
-              Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.check, color: Colors.white, size: 12),
+          ),
+          if (selected)
+            Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                shape: BoxShape.circle,
               ),
-          ],
-        ),
+              child: const Icon(Icons.check, color: Colors.white, size: 12),
+            ),
+        ],
       ),
     );
   }
@@ -252,38 +239,31 @@ class _ThemeTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return AppCard(
+      padding: const EdgeInsets.all(12),
+      borderRadius: AppColors.kSmallBorderRadius,
+      color: selected ? AppColors.primaryLight : Colors.transparent,
+      borderColor: selected ? AppColors.primary : null,
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: selected ? AppColors.primaryLight : Colors.transparent,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: selected ? AppColors.primary : AppColors.border,
-            width: selected ? 1.5 : 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: selected ? AppColors.primary : AppColors.textSecondary, size: 20),
-            const SizedBox(width: 10),
-            Text(title, style: TextStyle(
-              color: selected ? AppColors.primary : AppColors.textPrimary,
-              fontSize: 13, fontWeight: FontWeight.w500,
-            )),
-            const Spacer(),
-            if (selected)
-              Container(
-                padding: const EdgeInsets.all(3),
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.check, color: Colors.white, size: 10),
+      child: Row(
+        children: [
+          Icon(icon, color: selected ? AppColors.primary : AppColors.textSecondary, size: 20),
+          const SizedBox(width: 10),
+          Text(title, style: TextStyle(
+            color: selected ? AppColors.primary : AppColors.textPrimary,
+            fontSize: 13, fontWeight: FontWeight.w500,
+          )),
+          const Spacer(),
+          if (selected)
+            Container(
+              padding: const EdgeInsets.all(3),
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                shape: BoxShape.circle,
               ),
-          ],
-        ),
+              child: const Icon(Icons.check, color: Colors.white, size: 10),
+            ),
+        ],
       ),
     );
   }

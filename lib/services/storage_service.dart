@@ -21,7 +21,7 @@ class StorageService {
           .toList()
         ..sort((a, b) => b.lastUsed.compareTo(a.lastUsed));
     } catch (e) {
-      debugPrint('StorageService.loadServers: $e');
+      debugPrint('StorageService.loadServers: $e — raw: ${raw.substring(0, raw.length.clamp(0, 500))}');
       return [];
     }
   }
@@ -74,7 +74,7 @@ class StorageService {
     try {
       return servers.firstWhere((s) => s.id == id);
     } catch (e) {
-      debugPrint('StorageService.getLastSelected: $e');
+      debugPrint('StorageService.getLastSelected: $e (lastId: $id)');
       return null;
     }
   }

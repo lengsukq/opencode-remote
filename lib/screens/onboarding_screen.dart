@@ -60,7 +60,7 @@ class OnboardingScreen extends StatelessWidget {
                               style: TextStyle(
                                 fontSize: 28,
                                 fontWeight: FontWeight.w700,
-                                color: Color(0xFF1C1C1E),
+                                color: AppColors.textPrimary,
                                 letterSpacing: -0.5,
                               ),
                             ),
@@ -147,7 +147,7 @@ class _ModeOption extends StatelessWidget {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: AppColors.primaryLight,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(AppColors.kDefaultBorderRadius),
               ),
               child: Icon(icon, color: AppColors.primary, size: 28),
             ),
@@ -161,7 +161,7 @@ class _ModeOption extends StatelessWidget {
                     style: const TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF1C1C1E),
+                      color: AppColors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 4),

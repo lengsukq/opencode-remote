@@ -30,6 +30,7 @@ class OpenCodeApi {
 
   static Map<String, dynamic> _safeMap(dynamic json) {
     if (json is Map<String, dynamic>) return json;
+    debugPrint('OpenCodeApi._safeMap: expected Map<String,dynamic>, got ${json.runtimeType}: $json');
     return {};
   }
 
@@ -47,24 +48,31 @@ class OpenCodeApi {
     return uri.replace(queryParameters: allParams);
   }
 
+  static const _timeoutSeconds = 30;
+
   Future<http.Response> _get(String path) async {
-    return http.get(_buildUri(path), headers: _headers);
+    return http.get(_buildUri(path), headers: _headers)
+        .timeout(const Duration(seconds: _timeoutSeconds));
   }
 
   Future<http.Response> _post(String path, {Map<String, dynamic>? body}) async {
-    return http.post(_buildUri(path), headers: _headers, body: body != null ? jsonEncode(body) : null);
+    return http.post(_buildUri(path), headers: _headers, body: body != null ? jsonEncode(body) : null)
+        .timeout(const Duration(seconds: _timeoutSeconds));
   }
 
   Future<http.Response> _patch(String path, {Map<String, dynamic>? body}) async {
-    return http.patch(_buildUri(path), headers: _headers, body: body != null ? jsonEncode(body) : null);
+    return http.patch(_buildUri(path), headers: _headers, body: body != null ? jsonEncode(body) : null)
+        .timeout(const Duration(seconds: _timeoutSeconds));
   }
 
   Future<http.Response> _put(String path, {Map<String, dynamic>? body}) async {
-    return http.put(_buildUri(path), headers: _headers, body: body != null ? jsonEncode(body) : null);
+    return http.put(_buildUri(path), headers: _headers, body: body != null ? jsonEncode(body) : null)
+        .timeout(const Duration(seconds: _timeoutSeconds));
   }
 
   Future<http.Response> _delete(String path) async {
-    return http.delete(_buildUri(path), headers: _headers);
+    return http.delete(_buildUri(path), headers: _headers)
+        .timeout(const Duration(seconds: _timeoutSeconds));
   }
 
   void _check(http.Response res) {
@@ -73,12 +81,9 @@ class OpenCodeApi {
     }
   }
 
-  bool _checkBool(http.Response res) {
-    if (res.statusCode >= 400) {
-      debugPrint('OpenCodeApi._checkBool failed: ${res.statusCode} ${res.body}');
-      return false;
-    }
-    return true;
+  /// Adds [value] to [body] at [key] only if [value] is not null.
+  void _addIfNotNull(Map<String, dynamic> body, String key, dynamic value) {
+    if (value != null) body[key] = value;
   }
 
   // --- Global ---
@@ -116,9 +121,9 @@ class OpenCodeApi {
   }
 
   // --- Instance ---
-  Future<bool> disposeInstance() async {
+  Future<void> disposeInstance() async {
     final res = await _post('/instance/dispose');
-    return _checkBool(res);
+    _check(res);
   }
 
   // --- Session ---
@@ -130,8 +135,8 @@ class OpenCodeApi {
 
   Future<Session> createSession({String? parentID, String? title}) async {
     final body = <String, dynamic>{};
-    if (parentID != null) body['parentID'] = parentID;
-    if (title != null) body['title'] = title;
+    _addIfNotNull(body, 'parentID', parentID);
+    _addIfNotNull(body, 'title', title);
     final res = await _post('/session', body: body);
     _check(res);
     return Session.fromJson(_safeMap(jsonDecode(res.body)));
@@ -143,19 +148,19 @@ class OpenCodeApi {
     return Session.fromJson(_safeMap(jsonDecode(res.body)));
   }
 
-  Future<bool> deleteSession(String id) async {
+  Future<void> deleteSession(String id) async {
     final res = await _delete('/session/$id');
-    return _checkBool(res);
+    _check(res);
   }
 
-  Future<bool> abortSession(String id) async {
+  Future<void> abortSession(String id) async {
     final res = await _post('/session/$id/abort');
-    return _checkBool(res);
+    _check(res);
   }
 
   Future<Session> updateSession(String id, {String? title}) async {
     final body = <String, dynamic>{};
-    if (title != null) body['title'] = title;
+    _addIfNotNull(body, 'title', title);
     final res = await _patch('/session/$id', body: body);
     _check(res);
     return Session.fromJson(_safeMap(jsonDecode(res.body)));
@@ -169,7 +174,7 @@ class OpenCodeApi {
 
   Future<Session> forkSession(String id, {String? messageID}) async {
     final body = <String, dynamic>{};
-    if (messageID != null) body['messageID'] = messageID;
+    _addIfNotNull(body, 'messageID', messageID);
     final res = await _post('/session/$id/fork', body: body);
     _check(res);
     return Session.fromJson(_safeMap(jsonDecode(res.body)));
@@ -195,24 +200,24 @@ class OpenCodeApi {
     return _safeList(jsonDecode(res.body), DiffEntry.fromJson);
   }
 
-  Future<bool> summarizeSession(String id, {String? providerID, String? modelID}) async {
+  Future<void> summarizeSession(String id, {String? providerID, String? modelID}) async {
     final body = <String, dynamic>{};
-    if (providerID != null) body['providerID'] = providerID;
-    if (modelID != null) body['modelID'] = modelID;
+    _addIfNotNull(body, 'providerID', providerID);
+    _addIfNotNull(body, 'modelID', modelID);
     final res = await _post('/session/$id/summarize', body: body);
-    return _checkBool(res);
+    _check(res);
   }
 
-  Future<bool> revertMessage(String id, String messageID, {String? partID}) async {
+  Future<void> revertMessage(String id, String messageID, {String? partID}) async {
     final body = <String, dynamic>{'messageID': messageID};
-    if (partID != null) body['partID'] = partID;
+    _addIfNotNull(body, 'partID', partID);
     final res = await _post('/session/$id/revert', body: body);
-    return _checkBool(res);
+    _check(res);
   }
 
-  Future<bool> unrevertMessages(String id) async {
+  Future<void> unrevertMessages(String id) async {
     final res = await _post('/session/$id/unrevert');
-    return _checkBool(res);
+    _check(res);
   }
 
   Future<List<Todo>> getSessionTodo(String id) async {
@@ -261,12 +266,12 @@ class OpenCodeApi {
       {'type': 'text', 'text': content ?? ''}
     ];
     final body = <String, dynamic>{'parts': bodyParts};
-    if (model != null) body['model'] = model;
-    if (agent != null) body['agent'] = agent;
-    if (messageID != null) body['messageID'] = messageID;
-    if (noReply != null) body['noReply'] = noReply;
-    if (system != null) body['system'] = system;
-    if (tools != null) body['tools'] = tools;
+    if (model != null) body['model'] = _modelRef(model);
+    _addIfNotNull(body, 'agent', agent);
+    _addIfNotNull(body, 'messageID', messageID);
+    _addIfNotNull(body, 'noReply', noReply);
+    _addIfNotNull(body, 'system', system);
+    _addIfNotNull(body, 'tools', tools);
     final res = await _post('/session/$sessionId/message', body: body);
     _check(res);
     return SessionMessageResponse.fromJson(_safeMap(jsonDecode(res.body)));
@@ -287,15 +292,13 @@ class OpenCodeApi {
     ];
     final body = <String, dynamic>{'parts': bodyParts};
     if (model != null) body['model'] = _modelRef(model);
-    if (agent != null) body['agent'] = agent;
-    if (messageID != null) body['messageID'] = messageID;
-    if (noReply != null) body['noReply'] = noReply;
-    if (system != null) body['system'] = system;
-    if (tools != null) body['tools'] = tools;
+    _addIfNotNull(body, 'agent', agent);
+    _addIfNotNull(body, 'messageID', messageID);
+    _addIfNotNull(body, 'noReply', noReply);
+    _addIfNotNull(body, 'system', system);
+    _addIfNotNull(body, 'tools', tools);
     final res = await _post('/session/$sessionId/prompt_async', body: body);
-    if (res.statusCode != 204 && res.statusCode != 200) {
-      throw OpenCodeApiException(res.statusCode, res.body);
-    }
+    _check(res);
   }
 
   static Map<String, String>? _modelRef(String model) {
@@ -316,9 +319,9 @@ class OpenCodeApi {
       'command': command,
       'arguments': arguments,
     };
-    if (agent != null) body['agent'] = agent;
-    if (model != null) body['model'] = model;
-    if (messageID != null) body['messageID'] = messageID;
+    _addIfNotNull(body, 'agent', agent);
+    _addIfNotNull(body, 'model', model);
+    _addIfNotNull(body, 'messageID', messageID);
     final res = await _post('/session/$sessionId/command', body: body);
     _check(res);
     return SessionMessageResponse.fromJson(_safeMap(jsonDecode(res.body)));
@@ -331,8 +334,8 @@ class OpenCodeApi {
     String? model,
   }) async {
     final body = <String, dynamic>{'command': command};
-    if (agent != null) body['agent'] = agent;
-    if (model != null) body['model'] = model;
+    _addIfNotNull(body, 'agent', agent);
+    _addIfNotNull(body, 'model', model);
     final res = await _post('/session/$sessionId/shell', body: body);
     _check(res);
     return SessionMessageResponse.fromJson(_safeMap(jsonDecode(res.body)));
@@ -440,9 +443,9 @@ class OpenCodeApi {
     });
   }
 
-  Future<bool> setAuth(String id, Map<String, dynamic> body) async {
+  Future<void> setAuth(String id, Map<String, dynamic> body) async {
     final res = await _put('/auth/$id', body: body);
-    return _checkBool(res);
+    _check(res);
   }
 
   // --- Agent ---
@@ -473,7 +476,7 @@ class OpenCodeApi {
   }
 
   // --- Log ---
-  Future<bool> writeLog(String service, String level, String message, {Map<String, dynamic>? extra}) async {
+  Future<void> writeLog(String service, String level, String message, {Map<String, dynamic>? extra}) async {
     final body = <String, dynamic>{
       'service': service,
       'level': level,
@@ -481,7 +484,7 @@ class OpenCodeApi {
     };
     if (extra != null) body['extra'] = extra;
     final res = await _post('/log', body: body);
-    return _checkBool(res);
+    _check(res);
   }
 
   // --- Session Status ---
@@ -493,20 +496,20 @@ class OpenCodeApi {
   }
 
   // --- Session Init ---
-  Future<bool> initSession(String id, {required String messageID, String? providerID, String? modelID}) async {
+  Future<void> initSession(String id, {required String messageID, String? providerID, String? modelID}) async {
     final body = <String, dynamic>{'messageID': messageID};
-    if (providerID != null) body['providerID'] = providerID;
-    if (modelID != null) body['modelID'] = modelID;
+    _addIfNotNull(body, 'providerID', providerID);
+    _addIfNotNull(body, 'modelID', modelID);
     final res = await _post('/session/$id/init', body: body);
-    return _checkBool(res);
+    _check(res);
   }
 
   // --- Session Permissions ---
-  Future<bool> respondPermission(String sessionId, String permissionID, {required String response, bool? remember}) async {
+  Future<void> respondPermission(String sessionId, String permissionID, {required String response, bool? remember}) async {
     final body = <String, dynamic>{'response': response};
     if (remember != null) body['remember'] = remember;
     final res = await _post('/session/$sessionId/permissions/$permissionID', body: body);
-    return _checkBool(res);
+    _check(res);
   }
 
   // --- Provider OAuth ---
@@ -516,9 +519,9 @@ class OpenCodeApi {
     return ProviderAuthAuthorization.fromJson(_safeMap(jsonDecode(res.body)));
   }
 
-  Future<bool> oauthCallback(String id, Map<String, dynamic> body) async {
+  Future<void> oauthCallback(String id, Map<String, dynamic> body) async {
     final res = await _post('/provider/$id/oauth/callback', body: body);
-    return _checkBool(res);
+    _check(res);
   }
 
   // --- File Status ---

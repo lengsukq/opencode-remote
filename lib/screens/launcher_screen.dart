@@ -3,6 +3,7 @@ import '../models.dart';
 import '../theme.dart';
 import '../services/storage_service.dart';
 import '../utils/time_format.dart';
+import '../widgets/server_edit_dialog.dart';
 import 'settings_sheet.dart';
 import 'webview_screen.dart';
 import '../widgets/main_scaffold.dart';
@@ -76,7 +77,10 @@ class _LauncherScreenState extends State<LauncherScreen> {
   }
 
   Future<void> _addServer({ServerEntry? existing}) async {
-    final result = await _showEditDialog(context, entry: existing);
+    final result = await showDialog<ServerEntry>(
+      context: context,
+      builder: (_) => AppServerEditDialog(existing: existing),
+    );
     if (result == null) return;
     await StorageService.addOrUpdate(result);
     await _reload();
@@ -263,109 +267,4 @@ class _ServerCard extends StatelessWidget {
       ),
     );
   }
-}
-
-Future<ServerEntry?> _showEditDialog(BuildContext context, {ServerEntry? entry}) async {
-  final uri = entry != null ? Uri.tryParse(entry.url) : null;
-  final nameCtrl = TextEditingController(text: entry?.name ?? '');
-  final hostCtrl = TextEditingController(text: uri?.host.isNotEmpty == true ? uri!.host : '');
-  final portCtrl = TextEditingController(text: uri != null && uri.port > 0 ? uri.port.toString() : '4096');
-  final userCtrl = TextEditingController(text: entry?.username ?? 'opencode');
-  final passCtrl = TextEditingController(text: entry?.password ?? '');
-
-  final result = await showDialog<ServerEntry>(
-    context: context,
-    builder: (ctx) => AlertDialog(
-      backgroundColor: AppColors.surface,
-      title: Text(entry == null ? '添加服务器' : '编辑服务器',
-          style: const TextStyle(color: AppColors.textPrimary)),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameCtrl,
-              style: const TextStyle(color: AppColors.textPrimary),
-              decoration: _inputDec('名称', '家里PC'),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: hostCtrl,
-              style: const TextStyle(color: AppColors.textPrimary),
-              decoration: _inputDec('地址', '10.10.10.216'),
-              keyboardType: TextInputType.url,
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: portCtrl,
-              style: const TextStyle(color: AppColors.textPrimary),
-              decoration: _inputDec('端口', '4096'),
-              keyboardType: TextInputType.number,
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: userCtrl,
-              style: const TextStyle(color: AppColors.textPrimary),
-              decoration: _inputDec('用户名', 'opencode'),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: passCtrl,
-              style: const TextStyle(color: AppColors.textPrimary),
-              decoration: _inputDec('密码', ''),
-              obscureText: true,
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () {
-            FocusScope.of(ctx).unfocus();
-            Navigator.pop(ctx);
-          },
-          child: const Text('取消', style: TextStyle(color: AppColors.textSecondary)),
-        ),
-        FilledButton(
-          style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
-          onPressed: () {
-            final name = nameCtrl.text.trim();
-            final host = hostCtrl.text.trim();
-            final port = portCtrl.text.trim();
-            if (name.isEmpty || host.isEmpty) return;
-            final url = 'http://$host${port.isNotEmpty ? ':$port' : ''}';
-            Navigator.pop(
-              ctx,
-              (entry ?? ServerEntry(name: name, url: url)).copyWith(
-                name: name,
-                url: url,
-                username: userCtrl.text.trim(),
-                password: passCtrl.text,
-              ),
-            );
-          },
-          child: const Text('保存'),
-        ),
-      ],
-    ),
-  );
-  nameCtrl.dispose();
-  hostCtrl.dispose();
-  portCtrl.dispose();
-  userCtrl.dispose();
-  passCtrl.dispose();
-  return result;
-}
-
-InputDecoration _inputDec(String label, String hint) {
-  return InputDecoration(
-    labelText: label,
-    hintText: hint,
-    labelStyle: const TextStyle(color: AppColors.textSecondary),
-    hintStyle: TextStyle(color: AppColors.textTertiary),
-    enabledBorder: const OutlineInputBorder(
-        borderSide: BorderSide(color: AppColors.border)),
-    focusedBorder: const OutlineInputBorder(
-        borderSide: BorderSide(color: AppColors.borderFocused)),
-  );
 }

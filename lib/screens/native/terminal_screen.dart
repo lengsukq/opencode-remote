@@ -96,11 +96,11 @@ class _TerminalScreenState extends State<TerminalScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = isDarkMode(context);
-    final bgColor = isDark ? const Color(0xFF1A1A1A) : const Color(0xFF1E1E1E);
-    final textColor = isDark ? const Color(0xFFD4D4D4) : const Color(0xFFCCCCCC);
-    final inputColor = const Color(0xFF98C379);
-    final errorColor = const Color(0xFFE06C75);
-    const promptColor = Color(0xFF61AFEF);
+    final bgColor = isDark ? AppColors.terminalBg : const Color(0xFF1E1E1E);
+    final textColor = isDark ? AppColors.terminalText : const Color(0xFFCCCCCC);
+    final inputColor = AppColors.terminalInput;
+    final errorColor = AppColors.terminalError;
+    const promptColor = AppColors.terminalPrompt;
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -111,7 +111,7 @@ class _TerminalScreenState extends State<TerminalScreen> {
         title: const Text('Terminal', style: TextStyle(fontFamily: 'monospace', fontSize: 14)),
         actions: [
           IconButton(
-            icon: const Icon(Icons.delete_outline, color: Color(0xFF888888), size: 20),
+            icon: const Icon(Icons.delete_outline, color: AppColors.terminalIcon, size: 20),
             tooltip: '清除',
             onPressed: () => setState(() => _lines.clear()),
           ),
@@ -142,7 +142,7 @@ class _TerminalScreenState extends State<TerminalScreen> {
             ),
           ),
           Container(
-            color: const Color(0xFF252526),
+            color: AppColors.terminalInputBg,
             padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
             child: Row(
               children: [
@@ -163,7 +163,7 @@ class _TerminalScreenState extends State<TerminalScreen> {
                 if (_running)
                   const SizedBox(
                     width: 14, height: 14,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF61AFEF)),
+                    child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.terminalPrompt),
                   ),
               ],
             ),

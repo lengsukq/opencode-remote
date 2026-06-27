@@ -40,6 +40,15 @@ class AppColors {
   static const EdgeInsets kPaddingScreen = EdgeInsets.all(16);
   static const EdgeInsets kPaddingCard = EdgeInsets.all(14);
   static const EdgeInsets kPaddingInput = EdgeInsets.symmetric(horizontal: 16, vertical: 10);
+
+  // Terminal colors
+  static const terminalBg = Color(0xFF1A1A1A);
+  static const terminalText = Color(0xFFD4D4D4);
+  static const terminalInput = Color(0xFF98C379);
+  static const terminalError = Color(0xFFE06C75);
+  static const terminalPrompt = Color(0xFF61AFEF);
+  static const terminalIcon = Color(0xFF888888);
+  static const terminalInputBg = Color(0xFF252526);
 }
 
 class DarkColors {
@@ -65,4 +74,13 @@ class DarkColors {
 
   static const shadow = Color(0x33000000);
   static const shadowStrong = Color(0x4C000000);
+
+  // Terminal colors
+  static const terminalBg = Color(0xFF1A1A1A);
+  static const terminalText = Color(0xFFD4D4D4);
+  static const terminalInput = Color(0xFF98C379);
+  static const terminalError = Color(0xFFE06C75);
+  static const terminalPrompt = Color(0xFF61AFEF);
+  static const terminalIcon = Color(0xFF888888);
+  static const terminalInputBg = Color(0xFF252526);
 }

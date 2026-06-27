@@ -3,6 +3,8 @@ import '../../models.dart';
 import '../../theme.dart';
 import '../../services/opencode_api.dart';
 import '../../widgets/diff_view.dart';
+import '../../widgets/app_dialog.dart';
+import '../../widgets/app_bottom_sheet.dart';
 import 'chat_screen.dart';
 
 class SessionListScreen extends StatefulWidget {
@@ -61,31 +63,11 @@ class _SessionListScreenState extends State<SessionListScreen> {
   }
 
   Future<void> _createSession() async {
-    final result = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        title: const Text('新建会话', style: TextStyle(color: AppColors.textPrimary)),
-        content: TextField(
-          autofocus: true,
-          style: const TextStyle(color: AppColors.textPrimary),
-          decoration: const InputDecoration(
-            hintText: '会话标题（可选）',
-            hintStyle: TextStyle(color: AppColors.textTertiary),
-            enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: AppColors.border)),
-            focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: AppColors.borderFocused)),
-          ),
-          onSubmitted: (v) => Navigator.pop(ctx, v),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消', style: TextStyle(color: AppColors.textSecondary))),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
-            onPressed: () => Navigator.pop(ctx, ''),
-            child: const Text('创建空会话'),
-          ),
-        ],
-      ),
+    final result = await AppDialog.showTextInput(
+      context,
+      title: '新建会话',
+      hintText: '会话标题（可选）',
+      confirmLabel: '创建空会话',
     );
     if (result == null) return;
     try {
@@ -99,73 +81,21 @@ class _SessionListScreenState extends State<SessionListScreen> {
   }
 
   Future<void> _showSessionActions(Session session) async {
-    final action = await showModalBottomSheet<String>(
-      context: context,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(session.title.isNotEmpty ? session.title : '未命名会话', style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
-            ),
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.edit, color: AppColors.textSecondary),
-              title: const Text('重命名', style: TextStyle(color: AppColors.textPrimary)),
-              onTap: () => Navigator.pop(ctx, 'rename'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.share, color: AppColors.textSecondary),
-              title: const Text('分享', style: TextStyle(color: AppColors.textPrimary)),
-              onTap: () => Navigator.pop(ctx, 'share'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.stop, color: AppColors.textSecondary),
-              title: const Text('中止', style: TextStyle(color: AppColors.textPrimary)),
-              onTap: () => Navigator.pop(ctx, 'abort'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.block, color: AppColors.textSecondary),
-              title: const Text('停止分享', style: TextStyle(color: AppColors.textPrimary)),
-              onTap: () => Navigator.pop(ctx, 'unshare'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.account_tree, color: AppColors.textSecondary),
-              title: const Text('子会话', style: TextStyle(color: AppColors.textPrimary)),
-              onTap: () => Navigator.pop(ctx, 'children'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.checklist, color: AppColors.textSecondary),
-              title: const Text('待办列表', style: TextStyle(color: AppColors.textPrimary)),
-              onTap: () => Navigator.pop(ctx, 'todo'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.difference, color: AppColors.textSecondary),
-              title: const Text('查看差异', style: TextStyle(color: AppColors.textPrimary)),
-              onTap: () => Navigator.pop(ctx, 'diff'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.summarize, color: AppColors.textSecondary),
-              title: const Text('总结', style: TextStyle(color: AppColors.textPrimary)),
-              onTap: () => Navigator.pop(ctx, 'summarize'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.call_split, color: AppColors.textSecondary),
-              title: const Text('分叉', style: TextStyle(color: AppColors.textPrimary)),
-              onTap: () => Navigator.pop(ctx, 'fork'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.delete, color: AppColors.danger),
-              title: const Text('删除', style: TextStyle(color: AppColors.danger)),
-              onTap: () => Navigator.pop(ctx, 'delete'),
-            ),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
+    final action = await AppBottomSheet.showOptions<String>(
+      context,
+      title: session.title.isNotEmpty ? session.title : '未命名会话',
+      options: [
+        const BottomSheetOption(icon: Icons.edit, label: '重命名', value: 'rename'),
+        const BottomSheetOption(icon: Icons.share, label: '分享', value: 'share'),
+        const BottomSheetOption(icon: Icons.stop, label: '中止', value: 'abort'),
+        const BottomSheetOption(icon: Icons.block, label: '停止分享', value: 'unshare'),
+        const BottomSheetOption(icon: Icons.account_tree, label: '子会话', value: 'children'),
+        const BottomSheetOption(icon: Icons.checklist, label: '待办列表', value: 'todo'),
+        const BottomSheetOption(icon: Icons.difference, label: '查看差异', value: 'diff'),
+        const BottomSheetOption(icon: Icons.summarize, label: '总结', value: 'summarize'),
+        const BottomSheetOption(icon: Icons.call_split, label: '分叉', value: 'fork'),
+        const BottomSheetOption(icon: Icons.delete, label: '删除', value: 'delete', destructive: true),
+      ],
     );
     if (action == null) return;
     switch (action) {
@@ -307,34 +237,13 @@ class _SessionListScreenState extends State<SessionListScreen> {
   }
 
   Future<void> _renameSession(Session session) async {
-    final result = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        title: const Text('重命名', style: TextStyle(color: AppColors.textPrimary)),
-        content: TextField(
-          autofocus: true,
-          controller: TextEditingController(text: session.title),
-          style: const TextStyle(color: AppColors.textPrimary),
-          decoration: const InputDecoration(
-            hintText: '新标题',
-            hintStyle: TextStyle(color: AppColors.textTertiary),
-            enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: AppColors.border)),
-            focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: AppColors.borderFocused)),
-          ),
-          onSubmitted: (v) => Navigator.pop(ctx, v),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消', style: TextStyle(color: AppColors.textSecondary))),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
-            onPressed: () => Navigator.pop(ctx, ''),
-            child: const Text('确定'),
-          ),
-        ],
-      ),
+    final result = await AppDialog.showTextInput(
+      context,
+      title: '重命名',
+      initialValue: session.title,
+      hintText: '新标题',
     );
-    if (result == null || result.isEmpty) return;
+    if (result == null || result.trim().isEmpty) return;
     try {
       await widget.api.updateSession(session.id, title: result.trim());
       await _load();
@@ -409,13 +318,13 @@ class _SessionListScreenState extends State<SessionListScreen> {
 
   Future<void> _summarizeSession(Session session) async {
     try {
-      final success = await widget.api.summarizeSession(session.id);
+      await widget.api.summarizeSession(session.id);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(success ? '总结完成' : '总结失败', style: TextStyle(color: AppColors.textPrimary)),
+          content: const Text('总结完成', style: TextStyle(color: AppColors.textPrimary)),
           backgroundColor: AppColors.surface,
         ));
-        if (success) await _load();
+        await _load();
       }
     } catch (e) {
       if (mounted) {

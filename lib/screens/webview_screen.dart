@@ -4,6 +4,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 import '../models.dart';
 import '../theme.dart';
 import '../services/storage_service.dart';
+import '../widgets/server_edit_dialog.dart';
 import 'launcher_screen.dart';
 
 class WebViewScreen extends StatefulWidget {
@@ -113,7 +114,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
   Future<void> _addNew() async {
     final result = await showDialog<ServerEntry>(
       context: context,
-      builder: (_) => _EditDialog(),
+      builder: (_) => const AppServerEditDialog(),
     );
     if (result != null) {
       result.lastUsed = DateTime.now().millisecondsSinceEpoch;
@@ -167,91 +168,6 @@ class _WebViewScreenState extends State<WebViewScreen> {
           ],
         ),
         body: WebViewWidget(controller: _controller),
-      ),
-    );
-  }
-}
-
-class _EditDialog extends StatefulWidget {
-  @override
-  State<_EditDialog> createState() => _EditDialogState();
-}
-
-class _EditDialogState extends State<_EditDialog> {
-  final _nameCtrl = TextEditingController();
-  final _hostCtrl = TextEditingController();
-  final _portCtrl = TextEditingController(text: '4096');
-  final _userCtrl = TextEditingController(text: 'opencode');
-  final _passCtrl = TextEditingController();
-
-  @override
-  void dispose() {
-    _nameCtrl.dispose();
-    _hostCtrl.dispose();
-    _portCtrl.dispose();
-    _userCtrl.dispose();
-    _passCtrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      backgroundColor: AppColors.surface,
-      title: const Text('添加服务器', style: TextStyle(color: AppColors.textPrimary)),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _field('名称', '家里PC', _nameCtrl),
-            const SizedBox(height: 12),
-            _field('地址', '10.10.10.216', _hostCtrl, keyboardType: TextInputType.url),
-            const SizedBox(height: 12),
-            _field('端口', '4096', _portCtrl, keyboardType: TextInputType.number),
-            const SizedBox(height: 12),
-            _field('用户名', 'opencode', _userCtrl),
-            const SizedBox(height: 12),
-            _field('密码', '', _passCtrl, obscure: true),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () {
-            FocusScope.of(context).unfocus();
-            Navigator.pop(context);
-          },
-          child: const Text('取消', style: TextStyle(color: AppColors.textSecondary)),
-        ),
-        FilledButton(
-          style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
-          onPressed: () {
-            final name = _nameCtrl.text.trim();
-            final host = _hostCtrl.text.trim();
-            final port = _portCtrl.text.trim();
-            if (name.isEmpty || host.isEmpty) return;
-            final url = 'http://$host${port.isNotEmpty ? ':$port' : ''}';
-            Navigator.pop(context, ServerEntry(name: name, url: url, username: _userCtrl.text.trim(), password: _passCtrl.text));
-          },
-          child: const Text('保存'),
-        ),
-      ],
-    );
-  }
-
-  Widget _field(String label, String hint, TextEditingController ctrl, {bool obscure = false, TextInputType? keyboardType}) {
-    return TextField(
-      controller: ctrl,
-      obscureText: obscure,
-      keyboardType: keyboardType,
-      style: const TextStyle(color: AppColors.textPrimary),
-      decoration: InputDecoration(
-        labelText: label,
-        hintText: hint,
-        labelStyle: const TextStyle(color: AppColors.textSecondary),
-        hintStyle: TextStyle(color: AppColors.textTertiary),
-        enabledBorder: const OutlineInputBorder(borderSide: BorderSide(color: AppColors.border)),
-        focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: AppColors.borderFocused)),
       ),
     );
   }

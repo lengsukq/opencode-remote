@@ -5,6 +5,8 @@ import '../../services/storage_service.dart';
 import '../../services/opencode_api.dart';
 import '../../utils/time_format.dart';
 import '../settings_sheet.dart';
+import '../../widgets/app_dialog.dart';
+import '../../widgets/app_bottom_sheet.dart';
 import 'session_list_screen.dart';
 import 'file_browser_screen.dart';
 import 'project_screen.dart';
@@ -70,13 +72,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _openSettings() {
-    showModalBottomSheet(
+    AppBottomSheet.show(
       context: context,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (_) => SettingsSheet(entry: _entry, currentMode: AppMode.native),
+      child: SettingsSheet(entry: _entry, currentMode: AppMode.native),
     );
   }
 
@@ -84,28 +82,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final servers = await StorageService.loadServers();
     if (!mounted) return;
 
-    final selected = await showModalBottomSheet<ServerEntry>(
+    final selected = await AppBottomSheet.show<ServerEntry>(
       context: context,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text('切换服务器', style: TextStyle(color: AppColors.textPrimary, fontSize: 16)),
-            ),
-            const Divider(),
-            ...servers.map((s) => ListTile(
-              leading: Icon(Icons.computer, color: s.id == _entry.id ? AppColors.primary : AppColors.textSecondary),
-              title: Text(s.name, style: TextStyle(color: s.id == _entry.id ? AppColors.primary : AppColors.textPrimary)),
-              subtitle: Text(s.url, style: TextStyle(color: AppColors.textTertiary, fontSize: 12)),
-              onTap: () => Navigator.pop(ctx, s),
-            )),
-          ],
+      child: Builder(
+        builder: (ctx) => SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text('切换服务器', style: TextStyle(color: AppColors.textPrimary, fontSize: 16)),
+              ),
+              const Divider(),
+              ...servers.map((s) => ListTile(
+                leading: Icon(Icons.computer, color: s.id == _entry.id ? AppColors.primary : AppColors.textSecondary),
+                title: Text(s.name, style: TextStyle(color: s.id == _entry.id ? AppColors.primary : AppColors.textPrimary)),
+                subtitle: Text(s.url, style: TextStyle(color: AppColors.textTertiary, fontSize: 12)),
+                onTap: () => Navigator.pop(ctx, s),
+              )),
+            ],
+          ),
         ),
       ),
     );
@@ -124,57 +120,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _showAuthDialog() async {
-    final providerID = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        title: const Text('设置认证', style: TextStyle(color: AppColors.textPrimary)),
-        content: TextField(
-          autofocus: true,
-          style: const TextStyle(color: AppColors.textPrimary),
-          decoration: const InputDecoration(
-            hintText: 'provider ID (如 openai)',
-            hintStyle: TextStyle(color: AppColors.textTertiary),
-            enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: AppColors.border)),
-            focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: AppColors.borderFocused)),
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消', style: TextStyle(color: AppColors.textSecondary))),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
-            onPressed: () => Navigator.pop(ctx, ''),
-            child: const Text('确定'),
-          ),
-        ],
-      ),
+    final providerID = await AppDialog.showTextInput(
+      context,
+      title: '设置认证',
+      hintText: 'provider ID (如 openai)',
     );
     if (providerID == null || providerID.isEmpty) return;
-    final apiKey = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        title: const Text('API Key', style: TextStyle(color: AppColors.textPrimary)),
-        content: TextField(
-          autofocus: true,
-          obscureText: true,
-          style: const TextStyle(color: AppColors.textPrimary),
-          decoration: const InputDecoration(
-            hintText: 'sk-...',
-            hintStyle: TextStyle(color: AppColors.textTertiary),
-            enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: AppColors.border)),
-            focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: AppColors.borderFocused)),
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消', style: TextStyle(color: AppColors.textSecondary))),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
-            onPressed: () => Navigator.pop(ctx, ''),
-            child: const Text('确定'),
-          ),
-        ],
-      ),
+    final apiKey = await AppDialog.showTextInput(
+      context,
+      title: 'API Key',
+      hintText: 'sk-...',
+      obscureText: true,
     );
     if (apiKey == null || apiKey.isEmpty) return;
     try {
@@ -307,7 +263,7 @@ class _StatusCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppColors.kDefaultBorderRadius),
         border: Border.all(color: AppColors.border),
         boxShadow: [
           BoxShadow(color: AppColors.shadow, blurRadius: 10, offset: const Offset(0, 2)),
