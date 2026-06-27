@@ -4,6 +4,8 @@ import '../../theme.dart';
 import '../../services/opencode_api.dart';
 import '../../widgets/app_full_screen_dialog.dart';
 import '../../widgets/app_snackbar.dart';
+import '../../strings.dart';
+import '../../widgets/app_states.dart';
 
 class FileBrowserScreen extends StatefulWidget {
   final ServerEntry entry;
@@ -46,12 +48,12 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
   final List<String> _history = [];
 
   // Search mode
-  bool _searchMode = false;
+  bool _isSearchMode = false;
   final _searchCtrl = TextEditingController();
   List<SearchMatch> _searchResults = [];
   List<String> _fileResults = [];
   List<Symbol> _symbolResults = [];
-  bool _searching = false;
+  bool _isSearching = false;
   String _searchTabName = 'file'; // file | text | symbol
 
   @override
@@ -124,7 +126,7 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
       } catch (e) {
         setState(() => node.loading = false);
         if (mounted) {
-          AppSnackBar.error(context, '加载失败: $e');
+          AppSnackBar.error(context, '${S.loadFailed}: $e');
         }
       }
     } else {
@@ -153,7 +155,7 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
       );
     } catch (e) {
       if (mounted) {
-        AppSnackBar.error(context, '读取失败: $e');
+        AppSnackBar.error(context, '${S.readFailed}: $e');
       }
     }
   }
@@ -180,7 +182,7 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
               Text('${node.size} bytes', style: TextStyle(color: AppColors.textTertiary, fontSize: 12)),
             ],
             const SizedBox(height: 16),
-            Text('图片预览需要在服务端配置后可用', style: TextStyle(color: AppColors.textSecondary, fontSize: 13), textAlign: TextAlign.center),
+            Text(S.imagePreviewHint, style: TextStyle(color: AppColors.textSecondary, fontSize: 13), textAlign: TextAlign.center),
           ],
         ),
       ),
@@ -205,7 +207,7 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
               const SizedBox(height: 12),
               Text(name, style: TextStyle(color: AppColors.textPrimary, fontSize: 14)),
               const SizedBox(height: 16),
-              Text('图片预览需要在服务端配置后可用', style: TextStyle(color: AppColors.textSecondary, fontSize: 13), textAlign: TextAlign.center),
+              Text(S.imagePreviewHint, style: TextStyle(color: AppColors.textSecondary, fontSize: 13), textAlign: TextAlign.center),
             ],
           ),
         ),
@@ -228,7 +230,7 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
       );
     } catch (e) {
       if (mounted) {
-        AppSnackBar.error(context, '读取失败: $e');
+        AppSnackBar.error(context, '${S.readFailed}: $e');
       }
     }
   }
@@ -236,8 +238,8 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
   // --- Search ---
   void _toggleSearch() {
     setState(() {
-      _searchMode = !_searchMode;
-      if (!_searchMode) {
+      _isSearchMode = !_isSearchMode;
+      if (!_isSearchMode) {
         _searchResults = [];
         _fileResults = [];
         _symbolResults = [];
@@ -248,7 +250,7 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
 
   Future<void> _doSearch(String query) async {
     if (query.isEmpty) return;
-    setState(() => _searching = true);
+    setState(() => _isSearching = true);
     try {
       switch (_searchTabName) {
         case 'file':
@@ -263,18 +265,18 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
       }
     } catch (e) {
       if (mounted) {
-        AppSnackBar.error(context, '搜索失败: $e');
+        AppSnackBar.error(context, '${S.searchFailed}: $e');
       }
     }
-    if (mounted) setState(() => _searching = false);
+    if (mounted) setState(() => _isSearching = false);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: _searchMode ? _searchAppBar() : _browserAppBar(),
-      body: _searchMode ? _buildSearchResults() : Column(
+      appBar: _isSearchMode ? _searchAppBar() : _browserAppBar(),
+      body: _isSearchMode ? _buildSearchResults() : Column(
         children: [
           _buildBreadcrumb(),
           Expanded(child: _buildFileList()),
@@ -334,16 +336,16 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
               onPressed: () {},
             )
           : null,
-      title: Text(_currentPath.isEmpty ? '文件浏览' : _currentPath.split('/').last),
+      title: Text(_currentPath.isEmpty ? S.fileBrowser : _currentPath.split('/').last),
       actions: [
         IconButton(
           icon: const Icon(Icons.refresh, color: AppColors.textSecondary),
-          tooltip: '刷新',
+          tooltip: S.refresh,
           onPressed: _loadRoot,
         ),
         IconButton(
           icon: const Icon(Icons.search, color: AppColors.textSecondary),
-          tooltip: '搜索',
+          tooltip: S.search,
           onPressed: _toggleSearch,
         ),
       ],
@@ -361,7 +363,7 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
         autofocus: true,
         style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
         decoration: InputDecoration(
-          hintText: '搜索文件、内容或符号',
+          hintText: S.searchFiles,
           hintStyle: TextStyle(color: AppColors.textTertiary),
           border: InputBorder.none,
           filled: false,
@@ -369,7 +371,7 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
         onSubmitted: _doSearch,
       ),
       actions: [
-        if (_searching)
+        if (_isSearching)
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 12),
             child: SizedBox(
@@ -386,8 +388,8 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
       children: [
         _searchTabBar(),
         Expanded(
-          child: _searching
-              ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+          child: _isSearching
+              ? const Center(child: AppLoadingIndicator())
               : _searchTabName == 'file'
                   ? _fileResults.isNotEmpty
                       ? ListView.builder(
@@ -455,9 +457,9 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
       ),
       child: Row(
         children: [
-          _tabButton('file', '文件名'),
-          _tabButton('text', '内容'),
-          _tabButton('symbol', '符号'),
+          _tabButton('file', S.fileName),
+          _tabButton('text', S.content),
+          _tabButton('symbol', S.symbol),
         ],
       ),
     );
@@ -498,14 +500,14 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
 
   Widget _buildFileList() {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+      return const Center(child: AppLoadingIndicator());
     }
     if (_error != null) {
       return Center(child: Text(_error!, style: TextStyle(color: AppColors.textSecondary)));
     }
     final visible = _visibleNodes;
     if (visible.isEmpty) {
-      return Center(child: Text('空目录', style: TextStyle(color: AppColors.textTertiary)));
+      return Center(child: Text(S.emptyDir, style: TextStyle(color: AppColors.textTertiary)));
     }
     return ListView.builder(
       padding: const EdgeInsets.all(4),

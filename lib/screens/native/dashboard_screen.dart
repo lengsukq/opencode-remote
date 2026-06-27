@@ -7,7 +7,9 @@ import '../../utils/time_format.dart';
 import '../settings_sheet.dart';
 import '../../widgets/app_dialog.dart';
 import '../../widgets/app_bottom_sheet.dart';
+import '../../widgets/app_card.dart';
 import '../../widgets/app_snackbar.dart';
+import '../../widgets/app_states.dart';
 import 'session_list_screen.dart';
 import 'file_browser_screen.dart';
 import 'project_screen.dart';
@@ -187,7 +189,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         color: AppColors.primary,
         onRefresh: _load,
         child: _loading
-            ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+            ? const AppLoadingIndicator()
             : _error != null
                 ? _errorView()
                 : _buildContent(),
@@ -303,7 +305,7 @@ class _StatusCard extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
               color: isHealthy ? AppColors.success.withValues(alpha: 0.1) : AppColors.danger.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: BorderRadius.circular(AppColors.kChipBorderRadius),
             ),
             child: Text(
               isHealthy ? '在线' : '离线',
@@ -329,41 +331,45 @@ class _SessionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final timeStr = formatRelativeTime(session.updatedAt);
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 3),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: AppCard(
+        borderRadius: AppColors.kCardBorderRadius,
+        padding: EdgeInsets.zero,
         child: InkWell(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppColors.kCardBorderRadius),
           onTap: () {
             Navigator.push(context, MaterialPageRoute(
               builder: (_) => ChatScreen(session: session, entry: entry, api: api),
             ));
           },
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryLight,
-                  borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryLight,
+                    borderRadius: BorderRadius.circular(AppColors.kSmallBorderRadius),
+                  ),
+                  child: const Icon(Icons.chat, color: AppColors.primary, size: 16),
                 ),
-                child: const Icon(Icons.chat, color: AppColors.primary, size: 16),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(session.title.isNotEmpty ? session.title : '未命名会话',
-                        style: const TextStyle(color: AppColors.textPrimary, fontSize: 13)),
-                    const SizedBox(height: 2),
-                    Text(timeStr, style: TextStyle(color: AppColors.textTertiary, fontSize: 11)),
-                  ],
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(session.title.isNotEmpty ? session.title : '未命名会话',
+                          style: const TextStyle(color: AppColors.textPrimary, fontSize: 13)),
+                      const SizedBox(height: 2),
+                      Text(timeStr, style: TextStyle(color: AppColors.textTertiary, fontSize: 11)),
+                    ],
+                  ),
                 ),
-              ),
-              Icon(Icons.chevron_right, color: AppColors.textTertiary, size: 16),
-            ],
+                Icon(Icons.chevron_right, color: AppColors.textTertiary, size: 16),
+              ],
+            ),
           ),
         ),
       ),
@@ -424,7 +430,7 @@ class _ActionButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
           color: AppColors.surface,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppColors.kCardBorderRadius),
           border: Border.all(color: AppColors.border),
         ),
         child: Column(

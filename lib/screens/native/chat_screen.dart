@@ -17,6 +17,7 @@ import '../../widgets/todo_banner.dart';
 import '../../widgets/app_snackbar.dart';
 import '../../widgets/app_dialog.dart';
 import '../../widgets/app_bottom_sheet.dart';
+import '../../widgets/app_states.dart';
 import 'message_bubble.dart';
 import 'model_picker_sheet.dart';
 
@@ -40,22 +41,20 @@ class _ChatScreenState extends State<ChatScreen> {
   List<Message> _messages = [];
   List<Agent> _agents = [];
   List<Provider> _providers = [];
-  List<Command> _commands = [];
-  bool _loading = true;
+  late List<Command> _commands = [];
+  bool _isLoading = true;
   String? _error;
   final _inputCtrl = TextEditingController();
   final _scrollCtrl = ScrollController();
-  bool _sending = false;
+  bool _isSending = false;
   String? _selectedAgent;
   String? _selectedModel;
-  bool _showCommands = false;
-  List<Command> _filteredCommands = [];
+  final _cmdState = _CmdState();
   EventService? _eventService;
   StreamSubscription<ServerEvent>? _eventSub;
-  final Map<String, String> _streamingDeltas = {};
-  final Map<String, Map<String, dynamic>> _streamingToolStates = {};
+  final _streamState = _StreamState();
   List<Map<String, dynamic>> _attachments = [];
-  bool _shellMode = false;
+  bool _isShellMode = false;
   final List<String> _inputHistory = [];
   List<Todo> _todos = [];
   String? _revertSnapshot;
@@ -94,7 +93,7 @@ class _ChatScreenState extends State<ChatScreen> {
         switch (event.type) {
           case EventType.messageNew:
           case EventType.sessionUpdated:
-            _streamingDeltas.clear();
+            _streamState.clear();
             _refreshMessages();
           case EventType.messagePartDelta:
             _handleDelta(event.data);
@@ -120,16 +119,16 @@ class _ChatScreenState extends State<ChatScreen> {
     if (partID == null) return;
 
     if (field == 'text' && delta != null) {
-      _streamingDeltas[partID] = (_streamingDeltas[partID] ?? '') + delta;
+      _streamState.deltas[partID] = (_streamState.deltas[partID] ?? '') + delta;
     } else if (field == 'state.status' && delta != null) {
-      _streamingToolStates[partID] = {...?_streamingToolStates[partID], 'status': delta};
+      _streamState.toolStates[partID] = {...?_streamState.toolStates[partID], 'status': delta};
     } else if (field == 'state.output' && delta != null) {
-      final existing = (_streamingToolStates[partID]?['output'] as String? ?? '') + delta;
-      _streamingToolStates[partID] = {...?_streamingToolStates[partID], 'output': existing};
+      final existing = (_streamState.toolStates[partID]?['output'] as String? ?? '') + delta;
+      _streamState.toolStates[partID] = {...?_streamState.toolStates[partID], 'output': existing};
     } else if (field == 'state.error' && delta != null) {
-      _streamingToolStates[partID] = {...?_streamingToolStates[partID], 'error': delta};
+      _streamState.toolStates[partID] = {...?_streamState.toolStates[partID], 'error': delta};
     } else if (field == 'state.title' && delta != null) {
-      _streamingToolStates[partID] = {...?_streamingToolStates[partID], 'title': delta};
+      _streamState.toolStates[partID] = {...?_streamState.toolStates[partID], 'title': delta};
     }
     setState(() {});
   }
@@ -203,29 +202,29 @@ class _ChatScreenState extends State<ChatScreen> {
   void _onInputChanged() {
     final text = _inputCtrl.text;
     final isShell = text.startsWith('!') && !text.startsWith('!/');
-    if (isShell != _shellMode) setState(() => _shellMode = isShell);
+    if (isShell != _isShellMode) setState(() => _isShellMode = isShell);
     if (text.startsWith('/') && text.length > 1) {
       final query = text.substring(1).toLowerCase();
       setState(() {
-        _showCommands = true;
-        _filteredCommands = _commands.where((c) => c.id.toLowerCase().contains(query) || c.title.toLowerCase().contains(query)).toList();
+        _cmdState.show = true;
+        _cmdState.filtered = _commands.where((c) => c.id.toLowerCase().contains(query) || c.title.toLowerCase().contains(query)).toList();
       });
     } else if (text.isEmpty || !text.startsWith('/')) {
-      setState(() => _showCommands = false);
+      setState(() => _cmdState.show = false);
     }
   }
 
   // --- Data loading ---
 
   Future<void> _load() async {
-    if (mounted) setState(() => _loading = true);
+    if (mounted) setState(() => _isLoading = true);
     try {
       final data = await _loadAllData();
       if (!mounted) return;
       _applyLoadedData(data);
     } catch (e) {
       if (!mounted) return;
-      setState(() { _loading = false; _error = e.toString(); });
+      setState(() { _isLoading = false; _error = e.toString(); });
     }
   }
 
@@ -262,7 +261,7 @@ class _ChatScreenState extends State<ChatScreen> {
         final buildAgent = _agents.where((a) => a.name == 'build').firstOrNull;
         _selectedAgent = buildAgent?.name ?? _agents.first.name;
       }
-      _loading = false;
+      _isLoading = false;
       _error = null;
     });
     _scrollToBottom();
@@ -292,9 +291,9 @@ class _ChatScreenState extends State<ChatScreen> {
     var text = _inputCtrl.text.trim();
     if (text.isEmpty) return;
     _inputCtrl.clear();
-    setState(() { _sending = true; _showCommands = false; });
+    setState(() { _isSending = true; _cmdState.show = false; });
 
-    final isShellCmd = _shellMode && text.startsWith('!');
+    final isShellCmd = _isShellMode && text.startsWith('!');
     if (isShellCmd) text = text.substring(1).trim();
 
     try {
@@ -311,7 +310,7 @@ class _ChatScreenState extends State<ChatScreen> {
       await _refreshMessages();
     } catch (e) {
       if (mounted) _showError('Send Failed', '$e');
-      setState(() => _sending = false);
+      setState(() => _isSending = false);
     }
   }
 
@@ -350,11 +349,11 @@ class _ChatScreenState extends State<ChatScreen> {
   Future<void> _abortRequest() async {
     try {
       await widget.api.abortSession(widget.session.id);
-      setState(() => _sending = false);
+      setState(() => _isSending = false);
       await _refreshMessages();
     } catch (e) {
       debugPrint('ChatScreen._abortRequest: $e');
-      setState(() => _sending = false);
+      setState(() => _isSending = false);
     }
   }
 
@@ -385,11 +384,9 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<String?> _showAttachmentPicker() {
-    return showModalBottomSheet<String>(
+    return AppBottomSheet.show<String>(
       context: context,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
-      builder: (ctx) => SafeArea(
+      child: SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -398,9 +395,9 @@ class _ChatScreenState extends State<ChatScreen> {
               child: Text('Add Attachment', style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
             ),
             const Divider(height: 1),
-            _attachmentOption(ctx, Icons.image, 'Image', 'From Gallery', 'image'),
-            _attachmentOption(ctx, Icons.camera_alt, 'Camera', 'Take a Photo', 'camera'),
-            _attachmentOption(ctx, Icons.attach_file, 'File', 'From Local Storage', 'file'),
+            _attachmentOption(context, Icons.image, 'Image', 'From Gallery', 'image'),
+            _attachmentOption(context, Icons.camera_alt, 'Camera', 'Take a Photo', 'camera'),
+            _attachmentOption(context, Icons.attach_file, 'File', 'From Local Storage', 'file'),
             const SizedBox(height: 8),
           ],
         ),
@@ -452,7 +449,7 @@ class _ChatScreenState extends State<ChatScreen> {
   Future<void> _runShell() async {
     final command = await _showShellDialog();
     if (command == null || command.isEmpty) return;
-    setState(() => _sending = true);
+    setState(() => _isSending = true);
     try {
       await widget.api.runShell(widget.session.id, command: command, agent: _selectedAgent, model: _selectedModel);
       await _refreshMessages();
@@ -460,7 +457,7 @@ class _ChatScreenState extends State<ChatScreen> {
     } catch (e) {
       if (mounted) {
         AppSnackBar.error(context, 'Shell failed: $e');
-        setState(() => _sending = false);
+        setState(() => _isSending = false);
       }
     }
   }
@@ -585,7 +582,7 @@ class _ChatScreenState extends State<ChatScreen> {
       await _refreshMessages();
       final lastMsg = _messages.isNotEmpty ? _messages.last : null;
       final hasReply = lastMsg != null && lastMsg.role != 'user' && lastMsg.content.isNotEmpty;
-      if (mounted && hasReply) setState(() => _sending = false);
+      if (mounted && hasReply) setState(() => _isSending = false);
     });
   }
 
@@ -779,20 +776,18 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _showError(String title, String message) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        title: Text(title, style: TextStyle(color: AppColors.textPrimary)),
-        content: Text(message, style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
-        actions: [
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
+    AppDialog.showCustom(
+      context,
+      title: title,
+      showDefaultCancel: false,
+      content: Text(message, style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+      actions: [
+        FilledButton(
+          style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+          onPressed: () => Navigator.pop(context),
+          child: const Text('OK'),
+        ),
+      ],
     );
   }
 
@@ -828,14 +823,14 @@ class _ChatScreenState extends State<ChatScreen> {
             children: [
               Expanded(child: _buildMessageList()),
               if (_revertSnapshot != null) RevertBanner(onRestore: _handleRestore),
-              if (_showCommands && _filteredCommands.isNotEmpty) CommandSuggestions(commands: _filteredCommands, onSelect: _handleCommandSelect),
+              if (_cmdState.show && _cmdState.filtered.isNotEmpty) CommandSuggestions(commands: _cmdState.filtered, onSelect: _handleCommandSelect),
               if (_attachments.isNotEmpty) AttachmentPreview(attachments: _attachments, onRemove: (i) => setState(() => _attachments.removeAt(i))),
               AgentBar(
                 agentName: agentName,
                 agentColor: agentColor ?? AppColors.primary,
                 selectedModel: _selectedModel,
                 tokens: widget.session.tokens,
-                sending: _sending,
+                sending: _isSending,
                 onAgentTap: _showAgentPicker,
                 onModelTap: _showModelPicker,
               ),
@@ -843,8 +838,8 @@ class _ChatScreenState extends State<ChatScreen> {
                 TodoBanner(done: _todos.where((t) => t.done).length, total: _todos.length),
               ChatInputBar(
                 controller: _inputCtrl,
-                shellMode: _shellMode,
-                sending: _sending,
+                shellMode: _isShellMode,
+                sending: _isSending,
                 onSend: _sendMessage,
                 onAbort: _abortRequest,
                 onPickAttachment: _pickAttachment,
@@ -869,11 +864,11 @@ class _ChatScreenState extends State<ChatScreen> {
   void _handleCommandSelect(Command c) {
     _inputCtrl.text = '/${c.id} ';
     _inputCtrl.selection = TextSelection.collapsed(offset: _inputCtrl.text.length);
-    setState(() => _showCommands = false);
+    setState(() => _cmdState.show = false);
   }
 
   Widget _buildMessageList() {
-    if (_loading) return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+    if (_isLoading) return const AppLoadingIndicator();
     if (_error != null) return Center(child: Text(_error!, style: TextStyle(color: AppColors.textSecondary)));
     if (_messages.isEmpty) return Center(child: Text('Start a conversation', style: TextStyle(color: AppColors.textTertiary)));
 
@@ -887,7 +882,7 @@ class _ChatScreenState extends State<ChatScreen> {
         return MessageBubble(
           message: _messages[i],
           isLatest: isLatest || isSecondLatest,
-          streamingText: _streamingDeltas.isNotEmpty && isLatest && !_messages[i].content.endsWith('\n') ? _streamingDeltas.values.last : null,
+          streamingText: _streamState.deltas.isNotEmpty && isLatest && !_messages[i].content.endsWith('\n') ? _streamState.deltas.values.last : null,
           onLongPress: () => _showMessageActions(_messages[i]),
           onApplyCode: _applyCode,
         );
@@ -926,4 +921,21 @@ class _LoadData {
   final Map<String, String> defaults;
 
   _LoadData(this.msgs, this.agents, this.providers, this.commands, this.defaults);
+}
+
+/// Helper to reduce _ChatScreenState member count (streaming state).
+class _StreamState {
+  final Map<String, String> deltas = {};
+  final Map<String, Map<String, dynamic>> toolStates = {};
+
+  void clear() {
+    deltas.clear();
+    toolStates.clear();
+  }
+}
+
+/// Helper to reduce _ChatScreenState member count (command state).
+class _CmdState {
+  bool show = false;
+  List<Command> filtered = [];
 }

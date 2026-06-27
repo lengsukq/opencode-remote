@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models.dart';
+import '../../strings.dart';
 import '../../theme.dart';
 import '../../widgets/app_section_header.dart';
 
@@ -60,7 +61,7 @@ class _ModelPickerSheetState extends State<ModelPickerSheet> {
               _buildHeader(),
               Expanded(
                 child: _query.isNotEmpty && _filtered.isEmpty
-                    ? Center(child: Text('无匹配模型', style: TextStyle(color: AppColors.textTertiary, fontSize: 13)))
+                    ? Center(child: Text(S.noMatchModel, style: TextStyle(color: AppColors.textTertiary, fontSize: 13)))
                     : ListView(
                         controller: scrollCtrl,
                         padding: const EdgeInsets.only(bottom: 16),
@@ -79,13 +80,13 @@ class _ModelPickerSheetState extends State<ModelPickerSheet> {
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
       child: Column(
         children: [
-          Text('选择模型', style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
+          Text(S.selectModel, style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
           const SizedBox(height: 12),
           TextField(
             controller: _searchCtrl,
             style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
             decoration: InputDecoration(
-              hintText: '搜索模型...',
+              hintText: S.searchModelHint,
               hintStyle: TextStyle(color: AppColors.textTertiary),
               prefixIcon: Icon(Icons.search, color: AppColors.textSecondary, size: 20),
               suffixIcon: _query.isNotEmpty ? IconButton(
@@ -98,15 +99,15 @@ class _ModelPickerSheetState extends State<ModelPickerSheet> {
               filled: true,
               fillColor: AppColors.background,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(AppColors.kSmallBorderRadius),
                 borderSide: const BorderSide(color: AppColors.border),
               ),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(AppColors.kSmallBorderRadius),
                 borderSide: const BorderSide(color: AppColors.border),
               ),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(AppColors.kSmallBorderRadius),
                 borderSide: const BorderSide(color: AppColors.borderFocused),
               ),
               contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),

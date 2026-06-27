@@ -7,6 +7,8 @@ import '../../widgets/app_dialog.dart';
 import '../../widgets/app_bottom_sheet.dart';
 import '../../widgets/app_snackbar.dart';
 import 'chat_screen.dart';
+import '../../widgets/app_card.dart';
+import '../../widgets/app_states.dart';
 
 class SessionListScreen extends StatefulWidget {
   final ServerEntry entry;
@@ -436,9 +438,9 @@ class _SessionListScreenState extends State<SessionListScreen> {
                   filled: true,
                   fillColor: AppColors.background,
                   contentPadding: const EdgeInsets.symmetric(vertical: 8),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: AppColors.border)),
-                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: AppColors.border)),
-                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: AppColors.borderFocused)),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppColors.kSmallBorderRadius), borderSide: BorderSide(color: AppColors.border)),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(AppColors.kSmallBorderRadius), borderSide: BorderSide(color: AppColors.border)),
+                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(AppColors.kSmallBorderRadius), borderSide: BorderSide(color: AppColors.borderFocused)),
                 ),
                 onChanged: (_) => setState(() {}),
               ),
@@ -448,7 +450,7 @@ class _SessionListScreenState extends State<SessionListScreen> {
               color: AppColors.primary,
               onRefresh: _load,
               child: _loading
-                  ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+                  ? const AppLoadingIndicator()
                   : _error != null
                       ? Center(child: Text(_error!, style: TextStyle(color: AppColors.textSecondary)))
                       : displaySessions.isEmpty
@@ -484,38 +486,40 @@ class _SessionTile extends StatelessWidget {
     final dt = DateTime.fromMillisecondsSinceEpoch(session.updatedAt);
     final timeStr = '${dt.month}/${dt.day} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
 
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: onTap,
-        onLongPress: onLongPress,
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryLight,
-                  borderRadius: BorderRadius.circular(10),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
+      child: AppCard(
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppColors.kCardBorderRadius),
+          onTap: onTap,
+          onLongPress: onLongPress,
+          child: Padding(
+            padding: AppColors.kPaddingCard,
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryLight,
+                    borderRadius: BorderRadius.circular(AppColors.kSmallBorderRadius),
+                  ),
+                  child: const Icon(Icons.chat_outlined, color: AppColors.primary, size: 20),
                 ),
-                child: const Icon(Icons.chat_outlined, color: AppColors.primary, size: 20),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(session.title.isNotEmpty ? session.title : '未命名会话',
-                        style: const TextStyle(color: AppColors.textPrimary, fontSize: 14, fontWeight: FontWeight.w500)),
-                    const SizedBox(height: 3),
-                    Text(timeStr, style: TextStyle(color: AppColors.textTertiary, fontSize: 11)),
-                  ],
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(session.title.isNotEmpty ? session.title : '未命名会话',
+                          style: const TextStyle(color: AppColors.textPrimary, fontSize: 14, fontWeight: FontWeight.w500)),
+                      const SizedBox(height: 3),
+                      Text(timeStr, style: TextStyle(color: AppColors.textTertiary, fontSize: 11)),
+                    ],
+                  ),
                 ),
-              ),
-              Icon(Icons.chevron_right, color: AppColors.textTertiary, size: 18),
-            ],
+                Icon(Icons.chevron_right, color: AppColors.textTertiary, size: 18),
+              ],
+            ),
           ),
         ),
       ),

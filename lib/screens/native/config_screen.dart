@@ -6,6 +6,8 @@ import '../../widgets/app_card.dart';
 import '../../widgets/app_input_decoration.dart';
 import '../../widgets/app_section_header.dart';
 import '../../widgets/app_snackbar.dart';
+import '../../strings.dart';
+import '../../widgets/app_states.dart';
 
 class ConfigScreen extends StatefulWidget {
   final ServerEntry entry;
@@ -82,29 +84,29 @@ class _ConfigScreenState extends State<ConfigScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.surface,
-        title: const Text('添加/更新配置', style: TextStyle(color: AppColors.textPrimary)),
+        title: Text(S.addUpdateConfig, style: TextStyle(color: AppColors.textPrimary)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: keyCtrl,
               style: const TextStyle(color: AppColors.textPrimary),
-              decoration: AppInputDecoration.standard(hintText: '配置键'),
+              decoration: AppInputDecoration.standard(hintText: S.configKey),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: valueCtrl,
               style: const TextStyle(color: AppColors.textPrimary),
-              decoration: AppInputDecoration.standard(hintText: '配置值'),
+              decoration: AppInputDecoration.standard(hintText: S.configValue),
             ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('取消', style: TextStyle(color: AppColors.textSecondary))),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(S.cancel, style: TextStyle(color: AppColors.textSecondary))),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('保存'),
+            child: Text(S.save),
           ),
         ],
       ),
@@ -113,11 +115,11 @@ class _ConfigScreenState extends State<ConfigScreen> {
     try {
       await widget.api.patchConfig({keyCtrl.text.trim(): valueCtrl.text.trim()});
       if (mounted) {
-        AppSnackBar.success(context, '配置已更新');
+        AppSnackBar.success(context, S.configUpdated);
         _load();
       }
     } catch (e) {
-      if (mounted) AppSnackBar.error(context, '更新失败: $e');
+      if (mounted) AppSnackBar.error(context, '${S.updateFailed}: $e');
     }
   }
 
@@ -126,7 +128,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('诊断与配置'),
+        title: const Text(S.diagnosticsAndConfig),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh, color: AppColors.textSecondary),
@@ -135,7 +137,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
         ],
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+          ? const AppLoadingIndicator()
           : _error != null
               ? Center(child: Text(_error!, style: TextStyle(color: AppColors.textSecondary)))
               : RefreshIndicator(
@@ -202,7 +204,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
             alignment: Alignment.centerRight,
             child: TextButton.icon(
               icon: const Icon(Icons.edit, size: 14),
-              label: const Text('编辑', style: TextStyle(fontSize: 12)),
+              label: Text(S.edit, style: TextStyle(fontSize: 12)),
               onPressed: () => _editConfig(data),
             ),
           ),
@@ -221,13 +223,13 @@ class _ConfigScreenState extends State<ConfigScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('默认模型:', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+          Text(S.defaultModel, style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
           const SizedBox(height: 4),
           ...defaults.entries.map((e) => Padding(
             padding: const EdgeInsets.only(bottom: 2),
             child: Text('  ${e.key}: ${e.value}', style: TextStyle(color: AppColors.textPrimary, fontSize: 12, fontFamily: 'monospace')),
           )),
-          if (defaults.isEmpty) Text('  无默认模型', style: TextStyle(color: AppColors.textTertiary, fontSize: 12)),
+          if (defaults.isEmpty) Text('  ${S.noDefaultModel}', style: TextStyle(color: AppColors.textTertiary, fontSize: 12)),
           if (providers.isNotEmpty) ...[
             const SizedBox(height: 8),
             Text('提供商 (${providers.length}):', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
@@ -250,11 +252,11 @@ class _ConfigScreenState extends State<ConfigScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _toolGroup('LSP 服务器', _lsp.map((l) => _toolEntry(l.name, l.state)).toList()),
+          _toolGroup(S.lspServer, _lsp.map((l) => _toolEntry(l.name, l.state)).toList()),
           const SizedBox(height: 12),
-          _toolGroup('格式化器', _formatters.map((f) => _toolEntry(f.name, f.enabled ? 'enabled' : 'disabled')).toList()),
+          _toolGroup(S.formatter, _formatters.map((f) => _toolEntry(f.name, f.enabled ? 'enabled' : 'disabled')).toList()),
           const SizedBox(height: 12),
-          _toolGroup('MCP 服务器', _mcp.entries.map((e) => _toolEntry(e.key, e.value.status)).toList()),
+          _toolGroup(S.mcpServer, _mcp.entries.map((e) => _toolEntry(e.key, e.value.status)).toList()),
         ],
       ),
     );
@@ -297,7 +299,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
   }
 
   Widget _authCard() {
-    if (_authMethods.isEmpty) return _card('无认证信息', Icons.info_outline, AppColors.textSecondary);
+    if (_authMethods.isEmpty) return _card(S.noAuthInfo, Icons.info_outline, AppColors.textSecondary);
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
