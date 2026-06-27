@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
-import '../utils/responsive_values.dart';
 
-/// A section header with standardized styling for form sections.
+/// A section header with standardized iOS-style styling.
+///
+/// Renders the title in all-caps with a secondary text color, matching the
+/// iOS Settings-style section header appearance.
 ///
 /// Usage:
 /// ```dart
@@ -20,22 +22,24 @@ class AppSectionHeader extends StatelessWidget {
   const AppSectionHeader(
     this.title, {
     super.key,
-    this.padding = const EdgeInsets.only(bottom: 8),
-    this.fontSize = 0, // 0 means use responsive default
+    this.padding = AppColors.kPaddingSection,
+    this.fontSize = 0,
     this.color,
     this.fontWeight = FontWeight.w600,
   });
 
   @override
   Widget build(BuildContext context) {
+    final size = fontSize > 0 ? fontSize : 13.0;
     return Padding(
       padding: padding,
       child: Text(
-        title,
+        title.toUpperCase(),
         style: TextStyle(
           color: color ?? AppColors.textSecondary,
-          fontSize: fontSize > 0 ? fontSize : R.smallFontSize(context),
+          fontSize: size,
           fontWeight: fontWeight,
+          letterSpacing: 0.5,
         ),
       ),
     );

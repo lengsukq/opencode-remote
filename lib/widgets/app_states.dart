@@ -49,13 +49,19 @@ class AppEmptyState extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             title,
-            style: const TextStyle(color: AppColors.textSecondary, fontSize: 15),
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 15,
+            ),
           ),
           if (subtitle != null) ...[
             const SizedBox(height: 8),
             Text(
               subtitle!,
-              style: const TextStyle(color: AppColors.textTertiary, fontSize: 13),
+              style: const TextStyle(
+                color: AppColors.textTertiary,
+                fontSize: 13,
+              ),
             ),
           ],
         ],
@@ -85,7 +91,11 @@ class AppErrorState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.cloud_off, size: 48, color: AppColors.textTertiary),
+            const Icon(
+              Icons.cloud_off,
+              size: 48,
+              color: AppColors.textTertiary,
+            ),
             const SizedBox(height: 12),
             const Text(
               S.connectionFailed,
@@ -94,21 +104,29 @@ class AppErrorState extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               message,
-              style: const TextStyle(color: AppColors.textTertiary, fontSize: 12),
+              style: const TextStyle(
+                color: AppColors.textTertiary,
+                fontSize: 12,
+              ),
               textAlign: TextAlign.center,
             ),
             if (detail != null) ...[
               const SizedBox(height: 4),
               Text(
                 detail!,
-                style: const TextStyle(color: AppColors.textTertiary, fontSize: 10),
+                style: const TextStyle(
+                  color: AppColors.textTertiary,
+                  fontSize: 10,
+                ),
                 textAlign: TextAlign.center,
               ),
             ],
             if (onRetry != null) ...[
               const SizedBox(height: 20),
               FilledButton.icon(
-                style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                ),
                 onPressed: onRetry,
                 icon: const Icon(Icons.refresh, size: 18),
                 label: const Text(S.retry),
@@ -155,7 +173,11 @@ class AppBadge extends StatelessWidget {
           ],
           Text(
             label,
-            style: TextStyle(color: color, fontSize: fontSize, fontWeight: FontWeight.w600),
+            style: TextStyle(
+              color: color,
+              fontSize: fontSize,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),

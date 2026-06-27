@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
+import '../utils/glass_effect.dart';
 
 /// A reusable card container with consistent theming.
 ///
-/// Wraps content in a styled Container with the project's standard
-/// surface color, border, and border radius. Supports variants via
-/// optional parameters.
+/// Wraps content in a [GlassCard] with the project's standard
+/// glassmorphism effect, large rounded corners, and 3D shadows.
+/// Supports variants via optional parameters.
 ///
 /// Usage:
 /// ```dart
@@ -16,7 +17,7 @@ import '../theme.dart';
 /// AppCard(
 ///   padding: EdgeInsets.all(12),
 ///   borderRadius: 16,
-///   boxShadow: [BoxShadow(color: AppColors.shadow, blurRadius: 4)],
+///   boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 8)],
 ///   child: Text('Shadow card'),
 /// )
 /// ```
@@ -42,25 +43,13 @@ class AppCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final card = Container(
+    return GlassCard(
       padding: padding ?? AppColors.kPaddingCard,
-      decoration: BoxDecoration(
-        color: color ?? AppColors.surface,
-        borderRadius: BorderRadius.circular(borderRadius),
-        border: Border.all(color: borderColor ?? AppColors.border),
-        boxShadow: boxShadow,
-      ),
+      borderRadius: borderRadius,
+      foregroundColor: color,
+      boxShadow: boxShadow,
+      onTap: onTap,
       child: child,
     );
-
-    if (onTap != null) {
-      return InkWell(
-        borderRadius: BorderRadius.circular(borderRadius),
-        onTap: onTap,
-        child: card,
-      );
-    }
-
-    return card;
   }
 }

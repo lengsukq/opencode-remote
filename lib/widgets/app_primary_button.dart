@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
 
-/// A reusable primary button with consistent theming.
+/// A reusable primary button with iOS-style theming.
+///
+/// Uses the theme's [FilledButton] styles defined in [IOSTheme] with
+/// a subtle shadow effect and large rounded corners (12px).
 ///
 /// Usage:
 /// ```dart
@@ -46,6 +49,9 @@ class AppPrimaryButton extends StatelessWidget {
       style: FilledButton.styleFrom(
         backgroundColor: bgColor,
         minimumSize: minSize,
+        elevation: 2,
+        shadowColor: Colors.black.withValues(alpha: 0.2),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
       onPressed: onPressed,
       icon: icon != null ? Icon(icon!, size: 18) : const SizedBox.shrink(),

@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
 
-/// Shared SnackBar helpers for consistent notification styling.
+/// Shared SnackBar helpers for consistent iOS-style floating notification styling.
+///
+/// Uses the theme's [SnackBarThemeData] from [IOSTheme] for floating behavior,
+/// rounded corners, and elevation. Provides convenience variants for
+/// info, error, and success states.
 ///
 /// Usage:
 /// ```dart
@@ -11,7 +15,7 @@ import '../theme.dart';
 class AppSnackBar {
   AppSnackBar._();
 
-  /// Shows a standard info SnackBar with themed styling.
+  /// Shows a standard info SnackBar with themed iOS styling.
   static void show(
     BuildContext context,
     String message, {
@@ -20,10 +24,12 @@ class AppSnackBar {
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message, style: const TextStyle(color: AppColors.textPrimary)),
+        content: Text(
+          message,
+          style: const TextStyle(color: AppColors.textPrimary),
+        ),
         backgroundColor: AppColors.surface,
         duration: duration,
-        behavior: SnackBarBehavior.floating,
       ),
     );
   }
@@ -37,10 +43,9 @@ class AppSnackBar {
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message, style: const TextStyle(color: AppColors.surface)),
+        content: Text(message, style: const TextStyle(color: Colors.white)),
         backgroundColor: AppColors.danger,
         duration: duration,
-        behavior: SnackBarBehavior.floating,
       ),
     );
   }
@@ -54,10 +59,9 @@ class AppSnackBar {
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message, style: const TextStyle(color: AppColors.surface)),
+        content: Text(message, style: const TextStyle(color: Colors.white)),
         backgroundColor: AppColors.success,
         duration: duration,
-        behavior: SnackBarBehavior.floating,
       ),
     );
   }

@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
-import 'app_card.dart';
+import '../utils/glass_effect.dart';
 
-/// A selectable tile with optional border highlight and check indicator.
+/// A selectable tile with iOS-style glassmorphism and selection indicator.
+///
+/// Uses [GlassCard] as the base with large rounded corners. When selected,
+/// a check circle icon and primary color border indicate the active state.
 ///
 /// Used for mode/theme selection in settings and onboarding screens.
 ///
@@ -34,18 +37,25 @@ class AppSelectableTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final borderColor = selected ? AppColors.primary : AppColors.border;
-    final bgColor = selected ? AppColors.primaryLight : Colors.transparent;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = selected
+        ? (isDark ? DarkColors.primaryLight : AppColors.primaryLight)
+        : null;
 
     return GestureDetector(
       onTap: onTap,
-      child: AppCard(
+      child: GlassCard(
+        borderRadius: AppColors.kDefaultBorderRadius,
         padding: AppColors.kPaddingCard,
-        borderColor: borderColor,
-        color: bgColor,
+        foregroundColor: bgColor,
+        boxShadow: selected ? AppColors.shadowLevel2 : null,
         child: Row(
           children: [
-            Icon(icon, color: selected ? AppColors.primary : AppColors.textSecondary, size: 22),
+            Icon(
+              icon,
+              color: selected ? AppColors.primary : AppColors.textSecondary,
+              size: 22,
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -53,7 +63,7 @@ class AppSelectableTile extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: AppColors.textPrimary,
                       fontSize: 15,
                       fontWeight: FontWeight.w500,
@@ -63,14 +73,21 @@ class AppSelectableTile extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       subtitle!,
-                      style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                      ),
                     ),
                   ],
                 ],
               ),
             ),
             if (selected)
-              Icon(Icons.check_circle, color: AppColors.primary, size: 20),
+              const Icon(
+                Icons.check_circle,
+                color: AppColors.primary,
+                size: 20,
+              ),
           ],
         ),
       ),

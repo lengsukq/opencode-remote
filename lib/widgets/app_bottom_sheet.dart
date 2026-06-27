@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
+import '../utils/glass_effect.dart';
 
-/// Shared bottom sheet helpers for consistent modal bottom sheet styling.
+/// Shared bottom sheet helpers for consistent iOS-style modal bottom sheet styling.
+///
+/// Uses [GlassSheet] for the glassmorphism effect with large top rounded corners
+/// (16px), 3D shadows (level 4), and an iOS-style drag indicator pill.
 ///
 /// Usage:
 /// ```dart
@@ -17,7 +21,7 @@ import '../theme.dart';
 class AppBottomSheet {
   AppBottomSheet._();
 
-  /// Shows a modal bottom sheet with standard theming.
+  /// Shows a modal bottom sheet with iOS-style glassmorphism.
   static Future<T?> show<T>({
     required BuildContext context,
     required Widget child,
@@ -25,11 +29,9 @@ class AppBottomSheet {
   }) {
     return showModalBottomSheet<T>(
       context: context,
-      backgroundColor: AppColors.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(borderRadius)),
-      ),
-      builder: (_) => child,
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      builder: (_) => _buildSheet(borderRadius: borderRadius, child: child),
     );
   }
 
@@ -45,38 +47,85 @@ class AppBottomSheet {
   }) {
     return showModalBottomSheet<T>(
       context: context,
-      backgroundColor: AppColors.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(borderRadius)),
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      builder: (ctx) => _buildSheet(
+        borderRadius: borderRadius,
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const _DragIndicator(),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const Divider(height: 1, color: AppColors.border),
+              ...options.map(
+                (opt) => ListTile(
+                  leading: Icon(
+                    opt.icon,
+                    color: opt.iconColor ?? AppColors.textSecondary,
+                  ),
+                  title: Text(
+                    opt.label,
+                    style: TextStyle(
+                      color: opt.destructive
+                          ? AppColors.danger
+                          : AppColors.textPrimary,
+                    ),
+                  ),
+                  onTap: () => Navigator.pop(ctx, opt.value),
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
       ),
-      builder: (ctx) => SafeArea(
+    );
+  }
+
+  static Widget _buildSheet({
+    required double borderRadius,
+    required Widget child,
+  }) {
+    return DecoratedBox(
+      decoration: BoxDecoration(boxShadow: AppColors.shadowLevel4),
+      child: GlassSheet(
+        borderRadius: borderRadius,
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(
-                title,
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            const Divider(),
-            ...options.map((opt) => ListTile(
-              leading: Icon(opt.icon, color: opt.iconColor ?? AppColors.textSecondary),
-              title: Text(
-                opt.label,
-                style: TextStyle(
-                  color: opt.destructive ? AppColors.danger : AppColors.textPrimary,
-                ),
-              ),
-              onTap: () => Navigator.pop(ctx, opt.value),
-            )),
-            const SizedBox(height: 8),
-          ],
+          children: [const _DragIndicator(), child],
+        ),
+      ),
+    );
+  }
+}
+
+/// iOS-style drag indicator pill at the top of a bottom sheet.
+class _DragIndicator extends StatelessWidget {
+  const _DragIndicator();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 12, bottom: 4),
+      child: Center(
+        child: Container(
+          width: 36,
+          height: 5,
+          decoration: BoxDecoration(
+            color: AppColors.textTertiary.withValues(alpha: 0.5),
+            borderRadius: BorderRadius.circular(2.5),
+          ),
         ),
       ),
     );
