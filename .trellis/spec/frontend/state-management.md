@@ -9,7 +9,7 @@
 ## Data Flow
 
 ```
-User Action → setState(_loading = true) → await Service.call() 
+User Action → setState(_loading = true) → await Service.call()
   → setState(_loading = false, data = result)
 ```
 

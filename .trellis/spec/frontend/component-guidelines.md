@@ -2,7 +2,7 @@
 
 ## Shared Components Library
 
-The project provides a library of shared UI components in `lib/widgets/`.  
+The project provides a library of shared UI components in `lib/widgets/`.
 **Always prefer using these over inline patterns** — they ensure consistent theming and reduce duplication.
 
 | Component | File | Purpose |

@@ -51,3 +51,11 @@ app.*.map.json
 /config/keystore/
 *.keystore
 key.properties
+
+# Test files and temporary artifacts
+test_basic.js
+test_web.js
+screenshots/
+node_modules/
+package.json
+package-lock.json
