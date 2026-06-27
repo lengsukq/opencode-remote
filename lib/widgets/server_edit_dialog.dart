@@ -6,7 +6,7 @@ import 'app_input_decoration.dart';
 
 /// A shared dialog for adding or editing a server entry.
 ///
-/// Shows five fields: name, host, port, username, password.
+/// Shows name, host, port, username, password and an HTTPS toggle.
 /// Returns a [ServerEntry] on save, or `null` on cancel.
 ///
 /// Usage:
@@ -38,6 +38,7 @@ class _AppServerEditDialogState extends State<AppServerEditDialog> {
   late final TextEditingController _portCtrl;
   late final TextEditingController _userCtrl;
   late final TextEditingController _passCtrl;
+  bool _useHttps = false;
 
   @override
   void initState() {
@@ -52,6 +53,7 @@ class _AppServerEditDialogState extends State<AppServerEditDialog> {
     );
     _userCtrl = TextEditingController(text: widget.existing?.username ?? 'opencode');
     _passCtrl = TextEditingController(text: widget.existing?.password ?? '');
+    _useHttps = uri?.scheme == 'https';
   }
 
   @override
@@ -123,6 +125,21 @@ class _AppServerEditDialogState extends State<AppServerEditDialog> {
               ),
               obscureText: true,
             ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                const Text(
+                  'HTTPS',
+                  style: TextStyle(color: AppColors.textPrimary),
+                ),
+                const Spacer(),
+                Switch(
+                  value: _useHttps,
+                  onChanged: (v) => setState(() => _useHttps = v),
+                  activeColor: AppColors.primary,
+                ),
+              ],
+            ),
           ],
         ),
       ),
@@ -141,7 +158,8 @@ class _AppServerEditDialogState extends State<AppServerEditDialog> {
             final host = _hostCtrl.text.trim();
             final port = _portCtrl.text.trim();
             if (name.isEmpty || host.isEmpty) return;
-            final url = 'http://$host${port.isNotEmpty ? ':$port' : ''}';
+            final scheme = _useHttps ? 'https' : 'http';
+            final url = '$scheme://$host${port.isNotEmpty ? ':$port' : ''}';
             Navigator.pop(
               context,
               (widget.existing ?? ServerEntry(name: name, url: url)).copyWith(

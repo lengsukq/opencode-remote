@@ -249,7 +249,7 @@ class _ProjectScreenState extends State<ProjectScreen> {
             dragIndex: i,
           );
         },
-        onReorderItem: (oldIndex, newIndex) {
+        onReorder: (oldIndex, newIndex) {
           setState(() {
             if (oldIndex < newIndex) newIndex--;
             final item = items.removeAt(oldIndex);

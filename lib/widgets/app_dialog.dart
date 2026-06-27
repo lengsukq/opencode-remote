@@ -24,44 +24,18 @@ class AppDialog {
     bool obscureText = false,
     TextInputType? keyboardType,
   }) async {
-    final controller = TextEditingController(text: initialValue);
-    final result = await showDialog<String>(
+    return showDialog<String>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        title: Text(title, style: const TextStyle(color: AppColors.textPrimary)),
-        content: TextField(
-          autofocus: true,
-          controller: controller,
-          obscureText: obscureText,
-          keyboardType: keyboardType,
-          style: const TextStyle(color: AppColors.textPrimary),
-          decoration: InputDecoration(
-            hintText: hintText,
-            hintStyle: TextStyle(color: AppColors.textTertiary),
-            enabledBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: AppColors.border),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: AppColors.borderFocused),
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(cancelLabel, style: const TextStyle(color: AppColors.textSecondary)),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
-            onPressed: () => Navigator.pop(ctx, controller.text),
-            child: Text(confirmLabel),
-          ),
-        ],
+      builder: (ctx) => _TextInputDialogContent(
+        title: title,
+        hintText: hintText,
+        initialValue: initialValue,
+        confirmLabel: confirmLabel,
+        cancelLabel: cancelLabel,
+        obscureText: obscureText,
+        keyboardType: keyboardType,
       ),
     );
-    controller.dispose();
-    return result;
   }
 
   /// Shows a confirmation dialog with custom message.
@@ -124,6 +98,83 @@ class AppDialog {
           if (actions != null) ...actions,
         ],
       ),
+    );
+  }
+}
+
+/// Stateful dialog content that manages [TextEditingController] lifecycle,
+/// ensuring the controller isn't used after the dialog's dismiss animation ends.
+class _TextInputDialogContent extends StatefulWidget {
+  final String title;
+  final String hintText;
+  final String? initialValue;
+  final String confirmLabel;
+  final String cancelLabel;
+  final bool obscureText;
+  final TextInputType? keyboardType;
+
+  const _TextInputDialogContent({
+    required this.title,
+    required this.hintText,
+    this.initialValue,
+    required this.confirmLabel,
+    required this.cancelLabel,
+    required this.obscureText,
+    this.keyboardType,
+  });
+
+  @override
+  State<_TextInputDialogContent> createState() => _TextInputDialogContentState();
+}
+
+class _TextInputDialogContentState extends State<_TextInputDialogContent> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialValue);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: AppColors.surface,
+      title: Text(widget.title, style: const TextStyle(color: AppColors.textPrimary)),
+      content: TextField(
+        autofocus: true,
+        controller: _controller,
+        obscureText: widget.obscureText,
+        keyboardType: widget.keyboardType,
+        style: const TextStyle(color: AppColors.textPrimary),
+        decoration: InputDecoration(
+          hintText: widget.hintText,
+          hintStyle: TextStyle(color: AppColors.textTertiary),
+          enabledBorder: OutlineInputBorder(
+            borderSide: BorderSide(color: AppColors.border),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderSide: BorderSide(color: AppColors.borderFocused),
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(widget.cancelLabel, style: const TextStyle(color: AppColors.textSecondary)),
+        ),
+        FilledButton(
+          style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+          onPressed: () => Navigator.pop(context, _controller.text),
+          child: Text(widget.confirmLabel),
+        ),
+      ],
     );
   }
 }
