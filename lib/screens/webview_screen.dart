@@ -7,6 +7,7 @@ import '../services/storage_service.dart';
 import '../widgets/server_edit_dialog.dart';
 import '../widgets/app_bottom_sheet.dart';
 import '../widgets/app_snackbar.dart';
+import '../strings.dart';
 import 'launcher_screen.dart';
 
 class WebViewScreen extends StatefulWidget {
@@ -42,7 +43,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
         onPageFinished: (_) => setState(() => _loading = false),
         onWebResourceError: (error) {
           if (mounted) {
-            AppSnackBar.error(context, '加载失败: ${error.description}');
+            AppSnackBar.error(context, '${S.connectionFailed}: ${error.description}');
           }
         },
       ));
@@ -72,7 +73,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
             children: [
               Padding(
                 padding: const EdgeInsets.all(16),
-                child: Text('切换服务器', style: TextStyle(color: AppColors.textPrimary, fontSize: 16)),
+                child: Text(S.switchServer, style: TextStyle(color: AppColors.textPrimary, fontSize: 16)),
               ),
               const Divider(),
               ...servers.map((s) => ListTile(
@@ -84,7 +85,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
               const Divider(),
               ListTile(
                 leading: Icon(Icons.add, color: AppColors.textSecondary),
-                title: const Text('添加新服务器', style: TextStyle(color: AppColors.textPrimary)),
+                title: const Text(S.addNewServer, style: TextStyle(color: AppColors.textPrimary)),
                 onTap: () {
                   Navigator.pop(ctx);
                   WidgetsBinding.instance.addPostFrameCallback((_) => _addNew());
@@ -156,7 +157,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
               ),
             IconButton(
               icon: const Icon(Icons.swap_horiz, color: AppColors.textSecondary),
-              tooltip: '切换服务器',
+              tooltip: S.switchServer,
               onPressed: _switchServer,
             ),
             IconButton(

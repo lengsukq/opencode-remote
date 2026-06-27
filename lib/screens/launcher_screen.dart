@@ -7,7 +7,10 @@ import '../widgets/server_edit_dialog.dart';
 import 'settings_sheet.dart';
 import 'webview_screen.dart';
 import '../widgets/main_scaffold.dart';
+import '../strings.dart';
 import '../widgets/app_bottom_sheet.dart';
+import '../widgets/app_states.dart';
+import '../widgets/app_card.dart';
 
 class LauncherScreen extends StatefulWidget {
   final AppMode? initialMode;
@@ -38,6 +41,7 @@ class _LauncherScreenState extends State<LauncherScreen> {
 
   Future<void> _reload() async {
     final servers = await StorageService.loadServers();
+    if (!mounted) return;
     setState(() {
       _servers = servers;
       _loading = false;
@@ -103,10 +107,10 @@ class _LauncherScreenState extends State<LauncherScreen> {
                 color: _mode == AppMode.native
                     ? AppColors.primaryLight
                     : const Color(0xFFE8F5E9),
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(AppColors.kChipBorderRadius),
               ),
               child: Text(
-                _mode == AppMode.native ? '原生' : 'WebView',
+                _mode == AppMode.native ? S.nativeMode : S.webviewMode,
                 style: TextStyle(
                   fontSize: 10,
                   color: _mode == AppMode.native ? AppColors.primary : AppColors.success,
@@ -118,7 +122,7 @@ class _LauncherScreenState extends State<LauncherScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.settings, color: AppColors.textSecondary),
-            tooltip: '设置',
+            tooltip: S.settings,
             onPressed: _openSettings,
           ),
         ],
@@ -130,12 +134,12 @@ class _LauncherScreenState extends State<LauncherScreen> {
             const SizedBox(height: 16),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Text('服务器', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+              child: Text(S.servers, style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
             ),
             const SizedBox(height: 8),
             Expanded(
               child: _loading
-                  ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+                  ? const AppLoadingIndicator()
                   : _servers.isEmpty
                       ? _emptyState()
                       : _serverList(),
@@ -158,9 +162,9 @@ class _LauncherScreenState extends State<LauncherScreen> {
         children: [
           Icon(Icons.dns_outlined, size: 48, color: AppColors.textTertiary),
           const SizedBox(height: 16),
-          Text('还没有服务器', style: TextStyle(color: AppColors.textSecondary, fontSize: 15)),
+          Text(S.noServers, style: TextStyle(color: AppColors.textSecondary, fontSize: 15)),
           const SizedBox(height: 8),
-          Text('点击 + 添加', style: TextStyle(color: AppColors.textTertiary, fontSize: 13)),
+          Text(S.clickToAdd, style: TextStyle(color: AppColors.textTertiary, fontSize: 13)),
         ],
       ),
     );
@@ -181,7 +185,7 @@ class _LauncherScreenState extends State<LauncherScreen> {
             margin: const EdgeInsets.symmetric(vertical: 4),
             decoration: BoxDecoration(
               color: AppColors.danger,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppColors.kCardBorderRadius),
             ),
             child: const Icon(Icons.delete, color: Colors.white),
           ),
@@ -219,10 +223,11 @@ class _ServerCard extends StatelessWidget {
     final uri = Uri.tryParse(entry.url);
     final host = uri != null && uri.host.isNotEmpty ? '${uri.host}:${uri.port}' : entry.url;
 
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: AppCard(
+        child: InkWell(
+        borderRadius: BorderRadius.circular(AppColors.kCardBorderRadius),
         onTap: onTap,
         onLongPress: onLongPress,
         child: Padding(
@@ -234,7 +239,7 @@ class _ServerCard extends StatelessWidget {
                 height: 42,
                 decoration: BoxDecoration(
                   color: AppColors.primaryLight,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(AppColors.kSmallBorderRadius),
                 ),
                 child: const Icon(Icons.computer, color: AppColors.primary, size: 22),
               ),
@@ -252,7 +257,7 @@ class _ServerCard extends StatelessWidget {
                     Text(host,
                         style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
                     const SizedBox(height: 2),
-                    Text('最后使用: $timeStr',
+                    Text('${S.lastUsed} $timeStr',
                         style: TextStyle(color: AppColors.textTertiary, fontSize: 11)),
                   ],
                 ),
@@ -261,6 +266,7 @@ class _ServerCard extends StatelessWidget {
             ],
           ),
         ),
+      ),
       ),
     );
   }
