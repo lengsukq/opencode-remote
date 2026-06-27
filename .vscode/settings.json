@@ -1,0 +1,13 @@
+{
+  "dart.flutterSdkPath": "C:\\Users\\Su\\.flutter\\flutter",
+  "dart.sdkPath": "C:\\Users\\Su\\.flutter\\flutter\\bin\\cache\\dart-sdk",
+  "dart.checkForSdkUpdates": false,
+  "dart.openDevTools": "flutter",
+  "files.watcherExclude": {
+    "**/.git/**": true,
+    "**/opencode-dev/**": true
+  },
+  "search.exclude": {
+    "opencode-dev/": true
+  }
+}

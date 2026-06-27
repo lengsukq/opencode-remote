@@ -1,0 +1,37 @@
+﻿[
+    {
+        "Path":  "D:\\code\\opencode-remote\\opencode-dev\\infra\\lake.ts",
+        "LineNumber":  138,
+        "Line":  "          \"s3:AbortMultipartUpload\","
+    },
+    {
+        "Path":  "D:\\code\\opencode-remote\\opencode-dev\\infra\\lake.ts",
+        "LineNumber":  142,
+        "Line":  "          \"s3:ListBucketMultipartUploads\","
+    },
+    {
+        "Path":  "D:\\code\\opencode-remote\\opencode-dev\\infra\\lake.ts",
+        "LineNumber":  308,
+        "Line":  "    actions: [\"s3:GetObject\", \"s3:PutObject\", \"s3:AbortMultipartUpload\", \"s3:ListBucketMultipartUploads\"],"
+    },
+    {
+        "Path":  "D:\\code\\opencode-remote\\opencode-dev\\packages\\llm\\test\\provider\\openai-chat.test.ts",
+        "LineNumber":  383,
+        "Line":  "  it.effect(\"appends system updates without replacing multipart user content\", () =\u003e"
+    },
+    {
+        "Path":  "D:\\code\\opencode-remote\\opencode-dev\\packages\\sdk\\js\\src\\gen\\client\\utils.gen.ts",
+        "LineNumber":  76,
+        "Line":  "  if (cleanContent === \"multipart/form-data\") {"
+    },
+    {
+        "Path":  "D:\\code\\opencode-remote\\opencode-dev\\packages\\sdk\\js\\src\\v2\\gen\\client\\utils.gen.ts",
+        "LineNumber":  78,
+        "Line":  "  if (cleanContent === \"multipart/form-data\") {"
+    },
+    {
+        "Path":  "D:\\code\\opencode-remote\\opencode-dev\\packages\\stats\\app\\src\\routes\\api\\newsletter.ts",
+        "LineNumber":  7,
+        "Line":  "  if (!contentType.includes(\"multipart/form-data\") \u0026\u0026 !contentType.includes(\"application/x-www-form-urlencoded\")) {"
+    }
+]

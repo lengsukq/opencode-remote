@@ -1,0 +1,127 @@
+﻿[
+    {
+        "Path":  "D:\\code\\opencode-remote\\opencode-dev\\infra\\lake.ts",
+        "LineNumber":  138,
+        "Line":  "          \"s3:AbortMultipartUpload\","
+    },
+    {
+        "Path":  "D:\\code\\opencode-remote\\opencode-dev\\infra\\lake.ts",
+        "LineNumber":  142,
+        "Line":  "          \"s3:ListBucketMultipartUploads\","
+    },
+    {
+        "Path":  "D:\\code\\opencode-remote\\opencode-dev\\infra\\lake.ts",
+        "LineNumber":  308,
+        "Line":  "    actions: [\"s3:GetObject\", \"s3:PutObject\", \"s3:AbortMultipartUpload\", \"s3:ListBucketMultipartUploads\"],"
+    },
+    {
+        "Path":  "D:\\code\\opencode-remote\\opencode-dev\\packages\\app\\src\\components\\prompt-input\\build-request-parts.test.ts",
+        "LineNumber":  52,
+        "Line":  "  test(\"keeps multiple uploaded attachments in order\", () =\u003e {"
+    },
+    {
+        "Path":  "D:\\code\\opencode-remote\\opencode-dev\\packages\\app\\src\\components\\dialog-edit-project.tsx",
+        "LineNumber":  181,
+        "Line":  "                  \u003cIcon name=\"cloud-upload\" size=\"large\" class=\"text-icon-on-interactive-base drop-shadow-sm\" /\u003e"
+    },
+    {
+        "Path":  "D:\\code\\opencode-remote\\opencode-dev\\packages\\app\\src\\components\\dialog-edit-project.tsx",
+        "LineNumber":  194,
+        "Line":  "                id=\"icon-upload\""
+    },
+    {
+        "Path":  "D:\\code\\opencode-remote\\opencode-dev\\packages\\app\\src\\utils\\prompt.test.ts",
+        "LineNumber":  6,
+        "Line":  "  test(\"restores multiple uploaded attachments\", () =\u003e {"
+    },
+    {
+        "Path":  "D:\\code\\opencode-remote\\opencode-dev\\packages\\app\\vite.config.ts",
+        "LineNumber":  17,
+        "Line":  "          filesToDeleteAfterUpload: \"./dist/**/*.map\","
+    },
+    {
+        "Path":  "D:\\code\\opencode-remote\\opencode-dev\\packages\\core\\src\\github-copilot\\responses\\tool\\code-interpreter.ts",
+        "LineNumber":  35,
+        "Line":  "   * or an object that specifies uploaded file IDs to make available to your code."
+    },
+    {
+        "Path":  "D:\\code\\opencode-remote\\opencode-dev\\packages\\desktop\\scripts\\finalize-latest-json.ts",
+        "LineNumber":  217,
+        "Line":  "await $`gh release upload ${tag} ${file} --clobber --repo ${repo}`"
+    },
+    {
+        "Path":  "D:\\code\\opencode-remote\\opencode-dev\\packages\\desktop\\scripts\\finalize-latest-yml.ts",
+        "LineNumber":  113,
+        "Line":  "// Upload to release"
+    },
+    {
+        "Path":  "D:\\code\\opencode-remote\\opencode-dev\\packages\\desktop\\scripts\\finalize-latest-yml.ts",
+        "LineNumber":  120,
+        "Line":  "  await $`gh release upload ${tag} ${filepath} --clobber --repo ${repo}`"
+    },
+    {
+        "Path":  "D:\\code\\opencode-remote\\opencode-dev\\packages\\desktop\\scripts\\finalize-latest-yml.ts",
+        "LineNumber":  121,
+        "Line":  "  console.log(`uploaded ${filename}`)"
+    },
+    {
+        "Path":  "D:\\code\\opencode-remote\\opencode-dev\\packages\\desktop\\src\\main\\logging.ts",
+        "LineNumber":  40,
+        "Line":  "  crashReporter.start({ uploadToServer: false, compress: true })"
+    },
+    {
+        "Path":  "D:\\code\\opencode-remote\\opencode-dev\\packages\\desktop\\electron.vite.config.ts",
+        "LineNumber":  29,
+        "Line":  "          filesToDeleteAfterUpload: \"./out/renderer/**/*.map\","
+    },
+    {
+        "Path":  "D:\\code\\opencode-remote\\opencode-dev\\packages\\llm\\src\\protocols\\utils\\bedrock-media.ts",
+        "LineNumber":  19,
+        "Line":  "// the uploaded document."
+    },
+    {
+        "Path":  "D:\\code\\opencode-remote\\opencode-dev\\packages\\opencode\\script\\build.ts",
+        "LineNumber":  240,
+        "Line":  "  await $`gh release upload v${Script.version} ./dist/*.zip ./dist/*.tar.gz --clobber --repo ${process.env.GH_REPO}`"
+    },
+    {
+        "Path":  "D:\\code\\opencode-remote\\opencode-dev\\packages\\tui\\src\\component\\startup-loading.tsx",
+        "LineNumber":  5,
+        "Line":  "export function StartupLoading(props: { ready: () =\u003e boolean }) {"
+    },
+    {
+        "Path":  "D:\\code\\opencode-remote\\opencode-dev\\packages\\tui\\src\\app.tsx",
+        "LineNumber":  35,
+        "Line":  "import { StartupLoading } from \"./component/startup-loading\""
+    },
+    {
+        "Path":  "D:\\code\\opencode-remote\\opencode-dev\\packages\\tui\\src\\app.tsx",
+        "LineNumber":  1103,
+        "Line":  "        \u003cStartupLoading ready={ready} /\u003e"
+    },
+    {
+        "Path":  "D:\\code\\opencode-remote\\opencode-dev\\packages\\ui\\src\\components\\file-icons\\types.ts",
+        "LineNumber":  463,
+        "Line":  "  \"FolderUpload\","
+    },
+    {
+        "Path":  "D:\\code\\opencode-remote\\opencode-dev\\packages\\ui\\src\\components\\file-icons\\types.ts",
+        "LineNumber":  464,
+        "Line":  "  \"FolderUploadOpen\","
+    },
+    {
+        "Path":  "D:\\code\\opencode-remote\\opencode-dev\\packages\\ui\\src\\components\\icon.stories.tsx",
+        "LineNumber":  102,
+        "Line":  "  \"cloud-upload\","
+    },
+    {
+        "Path":  "D:\\code\\opencode-remote\\opencode-dev\\packages\\ui\\src\\components\\icon.tsx",
+        "LineNumber":  94,
+        "Line":  "  \"cloud-upload\": `\u003cpath d=\"M12.0833 16.25H15C17.0711 16.25 18.75 14.5711 18.75 12.5C18.75 10.5649 17.2843 8.97217 15.4025 8.77133C15.2 6.13103 12.8586 4.08333 10 4.08333C7.71532 4.08333 5.76101 5.49781 4.96501 7.49881C2.84892 7.90461 1.25 9.76559 1.25 11.6667C1.25 13.9813 3.30203 16.25 5.83333 16.25H7.91667M10 16.25V10.4167M12.0833 11.875L10 9.79167L7.91667 11.875\" stroke=\"currentColor\" stroke-linecap=\"square\"/\u003e`,"
+    },
+    {
+        "Path":  "D:\\code\\opencode-remote\\opencode-dev\\packages\\ui\\src\\components\\progress.stories.tsx",
+        "LineNumber":  8,
+        "Line":  "Use in forms, uploads, or background tasks."
+    }
+]
