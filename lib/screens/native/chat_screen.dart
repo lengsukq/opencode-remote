@@ -54,6 +54,8 @@ class _ChatScreenState extends State<ChatScreen> {
   int _historyIndex = -1;
   bool _shellMode = false;
   List<Todo> _todos = [];
+  List<String> _followUpSuggestions = [];
+  String? _revertSnapshot;
 
   @override
   void initState() {
@@ -621,12 +623,25 @@ class _ChatScreenState extends State<ChatScreen> {
         setState(() {
           _messages = messages;
           _error = null;
+          _followUpSuggestions = _extractFollowUps(messages);
+          _revertSnapshot = messages.isNotEmpty ? messages.lastOrNull?.content : null;
         });
         _scrollToBottom();
       }
     } catch (e) {
       debugPrint('ChatScreen._refreshMessages: $e');
     }
+  }
+
+  List<String> _extractFollowUps(List<Message> msgs) {
+    for (final m in msgs.reversed) {
+      if (m.role == 'assistant' && m.metadata != null) {
+        final raw = m.metadata!['followUp'] ?? m.metadata!['follow_up'];
+        if (raw is List) return raw.map((e) => e.toString()).toList();
+        if (raw is String) return [raw];
+      }
+    }
+    return [];
   }
 
   void _waitForFirstReply() {
@@ -956,6 +971,10 @@ class _ChatScreenState extends State<ChatScreen> {
               _agentBar(agentName, agentColor ?? AppColors.primary),
               if (_todos.any((t) => !t.done))
                 _buildTodoBanner(),
+              if (_followUpSuggestions.isNotEmpty)
+                _buildFollowUpSuggestions(),
+              if (_revertSnapshot != null && widget.session.revert != null)
+                _buildRevertBanner(),
               _buildInputBar(),
             ],
           ),
@@ -1134,6 +1153,83 @@ class _ChatScreenState extends State<ChatScreen> {
               child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
             ),
           ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFollowUpSuggestions() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: const BoxDecoration(
+        color: AppColors.surface,
+        border: Border(top: BorderSide(color: AppColors.border)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text('建议后续', style: TextStyle(color: AppColors.textSecondary, fontSize: 10)),
+          const SizedBox(height: 4),
+          SizedBox(
+            height: 32,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: _followUpSuggestions.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 6),
+              itemBuilder: (ctx, i) {
+                final suggestion = _followUpSuggestions[i];
+                return ActionChip(
+                  label: Text(suggestion, style: TextStyle(color: AppColors.textPrimary, fontSize: 12)),
+                  backgroundColor: AppColors.surfaceAlt,
+                  side: BorderSide(color: AppColors.border),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  onPressed: () {
+                    _inputCtrl.text = suggestion;
+                    _inputCtrl.selection = TextSelection.collapsed(offset: suggestion.length);
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRevertBanner() {
+    final revert = widget.session.revert;
+    if (revert == null) return const SizedBox.shrink();
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppColors.warning.withValues(alpha: 0.1),
+        border: const Border(top: BorderSide(color: AppColors.border)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.undo, size: 16, color: AppColors.warning),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              '消息已回退',
+              style: TextStyle(color: AppColors.textPrimary, fontSize: 12),
+            ),
+          ),
+          TextButton(
+            onPressed: () async {
+              try {
+                await widget.api.unrevertMessages(widget.session.id);
+                setState(() => _revertSnapshot = null);
+                await _refreshMessages();
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('恢复失败: $e')));
+                }
+              }
+            },
+            child: Text('恢复', style: TextStyle(color: AppColors.warning, fontSize: 12)),
+          ),
         ],
       ),
     );
