@@ -35,6 +35,7 @@ class AppColors {
   static const double kCardBorderRadius = 12;
   static const double kSmallBorderRadius = 8;
   static const double kChipBorderRadius = 6;
+  static const double kMediumBorderRadius = 20;
 
   // 间距常量
   static const EdgeInsets kPaddingScreen = EdgeInsets.all(16);

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models.dart';
 import '../theme.dart';
+import '../strings.dart';
 import '../services/opencode_api.dart';
 import '../screens/native/dashboard_screen.dart';
 import '../screens/native/session_list_screen.dart';
@@ -44,7 +45,7 @@ class _MainScaffoldState extends State<MainScaffold> {
       context: context,
       backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppColors.kDefaultBorderRadius)),
       ),
       builder: (_) => SettingsSheet(entry: widget.entry, currentMode: AppMode.native),
     );
@@ -100,27 +101,27 @@ class _MainScaffoldState extends State<MainScaffold> {
                 NavigationRailDestination(
                   icon: Icon(Icons.dashboard_outlined),
                   selectedIcon: Icon(Icons.dashboard),
-                  label: Text('仪表'),
+                  label: Text(S.dashboard),
                 ),
                 NavigationRailDestination(
                   icon: Icon(Icons.chat_outlined),
                   selectedIcon: Icon(Icons.chat),
-                  label: Text('会话'),
+                  label: Text(S.sessions),
                 ),
                 NavigationRailDestination(
                   icon: Icon(Icons.folder_outlined),
                   selectedIcon: Icon(Icons.folder),
-                  label: Text('文件'),
+                  label: Text(S.files),
                 ),
                 NavigationRailDestination(
                   icon: Icon(Icons.folder_special_outlined),
                   selectedIcon: Icon(Icons.folder_special),
-                  label: Text('项目'),
+                  label: Text(S.project),
                 ),
                 NavigationRailDestination(
                   icon: Icon(Icons.monitor_heart_outlined),
                   selectedIcon: Icon(Icons.monitor_heart),
-                  label: Text('诊断'),
+                  label: Text(S.diagnostics),
                 ),
                 NavigationRailDestination(
                   icon: Icon(Icons.terminal_outlined),

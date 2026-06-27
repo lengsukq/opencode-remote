@@ -6,6 +6,8 @@ class S {
   S._();
 
   // === General ===
+  static const copied = '已复制';
+  static const thinkingProcess = '思考过程';
   static const cancel = '取消';
   static const confirm = '确定';
   static const save = '保存';
@@ -64,6 +66,15 @@ class S {
   static const deny = '拒绝';
   static const permissionRequest = '权限请求';
   static const question = '问题';
+
+  // === Navigation Tabs ===
+  static const dashboard = '仪表';
+  static const sessions = '会话';
+  static const files = '文件';
+
+  // === Model Picker ===
+  static const noMatchModel = '无匹配模型';
+  static const searchModelHint = '搜索模型...';
 
   // === Server ===
   static const servers = '服务器';

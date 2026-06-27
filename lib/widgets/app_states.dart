@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
+import '../strings.dart';
 
 /// Shared widgets for common UI states: loading, empty, and error.
 ///
@@ -87,7 +88,7 @@ class AppErrorState extends StatelessWidget {
             const Icon(Icons.cloud_off, size: 48, color: AppColors.textTertiary),
             const SizedBox(height: 12),
             const Text(
-              '连接失败',
+              S.connectionFailed,
               style: TextStyle(color: AppColors.textSecondary, fontSize: 16),
             ),
             const SizedBox(height: 8),
@@ -110,7 +111,7 @@ class AppErrorState extends StatelessWidget {
                 style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
                 onPressed: onRetry,
                 icon: const Icon(Icons.refresh, size: 18),
-                label: const Text('重试'),
+                label: const Text(S.retry),
               ),
             ],
           ],
