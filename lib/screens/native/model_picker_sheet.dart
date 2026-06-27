@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models.dart';
 import '../../theme.dart';
+import '../../widgets/app_section_header.dart';
 
 /// Bottom sheet for searching and selecting AI models from providers.
 class ModelPickerSheet extends StatefulWidget {
@@ -121,10 +122,7 @@ class _ModelPickerSheetState extends State<ModelPickerSheet> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-          child: Text(p.name, style: TextStyle(color: AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.w600)),
-        ),
+        AppSectionHeader(p.name),
         ...p.models.map((m) => _buildModelTile(m, p.id)),
       ],
     );

@@ -4,6 +4,7 @@ import '../../theme.dart';
 import '../../services/opencode_api.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/app_input_decoration.dart';
+import '../../widgets/app_section_header.dart';
 
 class ConfigScreen extends StatefulWidget {
   final ServerEntry entry;
@@ -161,10 +162,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
   }
 
   Widget _sectionHeader(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Text(title, style: TextStyle(color: AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.w600)),
-    );
+    return AppSectionHeader(title);
   }
 
   Widget _configCard() {

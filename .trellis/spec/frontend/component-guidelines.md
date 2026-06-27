@@ -18,6 +18,9 @@ The project provides a library of shared UI components in `lib/widgets/`.
 | `AppErrorState` | `lib/widgets/app_states.dart` | Centered error state with message + optional retry button |
 | `AppBadge` | `lib/widgets/app_states.dart` | Small colored badge/label with optional icon |
 | `AppServerEditDialog` | `lib/widgets/server_edit_dialog.dart` | Server editing form (name/host/port/username/password) |
+| `AppSectionHeader` | `lib/widgets/app_section_header.dart` | Standardized section title for form sections |
+| `AppSelectableTile` | `lib/widgets/app_selectable_tile.dart` | Selection tile with border highlight + check indicator |
+| `AppStatusDot` | `lib/widgets/app_status_dot.dart` | Small colored status indicator dot |
 
 ---
 

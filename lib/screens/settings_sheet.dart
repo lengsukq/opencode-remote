@@ -5,6 +5,8 @@ import '../services/storage_service.dart';
 import '../main.dart' show themeNotifier;
 import '../widgets/main_scaffold.dart';
 import '../widgets/app_card.dart';
+import '../widgets/app_section_header.dart';
+import '../widgets/app_selectable_tile.dart';
 import 'launcher_screen.dart';
 class SettingsSheet extends StatefulWidget {
   final ServerEntry entry;
@@ -64,7 +66,7 @@ class _SettingsSheetState extends State<SettingsSheet> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('运行模式', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                AppSectionHeader('运行模式'),
                 const SizedBox(height: 8),
                 _ModeTile(
                   icon: Icons.public,
@@ -89,7 +91,7 @@ class _SettingsSheetState extends State<SettingsSheet> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('主题', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                AppSectionHeader('主题'),
                 const SizedBox(height: 8),
                 _ThemeTile(
                   icon: Icons.light_mode,
@@ -119,7 +121,7 @@ class _SettingsSheetState extends State<SettingsSheet> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('关于', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                AppSectionHeader('关于'),
                 const SizedBox(height: 8),
                 AppCard(
                   color: Colors.transparent,
@@ -193,37 +195,14 @@ class _ModeTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppCard(
-      padding: const EdgeInsets.all(14),
-      color: selected ? AppColors.primaryLight : Colors.transparent,
-      borderColor: selected ? AppColors.primary : null,
-      onTap: onTap,
-      child: Row(
-        children: [
-          Icon(icon, color: selected ? AppColors.primary : AppColors.textSecondary, size: 22),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: TextStyle(
-                  color: selected ? AppColors.primary : AppColors.textPrimary,
-                  fontSize: 14, fontWeight: FontWeight.w500,
-                )),
-                Text(subtitle, style: TextStyle(color: AppColors.textTertiary, fontSize: 11)),
-              ],
-            ),
-          ),
-          if (selected)
-            Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.check, color: Colors.white, size: 12),
-            ),
-        ],
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: AppSelectableTile(
+        icon: icon,
+        title: title,
+        subtitle: subtitle,
+        selected: selected,
+        onTap: onTap,
       ),
     );
   }
@@ -239,31 +218,13 @@ class _ThemeTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppCard(
-      padding: const EdgeInsets.all(12),
-      borderRadius: AppColors.kSmallBorderRadius,
-      color: selected ? AppColors.primaryLight : Colors.transparent,
-      borderColor: selected ? AppColors.primary : null,
-      onTap: onTap,
-      child: Row(
-        children: [
-          Icon(icon, color: selected ? AppColors.primary : AppColors.textSecondary, size: 20),
-          const SizedBox(width: 10),
-          Text(title, style: TextStyle(
-            color: selected ? AppColors.primary : AppColors.textPrimary,
-            fontSize: 13, fontWeight: FontWeight.w500,
-          )),
-          const Spacer(),
-          if (selected)
-            Container(
-              padding: const EdgeInsets.all(3),
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.check, color: Colors.white, size: 10),
-            ),
-        ],
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: AppSelectableTile(
+        icon: icon,
+        title: title,
+        selected: selected,
+        onTap: onTap,
       ),
     );
   }
