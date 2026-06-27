@@ -53,6 +53,7 @@ class _ChatScreenState extends State<ChatScreen> {
   List<String> _inputHistory = [];
   int _historyIndex = -1;
   bool _shellMode = false;
+  List<Todo> _todos = [];
 
   @override
   void initState() {
@@ -144,6 +145,7 @@ class _ChatScreenState extends State<ChatScreen> {
     if (!mounted) return;
     final props = (data['payload'] is Map ? data['payload']['properties'] : data['properties']) as Map<String, dynamic>?;
     if (props == null) return;
+    final permissionID = data['id'] as String?;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -151,11 +153,33 @@ class _ChatScreenState extends State<ChatScreen> {
         title: Text('权限请求', style: TextStyle(color: AppColors.textPrimary)),
         content: Text('${props['message'] ?? '允许此操作？'}', style: TextStyle(color: AppColors.textSecondary)),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('拒绝', style: TextStyle(color: AppColors.danger))),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              if (permissionID != null) {
+                widget.api.executeCommand(widget.session.id, command: 'permission', arguments: ['deny', permissionID]);
+              }
+            },
+            child: Text('拒绝', style: TextStyle(color: AppColors.danger)),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              if (permissionID != null) {
+                widget.api.executeCommand(widget.session.id, command: 'permission', arguments: ['approve', permissionID, '--remember']);
+              }
+            },
+            child: Text('始终允许', style: TextStyle(color: AppColors.warning)),
+          ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
-            onPressed: () => Navigator.pop(ctx),
-            child: Text('允许'),
+            onPressed: () {
+              Navigator.pop(ctx);
+              if (permissionID != null) {
+                widget.api.executeCommand(widget.session.id, command: 'permission', arguments: ['approve', permissionID]);
+              }
+            },
+            child: Text('一次允许'),
           ),
         ],
       ),
@@ -244,6 +268,7 @@ class _ChatScreenState extends State<ChatScreen> {
         _error = null;
       });
       _scrollToBottom();
+      _loadTodos();
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -259,6 +284,13 @@ class _ChatScreenState extends State<ChatScreen> {
         _scrollCtrl.animateTo(_scrollCtrl.position.maxScrollExtent, duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
       }
     });
+  }
+
+  Future<void> _loadTodos() async {
+    try {
+      final todos = await widget.api.getSessionTodo(widget.session.id);
+      if (mounted) setState(() => _todos = todos);
+    } catch (_) {}
   }
 
   Future<void> _sendMessage() async {
@@ -922,6 +954,8 @@ class _ChatScreenState extends State<ChatScreen> {
               if (_showCommands && _filteredCommands.isNotEmpty) _buildCommandSuggestions(),
               if (_attachments.isNotEmpty) _buildAttachmentPreview(),
               _agentBar(agentName, agentColor ?? AppColors.primary),
+              if (_todos.any((t) => !t.done))
+                _buildTodoBanner(),
               _buildInputBar(),
             ],
           ),
@@ -1011,7 +1045,46 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+  Widget _buildTodoBanner() {
+    final done = _todos.where((t) => t.done).length;
+    final total = _todos.length;
+    final pct = total > 0 ? done / total : 0.0;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: const BoxDecoration(
+        color: AppColors.surface,
+        border: Border(top: BorderSide(color: AppColors.border)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.checklist, size: 16, color: AppColors.primary),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              pct >= 1.0 ? '已完成所有待办事项!' : '$done/$total 待办已完成',
+              style: TextStyle(color: AppColors.textPrimary, fontSize: 12),
+            ),
+          ),
+          if (pct < 1.0)
+            LinearProgressIndicator(
+              value: pct,
+              backgroundColor: AppColors.border,
+              color: AppColors.success,
+              minHeight: 4,
+            ),
+          if (pct >= 1.0)
+            Icon(Icons.check_circle, size: 16, color: AppColors.success),
+        ],
+      ),
+    );
+  }
+
   Widget _agentBar(String agentName, Color agentColor) {
+    final tokens = widget.session.tokens;
+    final totalTokens = tokens != null ? tokens.input + tokens.output + tokens.reasoning : 0;
+    final contextPct = totalTokens > 0 ? (totalTokens / 128000).clamp(0.0, 1.0) : 0.0;
+    final ctxColor = contextPct < 0.5 ? AppColors.success : (contextPct < 0.8 ? AppColors.warning : AppColors.danger);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: const BoxDecoration(
@@ -1033,6 +1106,27 @@ class _ChatScreenState extends State<ChatScreen> {
             color: _selectedModel != null ? AppColors.primary : AppColors.textSecondary,
             onTap: _showModelPicker,
           ),
+          if (totalTokens > 0) ...[
+            const SizedBox(width: 8),
+            Tooltip(
+              message: '上下文使用: $totalTokens / 128K tokens',
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: ctxColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.memory, size: 12, color: ctxColor),
+                    const SizedBox(width: 3),
+                    Text('${(contextPct * 100).toInt()}%', style: TextStyle(color: ctxColor, fontSize: 10)),
+                  ],
+                ),
+              ),
+            ),
+          ],
           if (_sending) ...[
             const Spacer(),
             SizedBox(
