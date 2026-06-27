@@ -1,6 +1,7 @@
 import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import '../models.dart';
+import '../strings.dart';
 import '../theme.dart';
 import '../services/storage_service.dart';
 import '../screens/launcher_screen.dart';
@@ -23,81 +24,97 @@ class OnboardingScreen extends StatelessWidget {
           child: Center(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 32),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.6),
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.08),
-                          blurRadius: 30,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(24),
-                      child: BackdropFilter(
-                        filter: _blurFilter(),
-                        child: Column(
-                          children: [
-                            const SizedBox(height: 24),
-                            Container(
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: AppColors.primaryLight,
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: const Icon(Icons.code, color: AppColors.primary, size: 40),
-                            ),
-                            const SizedBox(height: 20),
-                            const Text(
-                              'OpenCode Remote',
-                              style: TextStyle(
-                                fontSize: 28,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.textPrimary,
-                                letterSpacing: -0.5,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              '选择你偏好的运行模式',
-                              style: TextStyle(
-                                fontSize: 15,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                            const SizedBox(height: 32),
-                            _ModeOption(
-                              icon: Icons.public,
-                              title: 'WebView 模式',
-                              subtitle: '通过浏览器界面远程控制',
-                              onTap: () => _selectMode(context, AppMode.webview),
-                            ),
-                            const SizedBox(height: 12),
-                            _ModeOption(
-                              icon: Icons.phone_android,
-                              title: '原生模式',
-                              subtitle: '使用原生 Flutter 界面',
-                              onTap: () => _selectMode(context, AppMode.native),
-                            ),
-                            const SizedBox(height: 24),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+              child: _buildModeSelectionCard(context),
             ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildModeSelectionCard(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 30,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: BackdropFilter(
+          filter: _blurFilter(),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 24),
+              _buildHeader(),
+              const SizedBox(height: 32),
+              _buildWebViewMode(context),
+              const SizedBox(height: 12),
+              _buildNativeMode(context),
+              const SizedBox(height: 24),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.primaryLight,
+            borderRadius: BorderRadius.circular(AppColors.kMediumBorderRadius),
+          ),
+          child: const Icon(Icons.code, color: AppColors.primary, size: 40),
+        ),
+        const SizedBox(height: 20),
+        const Text(
+          'OpenCode Remote',
+          style: TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
+            letterSpacing: -0.5,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          S.chooseMode,
+          style: TextStyle(
+            fontSize: 15,
+            color: AppColors.textSecondary,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWebViewMode(BuildContext context) {
+    return _ModeOption(
+      icon: Icons.public,
+      title: 'WebView 模式',
+      subtitle: S.webviewDesc,
+      onTap: () => _selectMode(context, AppMode.webview),
+    );
+  }
+
+  Widget _buildNativeMode(BuildContext context) {
+    return _ModeOption(
+      icon: Icons.phone_android,
+      title: S.nativeMode,
+      subtitle: S.nativeDesc,
+      onTap: () => _selectMode(context, AppMode.native),
     );
   }
 
@@ -132,7 +149,7 @@ class _ModeOption extends StatelessWidget {
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: 0.7),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(AppColors.kMediumBorderRadius),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.06),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models.dart';
+import '../strings.dart';
 import '../theme.dart';
 import '../services/storage_service.dart';
 import '../main.dart' show themeNotifier;
@@ -44,114 +45,128 @@ class _SettingsSheetState extends State<SettingsSheet> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            margin: const EdgeInsets.symmetric(vertical: 12),
-            width: 36, height: 4,
-            decoration: BoxDecoration(
-              color: AppColors.textTertiary,
-              borderRadius: BorderRadius.circular(AppColors.kChipBorderRadius),
-            ),
-          ),
+          _buildDragHandle(),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
             child: Row(
               children: [
-                Text('设置', style: TextStyle(color: AppColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w600)),
+                Text(S.settings, style: TextStyle(color: AppColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w600)),
               ],
             ),
           ),
           const Divider(),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                AppSectionHeader('运行模式'),
-                const SizedBox(height: 8),
-                _ModeTile(
-                  icon: Icons.public,
-                  title: 'WebView 模式',
-                  subtitle: '通过浏览器界面远程控制',
-                  selected: _mode == AppMode.webview,
-                  onTap: () => _switchMode(context, AppMode.webview),
-                ),
-                const SizedBox(height: 4),
-                _ModeTile(
-                  icon: Icons.phone_android,
-                  title: '原生模式',
-                  subtitle: '使用原生 Flutter 界面',
-                  selected: _mode == AppMode.native,
-                  onTap: () => _switchMode(context, AppMode.native),
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                AppSectionHeader('主题'),
-                const SizedBox(height: 8),
-                _ThemeTile(
-                  icon: Icons.light_mode,
-                  title: '浅色',
-                  selected: _themeMode == ThemeMode.light,
-                  onTap: () => _setTheme(ThemeMode.light),
-                ),
-                const SizedBox(height: 4),
-                _ThemeTile(
-                  icon: Icons.dark_mode,
-                  title: '深色',
-                  selected: _themeMode == ThemeMode.dark,
-                  onTap: () => _setTheme(ThemeMode.dark),
-                ),
-                const SizedBox(height: 4),
-                _ThemeTile(
-                  icon: Icons.settings_brightness,
-                  title: '跟随系统',
-                  selected: _themeMode == ThemeMode.system,
-                  onTap: () => _setTheme(ThemeMode.system),
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                AppSectionHeader('关于'),
-                const SizedBox(height: 8),
-                AppCard(
-                  color: Colors.transparent,
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryLight,
-                          borderRadius: BorderRadius.circular(AppColors.kSmallBorderRadius),
-                        ),
-                        child: const Icon(Icons.code, color: AppColors.primary, size: 20),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('OpenCode Remote', style: TextStyle(color: AppColors.textPrimary, fontSize: 14, fontWeight: FontWeight.w500)),
-                            Text('v1.0.0', style: TextStyle(color: AppColors.textTertiary, fontSize: 12)),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
+          _buildModeSection(),
+          _buildThemeSection(),
+          _buildAboutSection(),
           const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDragHandle() {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 12),
+      width: 36, height: 4,
+      decoration: BoxDecoration(
+        color: AppColors.textTertiary,
+        borderRadius: BorderRadius.circular(AppColors.kChipBorderRadius),
+      ),
+    );
+  }
+
+  Widget _buildModeSection() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppSectionHeader(S.runMode),
+          const SizedBox(height: 8),
+          _ModeTile(
+            icon: Icons.public,
+            title: S.webviewMode,
+            subtitle: S.webviewDesc,
+            selected: _mode == AppMode.webview,
+            onTap: () => _switchMode(context, AppMode.webview),
+          ),
+          const SizedBox(height: 4),
+          _ModeTile(
+            icon: Icons.phone_android,
+            title: S.nativeMode,
+            subtitle: S.nativeDesc,
+            selected: _mode == AppMode.native,
+            onTap: () => _switchMode(context, AppMode.native),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildThemeSection() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppSectionHeader(S.theme),
+          const SizedBox(height: 8),
+          _ThemeTile(icon: Icons.light_mode, title: S.light,
+            selected: _themeMode == ThemeMode.light,
+            onTap: () => _setTheme(ThemeMode.light),
+          ),
+          const SizedBox(height: 4),
+          _ThemeTile(icon: Icons.dark_mode, title: S.dark,
+            selected: _themeMode == ThemeMode.dark,
+            onTap: () => _setTheme(ThemeMode.dark),
+          ),
+          const SizedBox(height: 4),
+          _ThemeTile(icon: Icons.settings_brightness, title: S.followSystem,
+            selected: _themeMode == ThemeMode.system,
+            onTap: () => _setTheme(ThemeMode.system),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAboutSection() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppSectionHeader(S.about),
+          const SizedBox(height: 8),
+          _buildAboutCard(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAboutCard() {
+    return AppCard(
+      color: Colors.transparent,
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.primaryLight,
+              borderRadius: BorderRadius.circular(AppColors.kSmallBorderRadius),
+            ),
+            child: const Icon(Icons.code, color: AppColors.primary, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(S.appTitle, style: TextStyle(color: AppColors.textPrimary, fontSize: 14, fontWeight: FontWeight.w500)),
+                Text(S.appVersion, style: TextStyle(color: AppColors.textTertiary, fontSize: 12)),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -160,6 +175,7 @@ class _SettingsSheetState extends State<SettingsSheet> {
   Future<void> _setTheme(ThemeMode mode) async {
     await StorageService.setThemeMode(mode);
     themeNotifier.value = mode;
+    if (!mounted) return;
     setState(() => _themeMode = mode);
   }
 
