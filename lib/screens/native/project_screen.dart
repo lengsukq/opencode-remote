@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../models.dart';
 import '../../theme.dart';
 import '../../services/opencode_api.dart';
+import '../../utils/project_helpers.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/app_bottom_sheet.dart';
 import '../../widgets/app_snackbar.dart';
@@ -12,8 +14,14 @@ import '../../widgets/workspace_list.dart';
 class ProjectScreen extends StatefulWidget {
   final ServerEntry entry;
   final OpenCodeApi api;
+  final VoidCallback? onProjectsChanged;
 
-  const ProjectScreen({super.key, required this.entry, required this.api});
+  const ProjectScreen({
+    super.key,
+    required this.entry,
+    required this.api,
+    this.onProjectsChanged,
+  });
 
   @override
   State<ProjectScreen> createState() => _ProjectScreenState();
@@ -83,7 +91,6 @@ class _ProjectScreenState extends State<ProjectScreen> {
   }
 
   Future<void> _removeProject(Project project) async {
-    // Try API call; if unavailable, do local removal
     try {
       await widget.api.removeProject(project.id);
     } catch (_) {
@@ -97,6 +104,7 @@ class _ProjectScreenState extends State<ProjectScreen> {
         widget.api.directory = null;
       }
     });
+    widget.onProjectsChanged?.call();
   }
 
   Future<bool> _confirmRemoveProject(Project project) async {
@@ -257,6 +265,9 @@ class _ProjectScreenState extends State<ProjectScreen> {
             _projects = updatedProjects;
             _applyFilter();
           });
+          // 持久化排序顺序
+          final ids = _projects.where((p) => _current?.id != p.id).map((p) => p.id).toList();
+          unawaited(ProjectHelpers.saveOrder(widget.entry.id, ids));
         },
       ),
     ];

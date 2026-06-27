@@ -6,6 +6,7 @@ class ProjectAvatar extends StatelessWidget {
   final Project project;
   final bool isActive;
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
   final String? currentBranch;
 
   const ProjectAvatar({
@@ -13,6 +14,7 @@ class ProjectAvatar extends StatelessWidget {
     required this.project,
     this.isActive = false,
     this.onTap,
+    this.onLongPress,
     this.currentBranch,
   });
 
@@ -31,6 +33,7 @@ class ProjectAvatar extends StatelessWidget {
         message: project.name,
         child: InkWell(
           onTap: onTap,
+          onLongPress: onLongPress,
           borderRadius: BorderRadius.circular(22),
           child: SizedBox(
             width: 44,

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models.dart';
 import '../theme.dart';
@@ -10,7 +11,10 @@ import '../screens/native/project_screen.dart';
 import '../screens/native/config_screen.dart';
 import '../screens/native/terminal_screen.dart';
 import '../screens/settings_sheet.dart';
+import '../utils/project_helpers.dart';
 import 'project_avatar.dart';
+import 'add_project_dialog.dart';
+import 'app_snackbar.dart';
 
 enum NavPage { dashboard, sessions, files, projects, config, terminal }
 
@@ -52,8 +56,22 @@ class _MainScaffoldState extends State<MainScaffold> {
           _activeProject = current;
         });
       }
-      if (current != null) _api.directory = current.path;
+      _api.directory = current.path;
+      // 后台持久化：不阻塞 UI
+      unawaited(ProjectHelpers.saveProjects(widget.entry.id, projects));
     } catch (_) {}
+  }
+
+  Future<void> _showAddProjectDialog() async {
+    final project = await showDialog<Project>(
+      context: context,
+      builder: (_) => AddProjectDialog(api: _api),
+    );
+    if (project == null || !mounted) return;
+    AppSnackBar.success(context, '${S.projectAdded}: ${project.name}');
+    // 刷新项目列表并切换到新项目
+    _initProjects();
+    _switchProject(project);
   }
 
   void _switchProject(Project project) {
@@ -64,6 +82,32 @@ class _MainScaffoldState extends State<MainScaffold> {
         _currentPage = NavPage.dashboard;
       }
     });
+  }
+
+  Future<void> _closeProject(Project project) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: Text(S.closeProject, style: const TextStyle(color: AppColors.textPrimary)),
+        content: Text('${S.confirmCloseProject}\n${project.name}', style: TextStyle(color: AppColors.textSecondary)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(S.cancel, style: TextStyle(color: AppColors.textSecondary))),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(S.closeProject),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true || !mounted) return;
+    try { await _api.removeProject(project.id); } catch (_) {}
+    if (_activeProject?.id == project.id) {
+      _activeProject = null;
+      _api.directory = null;
+    }
+    _initProjects();
   }
 
   void _navigateTo(NavPage page) {
@@ -90,7 +134,7 @@ class _MainScaffoldState extends State<MainScaffold> {
       case NavPage.files:
         return FileBrowserScreen(entry: widget.entry, api: _api, activeProject: _activeProject);
       case NavPage.projects:
-        return ProjectScreen(entry: widget.entry, api: _api);
+        return ProjectScreen(entry: widget.entry, api: _api, onProjectsChanged: _initProjects);
       case NavPage.config:
         return ConfigScreen(entry: widget.entry, api: _api, activeProject: _activeProject);
       case NavPage.terminal:
@@ -123,6 +167,21 @@ class _MainScaffoldState extends State<MainScaffold> {
                     padding: const EdgeInsets.only(top: 8, bottom: 16),
                     child: Icon(Icons.code, color: selectedColor, size: 28),
                   ),
+                  if (_activeProject != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Text(
+                        _activeProject!.name,
+                        style: const TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        textAlign: TextAlign.center,
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                      ),
+                    ),
                   if (_projects.isNotEmpty)
                     ConstrainedBox(
                       constraints: const BoxConstraints(maxHeight: 300),
@@ -136,15 +195,13 @@ class _MainScaffoldState extends State<MainScaffold> {
                                 project: p,
                                 isActive: _activeProject?.id == p.id,
                                 onTap: () => _switchProject(p),
+                                onLongPress: p.id == _activeProject?.id ? () => _closeProject(p) : null,
                               ),
                             )),
                             const SizedBox(height: 4),
                             IconButton(
                               icon: Icon(Icons.add_circle_outline, color: unselectedColor, size: 20),
-                              onPressed: () {
-                                // TODO: 对接 Agent B 的 AddProjectDialog
-                                debugPrint('添加项目按钮被点击');
-                              },
+                              onPressed: _showAddProjectDialog,
                               tooltip: S.addProject,
                             ),
                           ],
@@ -156,10 +213,7 @@ class _MainScaffoldState extends State<MainScaffold> {
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       child: IconButton(
                         icon: Icon(Icons.add_circle_outline, color: unselectedColor, size: 20),
-                        onPressed: () {
-                          // TODO: 对接 Agent B 的 AddProjectDialog
-                          debugPrint('添加项目按钮被点击');
-                        },
+                        onPressed: _showAddProjectDialog,
                         tooltip: S.addProject,
                       ),
                     ),
