@@ -1,7 +1,9 @@
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import '../../models.dart';
 import '../../theme.dart';
+import '../../utils/glass_effect.dart';
 import '../../utils/time_format.dart';
 import '../../widgets/code_block_builder.dart';
 import '../../widgets/file_parts_row.dart';
@@ -14,7 +16,8 @@ class MessageBubble extends StatelessWidget {
   final bool isLatest;
   final String? streamingText;
   final VoidCallback? onLongPress;
-  final void Function(String code, String? language, BuildContext ctx)? onApplyCode;
+  final void Function(String code, String? language, BuildContext ctx)?
+  onApplyCode;
 
   const MessageBubble({
     super.key,
@@ -29,42 +32,60 @@ class MessageBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final isUser = message.role == 'user';
     final timeStr = formatTime(message.createdAt);
-    final displayContent = streamingText != null ? '${message.content}\n$streamingText' : message.content;
+    final displayContent = streamingText != null
+        ? '${message.content}\n$streamingText'
+        : message.content;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Column(
-        crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        crossAxisAlignment: isUser
+            ? CrossAxisAlignment.end
+            : CrossAxisAlignment.start,
         children: [
           _buildReasoningBlock(),
-          _buildCostBadge(),
+          _buildCostBadge(context),
           _buildBubble(context, isUser, displayContent),
           _buildFileParts(),
           ..._buildToolParts(),
           const SizedBox(height: 2),
-          Text(timeStr, style: TextStyle(color: AppColors.textTertiary, fontSize: 10)),
+          Text(
+            timeStr,
+            style: const TextStyle(color: AppColors.textTertiary, fontSize: 10),
+          ),
         ],
       ),
     );
   }
 
   Widget _buildReasoningBlock() {
-    if (message.role == 'user' || !message.hasReasoning) return const SizedBox.shrink();
+    if (message.role == 'user' || !message.hasReasoning) {
+      return const SizedBox.shrink();
+    }
     return ReasoningBlock(content: message.reasoning!, isLatest: isLatest);
   }
 
-  Widget _buildCostBadge() {
-    if (message.role == 'user' || message.cost <= 0) return const SizedBox.shrink();
+  Widget _buildCostBadge(BuildContext context) {
+    if (message.role == 'user' || message.cost <= 0) {
+      return const SizedBox.shrink();
+    }
+    final isDark = isDarkMode(context);
+    final successColor = isDark ? DarkColors.success : AppColors.success;
     return Container(
       margin: const EdgeInsets.only(bottom: 4),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: AppColors.success.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(4),
+        color: successColor.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(10),
       ),
       child: Text(
-        '\$${message.cost.toStringAsFixed(4)}',
-        style: TextStyle(color: AppColors.success, fontSize: 10, fontFamily: 'monospace'),
+        '\$'
+        '${message.cost.toStringAsFixed(4)}',
+        style: TextStyle(
+          color: successColor,
+          fontSize: 10,
+          fontFamily: 'monospace',
+        ),
       ),
     );
   }
@@ -79,35 +100,79 @@ class MessageBubble extends StatelessWidget {
   }
 
   List<Widget> _buildToolParts() {
-    return message.parts.where((p) => p.type == 'tool').map((p) => ToolPartWidget(
-      part: p,
-      isLatest: isLatest,
-      streamingText: streamingText,
-    )).toList();
+    return message.parts
+        .where((p) => p.type == 'tool')
+        .map(
+          (p) => ToolPartWidget(
+            part: p,
+            isLatest: isLatest,
+            streamingText: streamingText,
+          ),
+        )
+        .toList();
   }
 
-  Widget _buildBubble(BuildContext context, bool isUser, String displayContent) {
-    return GestureDetector(
-      onLongPress: onLongPress,
-      child: Container(
-        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.85),
-        padding: EdgeInsets.only(
+  Widget _buildBubble(
+    BuildContext context,
+    bool isUser,
+    String displayContent,
+  ) {
+    final shadows = ResponsiveTheme.getShadow(context, level: isUser ? 1 : 2);
+    final bubbleRadius = BorderRadius.circular(isUser ? 16 : 14).copyWith(
+      bottomRight: isUser ? const Radius.circular(4) : null,
+      bottomLeft: !isUser ? const Radius.circular(4) : null,
+    );
+
+    Widget bubble;
+    if (isUser) {
+      bubble = Container(
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.85,
+        ),
+        padding: const EdgeInsets.only(
           left: 14,
           right: 14,
-          top: isUser ? 10 : 8,
-          bottom: isUser ? 10 : 8,
+          top: 10,
+          bottom: 10,
         ),
         decoration: BoxDecoration(
-          color: isUser ? AppColors.primary : AppColors.surface,
-          borderRadius: BorderRadius.circular(16).copyWith(
-            bottomRight: isUser ? const Radius.circular(4) : null,
-            bottomLeft: !isUser ? const Radius.circular(4) : null,
-          ),
-          boxShadow: isUser ? null : [BoxShadow(color: AppColors.shadow, blurRadius: 4, offset: const Offset(0, 1))],
+          color: AppColors.primary,
+          borderRadius: bubbleRadius,
+          boxShadow: shadows,
         ),
         child: _buildBubbleContent(isUser, displayContent),
-      ),
-    );
+      );
+    } else {
+      bubble = ClipRRect(
+        borderRadius: bubbleRadius,
+        child: BackdropFilter(
+          filter: ui.ImageFilter.blur(
+            sigmaX: Glass.cardBlur,
+            sigmaY: Glass.cardBlur,
+          ),
+          child: Container(
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.of(context).size.width * 0.85,
+            ),
+            padding: const EdgeInsets.only(
+              left: 14,
+              right: 14,
+              top: 8,
+              bottom: 8,
+            ),
+            decoration: BoxDecoration(
+              color: Glass.surface(context),
+              borderRadius: bubbleRadius,
+              border: Border.all(color: Glass.border(context), width: 0.5),
+              boxShadow: shadows,
+            ),
+            child: _buildBubbleContent(isUser, displayContent),
+          ),
+        ),
+      );
+    }
+
+    return GestureDetector(onLongPress: onLongPress, child: bubble);
   }
 
   Widget _buildBubbleContent(bool isUser, String displayContent) {
@@ -120,36 +185,57 @@ class MessageBubble extends StatelessWidget {
     return MarkdownBody(
       data: displayContent,
       selectable: true,
-      builders: {
-        'code_block': CodeBlockBuilder(onApply: onApplyCode),
-      },
+      builders: {'code_block': CodeBlockBuilder(onApply: onApplyCode)},
       styleSheet: _chatMarkdownStyle,
     );
   }
 
   static MarkdownStyleSheet get _chatMarkdownStyle => MarkdownStyleSheet(
     p: const TextStyle(color: AppColors.textPrimary, fontSize: 14, height: 1.5),
-    h1: TextStyle(color: AppColors.textPrimary, fontSize: 20, fontWeight: FontWeight.bold, height: 1.4),
-    h2: TextStyle(color: AppColors.textPrimary, fontSize: 17, fontWeight: FontWeight.bold, height: 1.4),
-    h3: TextStyle(color: AppColors.textPrimary, fontSize: 15, fontWeight: FontWeight.w600, height: 1.4),
-    code: TextStyle(color: AppColors.textPrimary, fontSize: 12, fontFamily: 'monospace', backgroundColor: AppColors.surfaceAlt),
+    h1: const TextStyle(
+      color: AppColors.textPrimary,
+      fontSize: 20,
+      fontWeight: FontWeight.bold,
+      height: 1.4,
+    ),
+    h2: const TextStyle(
+      color: AppColors.textPrimary,
+      fontSize: 17,
+      fontWeight: FontWeight.bold,
+      height: 1.4,
+    ),
+    h3: const TextStyle(
+      color: AppColors.textPrimary,
+      fontSize: 15,
+      fontWeight: FontWeight.w600,
+      height: 1.4,
+    ),
+    code: const TextStyle(
+      color: AppColors.textPrimary,
+      fontSize: 12,
+      fontFamily: 'monospace',
+      backgroundColor: AppColors.surfaceAlt,
+    ),
     codeblockDecoration: BoxDecoration(
       color: AppColors.surfaceAlt,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(12),
     ),
-    blockquoteDecoration: BoxDecoration(
+    blockquoteDecoration: const BoxDecoration(
       border: Border(left: BorderSide(color: AppColors.primary, width: 3)),
       color: AppColors.surfaceAlt,
     ),
-    listBullet: TextStyle(color: AppColors.textSecondary),
-    horizontalRuleDecoration: BoxDecoration(
+    listBullet: const TextStyle(color: AppColors.textSecondary),
+    horizontalRuleDecoration: const BoxDecoration(
       border: Border(top: BorderSide(color: AppColors.border)),
     ),
-    a: const TextStyle(color: AppColors.primary, decoration: TextDecoration.underline),
+    a: const TextStyle(
+      color: AppColors.primary,
+      decoration: TextDecoration.underline,
+    ),
     strong: const TextStyle(fontWeight: FontWeight.bold),
     em: const TextStyle(fontStyle: FontStyle.italic),
     del: const TextStyle(decoration: TextDecoration.lineThrough),
     blockSpacing: 8,
-    codeblockPadding: EdgeInsets.all(10),
+    codeblockPadding: const EdgeInsets.all(10),
   );
 }
