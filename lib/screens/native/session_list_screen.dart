@@ -3,13 +3,13 @@ import '../../models.dart';
 import '../../strings.dart';
 import '../../theme.dart';
 import '../../services/opencode_api.dart';
-import '../../widgets/diff_view.dart';
 import '../../widgets/app_dialog.dart';
 import '../../widgets/app_bottom_sheet.dart';
 import '../../widgets/app_snackbar.dart';
 import 'chat_screen.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/app_states.dart';
+import '../../widgets/session_actions.dart';
 
 class SessionListScreen extends StatefulWidget {
   final ServerEntry entry;
@@ -62,16 +62,19 @@ class _SessionListScreenState extends State<SessionListScreen> {
     try {
       final sessions = await widget.api.getSessions();
       sessions.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+      if (!mounted) return;
       setState(() {
         _sessions = sessions;
         _loading = false;
         _error = null;
       });
     } catch (e) {
-      setState(() {
-        _loading = false;
-        _error = e.toString();
-      });
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _error = e.toString();
+        });
+      }
     }
   }
 
@@ -96,306 +99,42 @@ class _SessionListScreenState extends State<SessionListScreen> {
   Future<void> _showSessionActions(Session session) async {
     final action = await AppBottomSheet.showOptions<String>(
       context,
-      title: session.title.isNotEmpty ? session.title : '未命名会话',
+      title: session.title.isNotEmpty ? session.title : S.unnamedSession,
       options: [
         const BottomSheetOption(icon: Icons.edit, label: '重命名', value: 'rename'),
-        const BottomSheetOption(icon: Icons.share, label: '分享', value: 'share'),
-        const BottomSheetOption(icon: Icons.stop, label: '中止', value: 'abort'),
-        const BottomSheetOption(icon: Icons.block, label: '停止分享', value: 'unshare'),
-        const BottomSheetOption(icon: Icons.account_tree, label: '子会话', value: 'children'),
-        const BottomSheetOption(icon: Icons.checklist, label: '待办列表', value: 'todo'),
-        const BottomSheetOption(icon: Icons.difference, label: '查看差异', value: 'diff'),
-        const BottomSheetOption(icon: Icons.summarize, label: '总结', value: 'summarize'),
-        const BottomSheetOption(icon: Icons.call_split, label: '分叉', value: 'fork'),
-        const BottomSheetOption(icon: Icons.delete, label: '删除', value: 'delete', destructive: true),
+        const BottomSheetOption(icon: Icons.share, label: S.share, value: 'share'),
+        const BottomSheetOption(icon: Icons.stop, label: S.abort, value: 'abort'),
+        const BottomSheetOption(icon: Icons.block, label: S.stopSharing, value: 'unshare'),
+        const BottomSheetOption(icon: Icons.account_tree, label: S.childSessions, value: 'children'),
+        const BottomSheetOption(icon: Icons.checklist, label: S.todoList, value: 'todo'),
+        const BottomSheetOption(icon: Icons.difference, label: S.diff, value: 'diff'),
+        const BottomSheetOption(icon: Icons.summarize, label: S.summarize, value: 'summarize'),
+        const BottomSheetOption(icon: Icons.call_split, label: S.fork, value: 'fork'),
+        const BottomSheetOption(icon: Icons.delete, label: S.delete, value: 'delete', destructive: true),
       ],
     );
     if (action == null) return;
     switch (action) {
       case 'rename':
-        await _renameSession(session);
+        await SessionActions.rename(context, widget.api, session, _load);
       case 'share':
-        await _shareSession(session);
+        await SessionActions.share(context, widget.api, session);
       case 'abort':
-        await _abortSession(session);
+        await SessionActions.abort(context, widget.api, session, _load);
       case 'unshare':
-        await _unshareSession(session);
+        await SessionActions.unshare(context, widget.api, session, _load);
       case 'children':
-        await _showChildSessions(session);
+        await SessionActions.showChildSessions(context, widget.api, session);
       case 'todo':
-        await _showTodoList(session);
+        await SessionActions.showTodoList(context, widget.api, session);
       case 'diff':
-        await _showDiff(session);
+        await SessionActions.showDiff(context, widget.api, session);
       case 'summarize':
-        await _summarizeSession(session);
+        await SessionActions.summarize(context, widget.api, session, _load);
       case 'fork':
-        await _forkSession(session);
+        await SessionActions.fork(context, widget.api, session, _load);
       case 'delete':
-        await _deleteSession(session);
-    }
-  }
-
-  Future<void> _abortSession(Session session) async {
-    try {
-      await widget.api.abortSession(session.id);
-      if (mounted) {
-        AppSnackBar.show(context, '会话已中止');
-        await _load();
-      }
-    } catch (e) {
-      if (mounted) AppSnackBar.error(context, '中止失败: $e');
-    }
-  }
-
-  Future<void> _unshareSession(Session session) async {
-    try {
-      await widget.api.unshareSession(session.id);
-      if (mounted) {
-        AppSnackBar.show(context, '已取消分享');
-        await _load();
-      }
-    } catch (e) {
-      if (mounted) AppSnackBar.error(context, '取消失败: $e');
-    }
-  }
-
-  Future<void> _showChildSessions(Session session) async {
-    try {
-      final children = await widget.api.getChildSessions(session.id);
-      if (!mounted) return;
-      showDialog(
-        context: context,
-        builder: (ctx) => Dialog(
-          backgroundColor: AppColors.surface,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              AppBar(
-                title: const Text('子会话', style: TextStyle(color: AppColors.textPrimary, fontSize: 14)),
-                leading: IconButton(
-                  icon: const Icon(Icons.close, color: AppColors.textSecondary),
-                  onPressed: () => Navigator.pop(ctx),
-                ),
-              ),
-              if (children.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.all(20),
-                  child: Text('无子会话', style: TextStyle(color: AppColors.textTertiary)),
-                )
-              else
-                ...children.map((c) => ListTile(
-                  title: Text(c.title.isNotEmpty ? c.title : '未命名', style: TextStyle(color: AppColors.textPrimary, fontSize: 13)),
-                  subtitle: Text(c.status, style: TextStyle(color: AppColors.textTertiary, fontSize: 11)),
-                )),
-            ],
-          ),
-        ),
-      );
-    } catch (e) {
-      if (mounted) AppSnackBar.error(context, '获取子会话失败: $e');
-    }
-  }
-
-  Future<void> _showTodoList(Session session) async {
-    try {
-      final todos = await widget.api.getSessionTodo(session.id);
-      if (!mounted) return;
-      showDialog(
-        context: context,
-        builder: (ctx) => Dialog(
-          backgroundColor: AppColors.surface,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              AppBar(
-                title: const Text('待办列表', style: TextStyle(color: AppColors.textPrimary, fontSize: 14)),
-                leading: IconButton(
-                  icon: const Icon(Icons.close, color: AppColors.textSecondary),
-                  onPressed: () => Navigator.pop(ctx),
-                ),
-              ),
-              if (todos.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.all(20),
-                  child: Text('无待办事项', style: TextStyle(color: AppColors.textTertiary)),
-                )
-              else
-                Expanded(
-                  child: ListView(
-                    children: todos.map((t) => ListTile(
-                      dense: true,
-                      leading: Icon(
-                        t.done ? Icons.check_circle : Icons.radio_button_unchecked,
-                        color: t.done ? AppColors.success : AppColors.textSecondary,
-                        size: 18,
-                      ),
-                      title: Text(
-                        t.task,
-                        style: TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: 13,
-                          decoration: t.done ? TextDecoration.lineThrough : null,
-                        ),
-                      ),
-                    )).toList(),
-                  ),
-                ),
-            ],
-          ),
-        ),
-      );
-    } catch (e) {
-      if (mounted) AppSnackBar.error(context, '获取待办失败: $e');
-    }
-  }
-
-  Future<void> _renameSession(Session session) async {
-    final result = await AppDialog.showTextInput(
-      context,
-      title: '重命名',
-      initialValue: session.title,
-      hintText: '新标题',
-    );
-    if (result == null || result.trim().isEmpty) return;
-    try {
-      await widget.api.updateSession(session.id, title: result.trim());
-      await _load();
-    } catch (e) {
-      if (mounted) {
-        AppSnackBar.error(context, '重命名失败: $e');
-      }
-    }
-  }
-
-  Future<void> _shareSession(Session session) async {
-    try {
-      await widget.api.shareSession(session.id);
-      if (mounted) {
-        AppSnackBar.success(context, '会话已分享');
-      }
-    } catch (e) {
-      if (mounted) {
-        AppSnackBar.error(context, '分享失败: $e');
-      }
-    }
-  }
-
-  Future<void> _showDiff(Session session) async {
-    try {
-      final diffs = await widget.api.getSessionDiff(session.id);
-      if (!mounted) return;
-      if (diffs.isEmpty) {
-        AppSnackBar.show(context, '暂无差异');
-        return;
-      }
-      showDialog(
-        context: context,
-        builder: (ctx) => Dialog(
-          backgroundColor: AppColors.background,
-          child: Column(
-            mainAxisSize: MainAxisSize.max,
-            children: [
-              AppBar(
-                title: Text('差异: ${session.title}', style: const TextStyle(color: AppColors.textPrimary, fontSize: 14)),
-                leading: IconButton(
-                  icon: const Icon(Icons.close, color: AppColors.textSecondary),
-                  onPressed: () => Navigator.pop(ctx),
-                ),
-              ),
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.all(12),
-                  children: diffs.map((d) => Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: DiffView(
-                      filePath: d.filePath,
-                      status: d.status,
-                      hunks: [DiffHunkView.fromContent(0, 0, d.patch ?? '+${d.additions} -${d.deletions}')],
-                    ),
-                  )).toList(),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    } catch (e) {
-      if (mounted) {
-        AppSnackBar.error(context, '获取差异失败: $e');
-      }
-    }
-  }
-
-  Future<void> _summarizeSession(Session session) async {
-    try {
-      await widget.api.summarizeSession(session.id);
-      if (mounted) {
-        AppSnackBar.success(context, '总结完成');
-        await _load();
-      }
-    } catch (e) {
-      if (mounted) {
-        AppSnackBar.error(context, '总结失败: $e');
-      }
-    }
-  }
-
-  Future<void> _forkSession(Session session) async {
-    final messageID = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        title: const Text('分叉会话', style: TextStyle(color: AppColors.textPrimary)),
-        content: const Text('从最新消息分叉一个新会话？', style: TextStyle(color: AppColors.textSecondary)),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消', style: TextStyle(color: AppColors.textSecondary))),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('分叉'),
-          ),
-        ],
-      ),
-    );
-    if (messageID == null) return;
-    try {
-      await widget.api.forkSession(session.id);
-      if (mounted) {
-        AppSnackBar.success(context, '已分叉为新会话');
-        await _load();
-      }
-    } catch (e) {
-      if (mounted) {
-        AppSnackBar.error(context, '分叉失败: $e');
-      }
-    }
-  }
-
-  Future<void> _deleteSession(Session session) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        title: const Text('删除会话', style: TextStyle(color: AppColors.textPrimary)),
-        content: Text('确定删除"${session.title}"？', style: TextStyle(color: AppColors.textSecondary)),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('取消', style: TextStyle(color: AppColors.textSecondary))),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('删除'),
-          ),
-        ],
-      ),
-    );
-    if (confirm != true) return;
-    try {
-      await widget.api.deleteSession(session.id);
-      await _load();
-    } catch (e) {
-      if (mounted) {
-        AppSnackBar.error(context, '删除失败: $e');
-      }
+        await SessionActions.delete(context, widget.api, session, _load);
     }
   }
 
@@ -405,7 +144,7 @@ class _SessionListScreenState extends State<SessionListScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text(widget.activeProject != null ? '${widget.activeProject!.name} / 会话' : '会话列表'),
+        title: Text(widget.activeProject != null ? '${widget.activeProject!.name} / ${S.sessions}' : '${S.sessions}列表'),
         actions: [
           IconButton(
             icon: Icon(_searching ? Icons.search_off : Icons.search, color: AppColors.textSecondary),

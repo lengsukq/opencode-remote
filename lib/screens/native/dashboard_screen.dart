@@ -4,18 +4,15 @@ import '../../strings.dart';
 import '../../theme.dart';
 import '../../services/storage_service.dart';
 import '../../services/opencode_api.dart';
-import '../../utils/time_format.dart';
+
 import '../settings_sheet.dart';
 import '../../widgets/app_dialog.dart';
 import '../../widgets/app_bottom_sheet.dart';
-import '../../widgets/app_card.dart';
+
 import '../../widgets/app_snackbar.dart';
 import '../../widgets/app_states.dart';
 import 'session_list_screen.dart';
-import 'file_browser_screen.dart';
-import 'project_screen.dart';
-import 'config_screen.dart';
-import 'chat_screen.dart';
+import '../../widgets/dashboard_cards.dart';
 
 class DashboardScreen extends StatefulWidget {
   final ServerEntry entry;
@@ -80,6 +77,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       } else {
         filtered = sessions.take(5).toList();
       }
+      if (!mounted) return;
       setState(() {
         _health = health;
         _recentSessions = filtered;
@@ -87,10 +85,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
         _error = null;
       });
     } catch (e) {
-      setState(() {
-        _loading = false;
-        _error = e.toString();
-      });
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _error = e.toString();
+        });
+      }
     }
   }
 
@@ -133,6 +133,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       selected.lastUsed = DateTime.now().millisecondsSinceEpoch;
       await StorageService.addOrUpdate(selected);
       await StorageService.setLastSelectedId(selected.id);
+      if (!mounted) return;
       setState(() {
         _entry = selected;
         _loading = true;
@@ -145,14 +146,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<void> _showAuthDialog() async {
     final providerID = await AppDialog.showTextInput(
       context,
-      title: '设置认证',
-      hintText: 'provider ID (如 openai)',
+      title: S.setAuth,
+      hintText: S.providerIdHint,
     );
     if (providerID == null || providerID.isEmpty) return;
     final apiKey = await AppDialog.showTextInput(
       context,
-      title: 'API Key',
-      hintText: 'sk-...',
+      title: S.apiKey,
+      hintText: S.apiKeyHint,
       obscureText: true,
     );
     if (apiKey == null || apiKey.isEmpty) return;
@@ -160,7 +161,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       await _api.setAuth(providerID, {'apiKey': apiKey});
       if (mounted) AppSnackBar.success(context, '认证已设置');
     } catch (e) {
-      if (mounted) AppSnackBar.error(context, '设置认证失败: $e');
+      if (mounted) AppSnackBar.error(context, S.setAuthFailed(e));
     }
   }
 
@@ -173,7 +174,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.swap_horiz, color: AppColors.textSecondary),
-            tooltip: '切换服务器',
+            tooltip: S.switchServer,
             onPressed: _switchServer,
           ),
           IconButton(
@@ -186,21 +187,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
               if (v == 'dispose') {
                 try {
                   await _api.disposeInstance();
-                  if (mounted) AppSnackBar.show(context, '实例已销毁');
+                  if (mounted) AppSnackBar.show(context, S.instanceDisposed);
                 } catch (e) {
-                  if (mounted) AppSnackBar.error(context, '销毁失败: $e');
+                  if (mounted) AppSnackBar.error(context, S.disposeFailed(e));
                 }
               } else if (v == 'log') {
                 await _api.writeLog('client', 'info', 'Dashboard health check from remote app', extra: {'url': _entry.url});
-                if (mounted) AppSnackBar.show(context, '日志已写入');
+                if (mounted) AppSnackBar.show(context, S.logWritten);
               } else if (v == 'auth') {
                 await _showAuthDialog();
               }
             },
             itemBuilder: (_) => [
-              const PopupMenuItem(value: 'dispose', child: ListTile(leading: Icon(Icons.power_settings_new, size: 18), title: Text('销毁实例', style: TextStyle(fontSize: 13)))),
-              const PopupMenuItem(value: 'log', child: ListTile(leading: Icon(Icons.article, size: 18), title: Text('写入诊断日志', style: TextStyle(fontSize: 13)))),
-              const PopupMenuItem(value: 'auth', child: ListTile(leading: Icon(Icons.key, size: 18), title: Text('设置认证', style: TextStyle(fontSize: 13)))),
+              const PopupMenuItem(value: 'dispose', child: ListTile(leading: Icon(Icons.power_settings_new, size: 18), title: Text(S.disposeInstance, style: TextStyle(fontSize: 13)))),
+              const PopupMenuItem(value: 'log', child: ListTile(leading: Icon(Icons.article, size: 18), title: Text(S.writeDiagnosticLog, style: TextStyle(fontSize: 13)))),
+              const PopupMenuItem(value: 'auth', child: ListTile(leading: Icon(Icons.key, size: 18), title: Text(S.setAuth, style: TextStyle(fontSize: 13)))),
             ],
           ),
         ],
@@ -224,7 +225,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         const SizedBox(height: 40),
         Icon(Icons.cloud_off, size: 48, color: AppColors.textTertiary),
         const SizedBox(height: 12),
-        Text('连接失败', style: TextStyle(color: AppColors.textSecondary, fontSize: 16)),
+        Text(S.connectionFailed, style: TextStyle(color: AppColors.textSecondary, fontSize: 16)),
         const SizedBox(height: 8),
         Text(_error!, style: TextStyle(color: AppColors.textTertiary, fontSize: 12), textAlign: TextAlign.center),
         const SizedBox(height: 20),
@@ -242,26 +243,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        _StatusCard(health: _health, url: widget.entry.url),
+        DashboardStatusCard(health: _health, url: widget.entry.url),
         if (widget.activeProject != null) ...[
           const SizedBox(height: 16),
-          _buildProjectContextCard(),
+          DashboardProjectContextCard(project: widget.activeProject!),
         ],
         const SizedBox(height: 20),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('最近会话', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+            Text(S.recentSessions, style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
             TextButton(
               onPressed: () => Navigator.push(context, MaterialPageRoute(
                 builder: (_) => SessionListScreen(entry: widget.entry, api: _api, activeProject: widget.activeProject),
               )),
-              child: const Text('查看全部', style: TextStyle(color: AppColors.primary, fontSize: 12)),
+              child: const Text(S.viewAll, style: TextStyle(color: AppColors.primary, fontSize: 12)),
             ),
           ],
         ),
         const SizedBox(height: 8),
-        ..._recentSessions.map((s) => _SessionCard(session: s, api: _api, entry: widget.entry, activeProject: widget.activeProject)),
+        ..._recentSessions.map((s) => DashboardSessionCard(session: s, api: _api, entry: widget.entry, activeProject: widget.activeProject)),
         if (_recentSessions.isEmpty)
           Padding(
             padding: const EdgeInsets.all(20),
@@ -271,250 +272,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ),
         const SizedBox(height: 20),
-        _QuickActions(api: _api, entry: widget.entry, activeProject: widget.activeProject),
+        DashboardQuickActions(api: _api, entry: widget.entry, activeProject: widget.activeProject),
       ],
     );
   }
 
-  Widget _buildProjectContextCard() {
-    final project = widget.activeProject!;
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppColors.kDefaultBorderRadius),
-        border: Border.all(color: AppColors.border),
-        boxShadow: [
-          BoxShadow(color: AppColors.shadow, blurRadius: 10, offset: const Offset(0, 2)),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: AppColors.primaryLight,
-              borderRadius: BorderRadius.circular(AppColors.kCardBorderRadius),
-            ),
-            child: const Icon(Icons.folder, color: AppColors.primary, size: 22),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  project.name,
-                  style: const TextStyle(color: AppColors.textPrimary, fontSize: 15, fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  project.path,
-                  style: TextStyle(color: AppColors.textTertiary, fontSize: 11),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StatusCard extends StatelessWidget {
-  final HealthStatus? health;
-  final String url;
-
-  const _StatusCard({required this.health, required this.url});
-
-  @override
-  Widget build(BuildContext context) {
-    final uri = Uri.tryParse(url);
-    final host = uri != null && uri.host.isNotEmpty ? '${uri.host}:${uri.port}' : url;
-    final isHealthy = health?.healthy ?? false;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppColors.kDefaultBorderRadius),
-        border: Border.all(color: AppColors.border),
-        boxShadow: [
-          BoxShadow(color: AppColors.shadow, blurRadius: 10, offset: const Offset(0, 2)),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 12, height: 12,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: isHealthy ? AppColors.success : AppColors.danger,
-              boxShadow: [
-                BoxShadow(
-                  color: (isHealthy ? AppColors.success : AppColors.danger).withValues(alpha: 0.4),
-                  blurRadius: 8,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(host, style: const TextStyle(color: AppColors.textPrimary, fontSize: 14, fontWeight: FontWeight.w500)),
-                const SizedBox(height: 2),
-                Text(
-                  isHealthy ? 'v${health?.version ?? "?"} \u00b7 已连接' : '无法连接',
-                  style: TextStyle(color: isHealthy ? AppColors.success : AppColors.danger, fontSize: 12),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: isHealthy ? AppColors.success.withValues(alpha: 0.1) : AppColors.danger.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(AppColors.kChipBorderRadius),
-            ),
-            child: Text(
-              isHealthy ? '在线' : '离线',
-              style: TextStyle(
-                color: isHealthy ? AppColors.success : AppColors.danger,
-                fontSize: 11,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SessionCard extends StatelessWidget {
-  final Session session;
-  final OpenCodeApi api;
-  final ServerEntry entry;
-  final Project? activeProject;
-
-  const _SessionCard({required this.session, required this.api, required this.entry, this.activeProject});
-
-  @override
-  Widget build(BuildContext context) {
-    final timeStr = formatRelativeTime(session.updatedAt);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
-      child: AppCard(
-        borderRadius: AppColors.kCardBorderRadius,
-        padding: EdgeInsets.zero,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(AppColors.kCardBorderRadius),
-          onTap: () {
-            Navigator.push(context, MaterialPageRoute(
-              builder: (_) => ChatScreen(session: session, entry: entry, api: api),
-            ));
-          },
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryLight,
-                    borderRadius: BorderRadius.circular(AppColors.kSmallBorderRadius),
-                  ),
-                  child: const Icon(Icons.chat, color: AppColors.primary, size: 16),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(session.title.isNotEmpty ? session.title : '未命名会话',
-                          style: const TextStyle(color: AppColors.textPrimary, fontSize: 13)),
-                      const SizedBox(height: 2),
-                      Text(timeStr, style: TextStyle(color: AppColors.textTertiary, fontSize: 11)),
-                    ],
-                  ),
-                ),
-                Icon(Icons.chevron_right, color: AppColors.textTertiary, size: 16),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _QuickActions extends StatelessWidget {
-  final OpenCodeApi api;
-  final ServerEntry entry;
-  final Project? activeProject;
-
-  const _QuickActions({required this.api, required this.entry, this.activeProject});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('快捷操作', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(child: _ActionButton(icon: Icons.add, label: '新建会话', color: AppColors.primary, onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => SessionListScreen(entry: entry, api: api, activeProject: activeProject)));
-            })),
-            const SizedBox(width: 8),
-            Expanded(child: _ActionButton(icon: Icons.folder, label: '文件浏览', color: AppColors.success, onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => FileBrowserScreen(entry: entry, api: api, activeProject: activeProject)));
-            })),
-            const SizedBox(width: 8),
-            Expanded(child: _ActionButton(icon: Icons.swap_horiz, label: '切换项目', color: AppColors.warning, onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => ProjectScreen(entry: entry, api: api)));
-            })),
-            const SizedBox(width: 8),
-            Expanded(child: _ActionButton(icon: Icons.monitor_heart, label: '诊断', color: AppColors.primary, onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => ConfigScreen(entry: entry, api: api)));
-            })),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class _ActionButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-  final VoidCallback onTap;
-
-  const _ActionButton({required this.icon, required this.label, required this.color, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(AppColors.kCardBorderRadius),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: color, size: 24),
-            const SizedBox(height: 8),
-            Text(label, style: TextStyle(color: AppColors.textSecondary, fontSize: 11)),
-          ],
-        ),
-      ),
-    );
-  }
 }

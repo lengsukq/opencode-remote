@@ -59,7 +59,9 @@ class _MainScaffoldState extends State<MainScaffold> {
       _api.directory = current.path;
       // 后台持久化：不阻塞 UI
       unawaited(ProjectHelpers.saveProjects(widget.entry.id, projects));
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('MainScaffold._initProjects: $e');
+    }
   }
 
   Future<void> _showAddProjectDialog() async {
@@ -102,7 +104,11 @@ class _MainScaffoldState extends State<MainScaffold> {
       ),
     );
     if (confirm != true || !mounted) return;
-    try { await _api.removeProject(project.id); } catch (_) {}
+    try {
+      await _api.removeProject(project.id);
+    } catch (e) {
+      debugPrint('MainScaffold._closeProject: failed to remove project $e');
+    }
     if (_activeProject?.id == project.id) {
       _activeProject = null;
       _api.directory = null;
@@ -250,7 +256,7 @@ class _MainScaffoldState extends State<MainScaffold> {
                 NavigationRailDestination(
                   icon: Icon(Icons.terminal_outlined),
                   selectedIcon: Icon(Icons.terminal),
-                  label: Text('终端'),
+                  label: Text(S.terminal),
                 ),
               ],
             ),

@@ -6,6 +6,7 @@ import '../../widgets/app_full_screen_dialog.dart';
 import '../../widgets/app_snackbar.dart';
 import '../../strings.dart';
 import '../../widgets/app_states.dart';
+import '../../widgets/file_search_panel.dart';
 
 class FileBrowserScreen extends StatefulWidget {
   final ServerEntry entry;
@@ -50,12 +51,6 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
 
   // Search mode
   bool _isSearchMode = false;
-  final _searchCtrl = TextEditingController();
-  List<SearchMatch> _searchResults = [];
-  List<String> _fileResults = [];
-  List<Symbol> _symbolResults = [];
-  bool _isSearching = false;
-  String _searchTabName = 'file'; // file | text | symbol
 
   @override
   void initState() {
@@ -65,7 +60,6 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
 
   @override
   void dispose() {
-    _searchCtrl.dispose();
     super.dispose();
   }
 
@@ -102,10 +96,12 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
       );
       rootNode.setChildren(files.where((f) => f.type == 'directory').map((f) => _TreeNode(node: f, depth: 0)).toList()
         ..addAll(files.where((f) => f.type != 'directory').map((f) => _TreeNode(node: f, depth: 0))));
-      _roots = [rootNode];
-      _currentPath = initialPath;
-      _loading = false;
-      _error = null;
+      setState(() {
+        _roots = [rootNode];
+        _currentPath = initialPath;
+        _loading = false;
+        _error = null;
+      });
     } catch (e) {
       setState(() {
         _loading = false;
@@ -247,46 +243,22 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
 
   // --- Search ---
   void _toggleSearch() {
-    setState(() {
-      _isSearchMode = !_isSearchMode;
-      if (!_isSearchMode) {
-        _searchResults = [];
-        _fileResults = [];
-        _symbolResults = [];
-        _searchCtrl.clear();
-      }
-    });
-  }
-
-  Future<void> _doSearch(String query) async {
-    if (query.isEmpty) return;
-    setState(() => _isSearching = true);
-    try {
-      switch (_searchTabName) {
-        case 'file':
-          _fileResults = await widget.api.findFiles(query);
-          break;
-        case 'text':
-          _searchResults = await widget.api.searchFiles(query);
-          break;
-        case 'symbol':
-          _symbolResults = await widget.api.findSymbols(query);
-          break;
-      }
-    } catch (e) {
-      if (mounted) {
-        AppSnackBar.error(context, '${S.searchFailed}: $e');
-      }
-    }
-    if (mounted) setState(() => _isSearching = false);
+    setState(() => _isSearchMode = !_isSearchMode);
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isSearchMode) {
+      return FileSearchPanel(
+        api: widget.api,
+        onOpenFile: _readFileByPath,
+        onClose: _toggleSearch,
+      );
+    }
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: _isSearchMode ? _searchAppBar() : _browserAppBar(),
-      body: _isSearchMode ? _buildSearchResults() : Column(
+      appBar: _browserAppBar(),
+      body: Column(
         children: [
           _buildBreadcrumb(),
           Expanded(child: _buildFileList()),
@@ -361,152 +333,6 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
           onPressed: _toggleSearch,
         ),
       ],
-    );
-  }
-
-  PreferredSizeWidget _searchAppBar() {
-    return AppBar(
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back, color: AppColors.textSecondary),
-        onPressed: _toggleSearch,
-      ),
-      title: TextField(
-        controller: _searchCtrl,
-        autofocus: true,
-        style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
-        decoration: InputDecoration(
-          hintText: S.searchFiles,
-          hintStyle: TextStyle(color: AppColors.textTertiary),
-          border: InputBorder.none,
-          filled: false,
-        ),
-        onSubmitted: _doSearch,
-      ),
-      actions: [
-        if (_isSearching)
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 12),
-            child: SizedBox(
-              width: 18, height: 18,
-              child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildSearchResults() {
-    return Column(
-      children: [
-        _searchTabBar(),
-        Expanded(
-          child: _isSearching
-              ? const Center(child: AppLoadingIndicator())
-              : _searchTabName == 'file'
-                  ? _fileResults.isNotEmpty
-                      ? ListView.builder(
-                          padding: const EdgeInsets.all(12),
-                          itemCount: _fileResults.length,
-                          itemBuilder: (ctx, i) => ListTile(
-                            dense: true,
-                            leading: Icon(Icons.insert_drive_file, color: AppColors.textSecondary, size: 18),
-                            title: Text(_fileResults[i], style: const TextStyle(color: AppColors.textPrimary, fontSize: 13)),
-                            onTap: () => _readFileByPath(_fileResults[i]),
-                          ),
-                        )
-                      : _emptySearch()
-                  : _searchTabName == 'text'
-                      ? _searchResults.isNotEmpty
-                          ? ListView.builder(
-                              padding: const EdgeInsets.all(12),
-                              itemCount: _searchResults.length,
-                              itemBuilder: (ctx, i) {
-                                final r = _searchResults[i];
-                                return ListTile(
-                                  dense: true,
-                                  leading: Icon(Icons.text_snippet, color: AppColors.textSecondary, size: 18),
-                                  title: Text(r.path.split('/').last, style: const TextStyle(color: AppColors.textPrimary, fontSize: 13)),
-                                  subtitle: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text('行 ${r.lineNumber}', style: TextStyle(color: AppColors.textTertiary, fontSize: 10)),
-                                      Text(r.lines, style: const TextStyle(color: AppColors.textSecondary, fontSize: 11, fontFamily: 'monospace'), maxLines: 2),
-                                    ],
-                                  ),
-                                  onTap: () => _readFileByPath(r.path),
-                                );
-                              },
-                            )
-                          : _emptySearch()
-                      : _symbolResults.isNotEmpty
-                          ? ListView.builder(
-                              padding: const EdgeInsets.all(12),
-                              itemCount: _symbolResults.length,
-                              itemBuilder: (ctx, i) {
-                                final s = _symbolResults[i];
-                                return ListTile(
-                                  dense: true,
-                                  leading: Icon(Icons.code, color: AppColors.warning, size: 18),
-                                  title: Text(s.name, style: const TextStyle(color: AppColors.textPrimary, fontSize: 13)),
-                                  subtitle: Text(s.path, style: TextStyle(color: AppColors.textTertiary, fontSize: 11)),
-                                  onTap: () {
-                                    if (s.path.isNotEmpty) _readFileByPath(s.path);
-                                  },
-                                );
-                              },
-                            )
-                          : _emptySearch(),
-        ),
-      ],
-    );
-  }
-
-  Widget _searchTabBar() {
-    return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        border: Border(bottom: BorderSide(color: AppColors.border)),
-      ),
-      child: Row(
-        children: [
-          _tabButton('file', S.fileName),
-          _tabButton('text', S.content),
-          _tabButton('symbol', S.symbol),
-        ],
-      ),
-    );
-  }
-
-  Widget _tabButton(String tab, String label) {
-    final selected = _searchTabName == tab;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () {
-          setState(() => _searchTabName = tab);
-          if (_searchCtrl.text.isNotEmpty) _doSearch(_searchCtrl.text);
-        },
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            border: Border(bottom: BorderSide(color: selected ? AppColors.primary : Colors.transparent, width: 2)),
-          ),
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: selected ? AppColors.primary : AppColors.textSecondary,
-              fontSize: 12,
-              fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _emptySearch() {
-    return Center(
-      child: Text(S.searchKeyword, style: TextStyle(color: AppColors.textTertiary, fontSize: 14)),
     );
   }
 
