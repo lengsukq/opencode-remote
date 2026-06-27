@@ -248,7 +248,8 @@ class OpenCodeApi {
 
   Future<SessionMessageResponse> sendMessage(
     String sessionId, {
-    required String content,
+    String? content,
+    List<Map<String, dynamic>>? parts,
     String? model,
     String? agent,
     String? messageID,
@@ -256,8 +257,8 @@ class OpenCodeApi {
     String? system,
     List<Map<String, dynamic>>? tools,
   }) async {
-    final bodyParts = [
-      {'type': 'text', 'text': content}
+    final bodyParts = parts ?? [
+      {'type': 'text', 'text': content ?? ''}
     ];
     final body = <String, dynamic>{'parts': bodyParts};
     if (model != null) body['model'] = model;
@@ -271,7 +272,9 @@ class OpenCodeApi {
     return SessionMessageResponse.fromJson(_safeMap(jsonDecode(res.body)));
   }
 
-  Future<void> sendMessageAsync(String sessionId, String content, {
+  Future<void> sendMessageAsync(String sessionId, {
+    String? content,
+    List<Map<String, dynamic>>? parts,
     String? model,
     String? agent,
     String? messageID,
@@ -279,8 +282,8 @@ class OpenCodeApi {
     String? system,
     List<Map<String, dynamic>>? tools,
   }) async {
-    final bodyParts = [
-      {'type': 'text', 'text': content}
+    final bodyParts = parts ?? [
+      {'type': 'text', 'text': content ?? ''}
     ];
     final body = <String, dynamic>{'parts': bodyParts};
     if (model != null) body['model'] = _modelRef(model);

@@ -296,6 +296,7 @@ class Message {
   final Map<String, bool>? tools;
   final String? cwd;
   final String? root;
+  final List<Part> parts;
 
   Message({
     required this.id,
@@ -320,6 +321,7 @@ class Message {
     this.tools,
     this.cwd,
     this.root,
+    this.parts = const [],
   });
 
   bool get hasReasoning => reasoning != null && reasoning!.isNotEmpty;
@@ -332,12 +334,14 @@ class Message {
     final model = _extractModelInfo(info);
     final rawTokens = info['tokens'] as Map<String, dynamic>?;
     final rawPath = info['path'] as Map<String, dynamic>?;
+    final parsedParts = parts.map((p) => Part.fromJson(p)).toList();
     return Message(
       id: info['id'] as String? ?? '',
       sessionID: info['sessionID'] as String? ?? '',
       role: role,
       content: extracted.content,
       reasoning: extracted.reasoning,
+      parts: parsedParts,
       createdAt: created,
       completedAt: time?['completed'] as int?,
       model: model,

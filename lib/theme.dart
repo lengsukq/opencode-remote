@@ -25,6 +25,7 @@ class AppColors {
   static const success = Color(0xFF34C759);
   static const danger = Color(0xFFFF3B30);
   static const warning = Color(0xFFFF9500);
+  static const info = Color(0xFF007AFF);
 
   static const shadow = Color(0x1A000000);
   static const shadowStrong = Color(0x26000000);
@@ -60,6 +61,7 @@ class DarkColors {
   static const success = Color(0xFF30D158);
   static const danger = Color(0xFFFF453A);
   static const warning = Color(0xFFFF9F0A);
+  static const info = Color(0xFF0A84FF);
 
   static const shadow = Color(0x33000000);
   static const shadowStrong = Color(0x4C000000);

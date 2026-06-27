@@ -6,11 +6,19 @@ import 'screens/onboarding_screen.dart';
 import 'screens/launcher_screen.dart';
 import 'screens/webview_screen.dart';
 import 'widgets/main_scaffold.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:webview_flutter/webview_flutter.dart';
+import 'package:webview_flutter_web/webview_flutter_web.dart';
 
 final themeNotifier = ValueNotifier<ThemeMode>(ThemeMode.system);
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  if (kIsWeb) {
+    WebViewPlatform.instance = WebWebViewPlatform();
+  }
+
   final hasLaunched = await StorageService.hasLaunched();
   final themeMode = await StorageService.getThemeMode();
   themeNotifier.value = themeMode;

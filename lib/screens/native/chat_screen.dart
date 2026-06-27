@@ -1,14 +1,19 @@
 ﻿import 'dart:async';
+import 'dart:convert';
+import 'dart:typed_data';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_highlight/flutter_highlight.dart';
 import 'package:flutter_highlight/themes/github.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../models.dart';
 import '../../theme.dart';
 import '../../services/opencode_api.dart';
 import '../../services/event_service.dart';
 import '../../utils/time_format.dart';
+import '../../widgets/diff_view.dart';
 
 class ChatScreen extends StatefulWidget {
   final Session session;
@@ -43,6 +48,8 @@ class _ChatScreenState extends State<ChatScreen> {
   EventService? _eventService;
   StreamSubscription<ServerEvent>? _eventSub;
   final Map<String, String> _streamingDeltas = {};
+  final Map<String, Map<String, dynamic>> _streamingToolStates = {};
+  List<Map<String, dynamic>> _attachments = [];
 
   @override
   void initState() {
@@ -113,9 +120,20 @@ class _ChatScreenState extends State<ChatScreen> {
     final partID = props['partID'] as String?;
     final field = props['field'] as String?;
     final delta = props['delta'] as String?;
-    if (partID == null || field != 'text' || delta == null) return;
-    final key = partID;
-    _streamingDeltas[key] = (_streamingDeltas[key] ?? '') + delta;
+    if (partID == null) return;
+
+    if (field == 'text' && delta != null) {
+      _streamingDeltas[partID] = (_streamingDeltas[partID] ?? '') + delta;
+    } else if (field == 'state.status' && delta != null) {
+      _streamingToolStates[partID] = {...?_streamingToolStates[partID], 'status': delta};
+    } else if (field == 'state.output' && delta != null) {
+      final existing = (_streamingToolStates[partID]?['output'] as String? ?? '') + delta;
+      _streamingToolStates[partID] = {...?_streamingToolStates[partID], 'output': existing};
+    } else if (field == 'state.error' && delta != null) {
+      _streamingToolStates[partID] = {...?_streamingToolStates[partID], 'error': delta};
+    } else if (field == 'state.title' && delta != null) {
+      _streamingToolStates[partID] = {...?_streamingToolStates[partID], 'title': delta};
+    }
     if (mounted) setState(() {});
   }
 
@@ -254,11 +272,26 @@ class _ChatScreenState extends State<ChatScreen> {
         await widget.api.executeCommand(widget.session.id, command: cmd, arguments: args, agent: _selectedAgent, model: _selectedModel);
       } else {
         try {
-          await widget.api.sendMessageAsync(widget.session.id, text, agent: _selectedAgent, model: _selectedModel);
+          final allParts = <Map<String, dynamic>>[
+            {'type': 'text', 'text': text},
+            ..._attachments,
+          ];
+          await widget.api.sendMessageAsync(
+            widget.session.id,
+            content: text,
+            parts: allParts,
+            agent: _selectedAgent,
+            model: _selectedModel,
+          );
         } catch (_) {
-          await widget.api.sendMessage(widget.session.id, content: text, agent: _selectedAgent, model: _selectedModel);
+          final allParts = <Map<String, dynamic>>[
+            {'type': 'text', 'text': text},
+            ..._attachments,
+          ];
+          await widget.api.sendMessage(widget.session.id, content: text, parts: allParts, agent: _selectedAgent, model: _selectedModel);
         }
       }
+      _attachments = [];
       await _refreshMessages();
     } catch (e) {
       if (mounted) {
@@ -279,6 +312,122 @@ class _ChatScreenState extends State<ChatScreen> {
         );
         setState(() => _sending = false);
       }
+    }
+  }
+
+  Future<void> _pickAttachment() async {
+    final source = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text('添加附件', style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
+            ),
+            const Divider(height: 1),
+            ListTile(
+              leading: const Icon(Icons.image, color: AppColors.primary),
+              title: const Text('图片', style: TextStyle(color: AppColors.textPrimary)),
+              subtitle: Text('从相册选择', style: TextStyle(color: AppColors.textTertiary, fontSize: 12)),
+              onTap: () => Navigator.pop(ctx, 'image'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt, color: AppColors.primary),
+              title: const Text('拍照', style: TextStyle(color: AppColors.textPrimary)),
+              subtitle: Text('使用相机拍摄', style: TextStyle(color: AppColors.textTertiary, fontSize: 12)),
+              onTap: () => Navigator.pop(ctx, 'camera'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.attach_file, color: AppColors.primary),
+              title: const Text('文件', style: TextStyle(color: AppColors.textPrimary)),
+              subtitle: Text('从本地存储选择', style: TextStyle(color: AppColors.textTertiary, fontSize: 12)),
+              onTap: () => Navigator.pop(ctx, 'file'),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+    if (source == null) return;
+    try {
+      switch (source) {
+        case 'image':
+          final picker = ImagePicker();
+          final xFile = await picker.pickImage(source: ImageSource.gallery);
+          if (xFile == null) return;
+          await _addImageAttachment(xFile);
+        case 'camera':
+          final picker = ImagePicker();
+          final xFile = await picker.pickImage(source: ImageSource.camera);
+          if (xFile == null) return;
+          await _addImageAttachment(xFile);
+        case 'file':
+          final result = await FilePicker.platform.pickFiles();
+          if (result == null || result.files.isEmpty) return;
+          await _addFileAttachment(result.files.first);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('选择附件失败: $e')));
+      }
+    }
+  }
+
+  Future<void> _addImageAttachment(XFile xFile) async {
+    final bytes = await xFile.readAsBytes();
+    final b64 = base64Encode(bytes);
+    final name = xFile.name;
+    final ext = name.split('.').last.toLowerCase();
+    final mime = _mimeFromExt(ext);
+    if (mounted) setState(() {
+      _attachments.add({
+        'type': 'file',
+        'mime': mime,
+        'url': 'data:$mime;base64,$b64',
+        'filename': name,
+      });
+    });
+  }
+
+  Future<void> _addFileAttachment(PlatformFile file) async {
+    Uint8List? bytes = file.bytes;
+    if (bytes == null) return;
+    final b64 = base64Encode(bytes);
+    final ext = file.name.split('.').last.toLowerCase();
+    final mime = _mimeFromExt(ext);
+    if (mounted) setState(() {
+      _attachments.add({
+        'type': 'file',
+        'mime': mime,
+        'url': 'data:$mime;base64,$b64',
+        'filename': file.name,
+      });
+    });
+  }
+
+  String _mimeFromExt(String ext) {
+    switch (ext) {
+      case 'png': return 'image/png';
+      case 'jpg': case 'jpeg': return 'image/jpeg';
+      case 'gif': return 'image/gif';
+      case 'webp': return 'image/webp';
+      case 'svg': return 'image/svg+xml';
+      case 'pdf': return 'application/pdf';
+      case 'md': return 'text/markdown';
+      case 'json': return 'application/json';
+      case 'py': return 'text/x-python';
+      case 'dart': return 'text/x-dart';
+      case 'js': return 'text/javascript';
+      case 'ts': return 'text/typescript';
+      case 'html': return 'text/html';
+      case 'css': return 'text/css';
+      case 'yaml': case 'yml': return 'text/yaml';
+      case 'txt': return 'text/plain';
+      default: return 'application/octet-stream';
     }
   }
 
@@ -733,6 +882,7 @@ class _ChatScreenState extends State<ChatScreen> {
                               ),
               ),
               if (_showCommands && _filteredCommands.isNotEmpty) _buildCommandSuggestions(),
+              if (_attachments.isNotEmpty) _buildAttachmentPreview(),
               _agentBar(agentName, agentColor ?? AppColors.primary),
               _buildInputBar(),
             ],
@@ -765,6 +915,62 @@ class _ChatScreenState extends State<ChatScreen> {
         )).toList(),
       ),
     );
+  }
+
+  Widget _buildAttachmentPreview() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: const BoxDecoration(
+        color: AppColors.surface,
+        border: Border(bottom: BorderSide(color: AppColors.border)),
+      ),
+      child: SizedBox(
+        height: 48,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          itemCount: _attachments.length,
+          separatorBuilder: (_, __) => const SizedBox(width: 8),
+          itemBuilder: (ctx, i) {
+            final att = _attachments[i];
+            final name = att['filename'] as String? ?? '';
+            final mime = att['mime'] as String? ?? '';
+            final isImage = mime.startsWith('image/');
+            return Chip(
+              avatar: isImage
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: Image.memory(
+                        _dataUriBytes(att['url'] as String? ?? ''),
+                        width: 32, height: 32, fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Icon(Icons.image, size: 18, color: AppColors.textSecondary),
+                      ),
+                    )
+                  : Icon(Icons.attach_file, size: 18, color: AppColors.textSecondary),
+              label: Text(
+                name.length > 20 ? '${name.substring(0, 17)}...' : name,
+                style: TextStyle(color: AppColors.textPrimary, fontSize: 12),
+              ),
+              deleteIcon: Icon(Icons.close, size: 14, color: AppColors.textTertiary),
+              onDeleted: () => setState(() => _attachments.removeAt(i)),
+              backgroundColor: AppColors.background,
+              side: BorderSide(color: AppColors.border),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              visualDensity: VisualDensity.compact,
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Uint8List _dataUriBytes(String dataUri) {
+    final comma = dataUri.indexOf(',');
+    if (comma < 0) return Uint8List(0);
+    try {
+      return base64Decode(dataUri.substring(comma + 1));
+    } catch (_) {
+      return Uint8List(0);
+    }
   }
 
   Widget _agentBar(String agentName, Color agentColor) {
@@ -814,6 +1020,12 @@ class _ChatScreenState extends State<ChatScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           child: Row(
             children: [
+              IconButton(
+                onPressed: _pickAttachment,
+                icon: const Icon(Icons.add_circle_outline, color: AppColors.primary),
+                tooltip: '添加附件',
+              ),
+              const SizedBox(width: 4),
               Expanded(
                 child: TextField(
                   controller: _inputCtrl,
@@ -895,7 +1107,7 @@ class _CodeBlockBuilder extends MarkdownElementBuilder {
                       if (onApply != null)
                         GestureDetector(
                           onTap: () => onApply!(code, language, ctx),
-                          child: Icon(Icons.save_alt, size: 14, color: AppColors.success),
+                          child: Icon(Icons.smart_toy_outlined, size: 13, color: AppColors.textSecondary),
                         ),
                       if (onApply != null) const SizedBox(width: 10),
                       GestureDetector(
@@ -1026,7 +1238,6 @@ class _MessageBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final isUser = message.role == 'user';
     final timeStr = formatTime(message.createdAt);
-
     final displayContent = streamingText != null ? '${message.content}\n$streamingText' : message.content;
 
     return Padding(
@@ -1049,63 +1260,17 @@ class _MessageBubble extends StatelessWidget {
                 style: TextStyle(color: AppColors.success, fontSize: 10, fontFamily: 'monospace'),
               ),
             ),
-          GestureDetector(
-            onLongPress: onLongPress,
-            child: Container(
-              constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.85),
-              padding: EdgeInsets.only(
-                left: 14,
-                right: 14,
-                top: isUser ? 10 : 8,
-                bottom: isUser ? 10 : 8,
-              ),
-              decoration: BoxDecoration(
-                color: isUser ? AppColors.primary : AppColors.surface,
-                borderRadius: BorderRadius.circular(16).copyWith(
-                  bottomRight: isUser ? const Radius.circular(4) : null,
-                  bottomLeft: !isUser ? const Radius.circular(4) : null,
-                ),
-                boxShadow: isUser ? null : [BoxShadow(color: AppColors.shadow, blurRadius: 4, offset: const Offset(0, 1))],
-              ),
-              child: isUser
-                  ? Text(
-                      message.content,
-                      style: const TextStyle(color: Colors.white, fontSize: 14),
-                    )
-                  : MarkdownBody(
-                      data: displayContent,
-                      selectable: true,
-                      builders: {
-                        'code_block': _CodeBlockBuilder(onApply: onApplyCode),
-                      },
-                      styleSheet: MarkdownStyleSheet(
-                        p: const TextStyle(color: AppColors.textPrimary, fontSize: 14, height: 1.5),
-                        h1: TextStyle(color: AppColors.textPrimary, fontSize: 20, fontWeight: FontWeight.bold, height: 1.4),
-                        h2: TextStyle(color: AppColors.textPrimary, fontSize: 17, fontWeight: FontWeight.bold, height: 1.4),
-                        h3: TextStyle(color: AppColors.textPrimary, fontSize: 15, fontWeight: FontWeight.w600, height: 1.4),
-                        code: TextStyle(color: AppColors.textPrimary, fontSize: 12, fontFamily: 'monospace', backgroundColor: AppColors.surfaceAlt),
-                        codeblockDecoration: BoxDecoration(
-                          color: AppColors.surfaceAlt,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        blockquoteDecoration: BoxDecoration(
-                          border: Border(left: BorderSide(color: AppColors.primary, width: 3)),
-                          color: AppColors.surfaceAlt,
-                        ),
-                        listBullet: TextStyle(color: AppColors.textSecondary),
-                        horizontalRuleDecoration: BoxDecoration(
-                          border: Border(top: BorderSide(color: AppColors.border)),
-                        ),
-                        a: const TextStyle(color: AppColors.primary, decoration: TextDecoration.underline),
-                        strong: const TextStyle(fontWeight: FontWeight.bold),
-                        em: const TextStyle(fontStyle: FontStyle.italic),
-                        del: const TextStyle(decoration: TextDecoration.lineThrough),
-                        blockSpacing: 8,
-                        codeblockPadding: EdgeInsets.all(10),
-                      ),
-                    ),
+          _buildBubble(context, isUser, displayContent),
+          if (message.parts.any((p) => p.type == 'file'))
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: _FilePartsRow(parts: message.parts.where((p) => p.type == 'file').toList()),
             ),
-          ),
+          ...message.parts.where((p) => p.type == 'tool').map((p) => _ToolPartWidget(
+            part: p,
+            isLatest: isLatest,
+            streamingText: streamingText,
+          )),
           const SizedBox(height: 2),
           Text(timeStr, style: TextStyle(color: AppColors.textTertiary, fontSize: 10)),
         ],
@@ -1113,6 +1278,470 @@ class _MessageBubble extends StatelessWidget {
     );
   }
 
+  Widget _buildBubble(BuildContext context, bool isUser, String displayContent) {
+    return GestureDetector(
+      onLongPress: onLongPress,
+      child: Container(
+        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.85),
+        padding: EdgeInsets.only(
+          left: 14,
+          right: 14,
+          top: isUser ? 10 : 8,
+          bottom: isUser ? 10 : 8,
+        ),
+        decoration: BoxDecoration(
+          color: isUser ? AppColors.primary : AppColors.surface,
+          borderRadius: BorderRadius.circular(16).copyWith(
+            bottomRight: isUser ? const Radius.circular(4) : null,
+            bottomLeft: !isUser ? const Radius.circular(4) : null,
+          ),
+          boxShadow: isUser ? null : [BoxShadow(color: AppColors.shadow, blurRadius: 4, offset: const Offset(0, 1))],
+        ),
+        child: isUser
+            ? Text(
+                message.content,
+                style: const TextStyle(color: Colors.white, fontSize: 14),
+              )
+            : MarkdownBody(
+                data: displayContent,
+                selectable: true,
+                builders: {
+                  'code_block': _CodeBlockBuilder(onApply: onApplyCode),
+                },
+                styleSheet: MarkdownStyleSheet(
+                  p: const TextStyle(color: AppColors.textPrimary, fontSize: 14, height: 1.5),
+                  h1: TextStyle(color: AppColors.textPrimary, fontSize: 20, fontWeight: FontWeight.bold, height: 1.4),
+                  h2: TextStyle(color: AppColors.textPrimary, fontSize: 17, fontWeight: FontWeight.bold, height: 1.4),
+                  h3: TextStyle(color: AppColors.textPrimary, fontSize: 15, fontWeight: FontWeight.w600, height: 1.4),
+                  code: TextStyle(color: AppColors.textPrimary, fontSize: 12, fontFamily: 'monospace', backgroundColor: AppColors.surfaceAlt),
+                  codeblockDecoration: BoxDecoration(
+                    color: AppColors.surfaceAlt,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  blockquoteDecoration: BoxDecoration(
+                    border: Border(left: BorderSide(color: AppColors.primary, width: 3)),
+                    color: AppColors.surfaceAlt,
+                  ),
+                  listBullet: TextStyle(color: AppColors.textSecondary),
+                  horizontalRuleDecoration: BoxDecoration(
+                    border: Border(top: BorderSide(color: AppColors.border)),
+                  ),
+                  a: const TextStyle(color: AppColors.primary, decoration: TextDecoration.underline),
+                  strong: const TextStyle(fontWeight: FontWeight.bold),
+                  em: const TextStyle(fontStyle: FontStyle.italic),
+                  del: const TextStyle(decoration: TextDecoration.lineThrough),
+                  blockSpacing: 8,
+                  codeblockPadding: EdgeInsets.all(10),
+                ),
+              ),
+      ),
+    );
+  }
+}
+
+// --- Tool Part Widget ---
+class _ToolPartWidget extends StatefulWidget {
+  final Part part;
+  final bool isLatest;
+  final String? streamingText;
+
+  const _ToolPartWidget({
+    required this.part,
+    this.isLatest = false,
+    this.streamingText,
+  });
+
+  @override
+  State<_ToolPartWidget> createState() => _ToolPartWidgetState();
+}
+
+class _ToolPartWidgetState extends State<_ToolPartWidget> {
+  bool _expanded = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _expanded = widget.isLatest;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tool = widget.part.tool;
+    if (tool == null) return const SizedBox.shrink();
+
+    final isError = tool.isError;
+    final isRunning = tool.isRunning;
+    final isCompleted = tool.isCompleted;
+    Color? statusColor;
+    IconData statusIcon;
+    String statusLabel;
+    if (isError) {
+      statusColor = AppColors.danger;
+      statusIcon = Icons.error_outline;
+      statusLabel = '失败';
+    } else if (isRunning) {
+      statusColor = AppColors.warning;
+      statusIcon = Icons.hourglass_top;
+      statusLabel = '进行中';
+    } else if (isCompleted) {
+      statusColor = AppColors.success;
+      statusIcon = Icons.check_circle_outline;
+      statusLabel = '完成';
+    } else {
+      statusColor = AppColors.textSecondary;
+      statusIcon = Icons.schedule;
+      statusLabel = '等待';
+    }
+
+    final toolName = tool.tool;
+    final title = tool.title ?? toolName;
+    final input = tool.input;
+    final output = tool.output;
+    final error = tool.error;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: isError ? AppColors.danger : AppColors.border),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildHeader(title, toolName, statusColor, statusIcon, statusLabel),
+            if (_expanded) ...[
+              _buildInput(input, toolName),
+              _buildOutput(output, error, toolName),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(String title, String toolName, Color statusColor, IconData statusIcon, String statusLabel) {
+    return InkWell(
+      onTap: () => setState(() => _expanded = !_expanded),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Row(
+          children: [
+            _toolIcon(toolName),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                title,
+                style: TextStyle(color: AppColors.textPrimary, fontSize: 13, fontWeight: FontWeight.w500),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: statusColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(statusIcon, size: 12, color: statusColor),
+                  const SizedBox(width: 3),
+                  Text(statusLabel, style: TextStyle(color: statusColor, fontSize: 10)),
+                ],
+              ),
+            ),
+            const SizedBox(width: 4),
+            Icon(
+              _expanded ? Icons.unfold_less : Icons.unfold_more,
+              color: AppColors.textTertiary,
+              size: 16,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _toolIcon(String toolName) {
+    IconData icon;
+    Color color;
+    switch (toolName) {
+      case 'write':
+        icon = Icons.edit_note;
+        color = AppColors.primary;
+      case 'edit':
+        icon = Icons.difference;
+        color = AppColors.warning;
+      case 'read':
+        icon = Icons.visibility;
+        color = AppColors.info;
+      case 'bash':
+        icon = Icons.terminal;
+        color = AppColors.success;
+      case 'grep':
+        icon = Icons.search;
+        color = AppColors.textSecondary;
+      case 'glob':
+        icon = Icons.folder_open;
+        color = AppColors.textSecondary;
+      case 'webfetch':
+        icon = Icons.web;
+        color = AppColors.info;
+      case 'task':
+        icon = Icons.subdirectory_arrow_right;
+        color = AppColors.warning;
+      default:
+        icon = Icons.build;
+        color = AppColors.textSecondary;
+    }
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
+      child: Icon(icon, size: 16, color: color),
+    );
+  }
+
+  Widget _buildInput(Map<String, dynamic>? input, String toolName) {
+    if (input == null || input.isEmpty) return const SizedBox.shrink();
+    if (toolName == 'write') {
+      final filePath = input['file_path'] as String? ?? input['filePath'] as String? ?? '';
+      final content = input['content'] as String? ?? '';
+      if (content.isEmpty) return const SizedBox.shrink();
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (filePath.isNotEmpty)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              color: AppColors.surfaceAlt,
+              child: Text(
+                filePath,
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 11, fontFamily: 'monospace'),
+              ),
+            ),
+          _CodePreview(code: content, toolName: toolName, onApply: null),
+        ],
+      );
+    }
+    if (toolName == 'bash') {
+      final command = input['command'] as String? ?? input['cmd'] as String? ?? '';
+      if (command.isEmpty) return const SizedBox.shrink();
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        color: AppColors.surfaceAlt,
+        child: Text(
+          '\$ $command',
+          style: TextStyle(color: AppColors.textPrimary, fontSize: 12, fontFamily: 'monospace'),
+        ),
+      );
+    }
+    if (toolName == 'read') {
+      final filePath = input['file_path'] as String? ?? input['filePath'] as String? ?? '';
+      if (filePath.isEmpty) return const SizedBox.shrink();
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        color: AppColors.surfaceAlt,
+        child: Text(
+          filePath,
+          style: TextStyle(color: AppColors.textSecondary, fontSize: 11, fontFamily: 'monospace'),
+        ),
+      );
+    }
+    return const SizedBox.shrink();
+  }
+
+  Widget _buildOutput(String? output, String? error, String toolName) {
+    if (output != null && output.isNotEmpty) {
+      if (toolName == 'edit') {
+        final lines = output.split('\n');
+        final hunks = <DiffHunkView>[];
+        int i = 0;
+        while (i < lines.length) {
+          if (lines[i].startsWith('@@')) {
+            final match = RegExp(r'@@ -(\d+).*\+(\d+)').firstMatch(lines[i]);
+            final oldStart = int.tryParse(match?.group(1) ?? '') ?? 0;
+            final newStart = int.tryParse(match?.group(2) ?? '') ?? 0;
+            final hunkLines = <String>[];
+            i++;
+            while (i < lines.length && !lines[i].startsWith('@@')) {
+              hunkLines.add(lines[i]);
+              i++;
+            }
+            hunks.add(DiffHunkView.fromContent(oldStart, newStart, hunkLines.join('\n')));
+          } else {
+            i++;
+          }
+        }
+        if (hunks.isNotEmpty) {
+          return DiffView(
+            filePath: '',
+            status: 'modified',
+            hunks: hunks,
+          );
+        }
+      }
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        child: SelectableText(
+          output,
+          style: TextStyle(color: AppColors.textPrimary, fontSize: 12, fontFamily: 'monospace', height: 1.4),
+        ),
+      );
+    }
+    if (error != null && error.isNotEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        color: AppColors.danger.withValues(alpha: 0.1),
+        child: Text(
+          error,
+          style: TextStyle(color: AppColors.danger, fontSize: 12, fontFamily: 'monospace'),
+        ),
+      );
+    }
+    return const SizedBox.shrink();
+  }
+}
+
+// --- Tool Code Preview ---
+class _CodePreview extends StatelessWidget {
+  final String code;
+  final String toolName;
+  final void Function(String code, String? language, BuildContext ctx)? onApply;
+
+  const _CodePreview({required this.code, required this.toolName, this.onApply});
+
+  @override
+  Widget build(BuildContext context) {
+    final language = _detectLanguage();
+    return Container(
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          HighlightView(
+            code,
+            language: language,
+            theme: githubTheme,
+            textStyle: const TextStyle(fontFamily: 'monospace', fontSize: 11, height: 1.5),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _detectLanguage() {
+    if (onApply != null) return 'plaintext';
+    switch (toolName) {
+      case 'write':
+        return _guessLanguage(code);
+      default:
+        return 'plaintext';
+    }
+  }
+
+  String _guessLanguage(String code) {
+    if (code.startsWith('import ') || code.startsWith('void ') || code.startsWith('#include')) return 'c';
+    if (code.startsWith('package ') || code.startsWith('import "')) return 'go';
+    if (code.startsWith('const ') || code.startsWith('let ') || code.startsWith('function ')) return 'javascript';
+    if (code.startsWith('import ')) {
+      if (code.contains('package:')) return 'dart';
+      if (code.contains('from ')) return 'javascript';
+    }
+    return 'plaintext';
+  }
+}
+
+// --- File Parts Row ---
+class _FilePartsRow extends StatelessWidget {
+  final List<Part> parts;
+
+  const _FilePartsRow({required this.parts});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 56,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        shrinkWrap: true,
+        itemCount: parts.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (ctx, i) {
+          final p = parts[i];
+          final file = p.file;
+          if (file == null) return const SizedBox.shrink();
+          final isImage = file.mime.startsWith('image/');
+          final shortName = file.filename ?? file.url.split('/').last;
+          final displayName = shortName.length > 20 ? '${shortName.substring(0, 17)}...' : shortName;
+          return Container(
+            width: 140,
+            decoration: BoxDecoration(
+              color: AppColors.background,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: isImage
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        Image.network(
+                          file.url,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Center(
+                            child: Icon(Icons.broken_image, color: AppColors.textSecondary, size: 28),
+                          ),
+                          loadingBuilder: (_, child, progress) {
+                            if (progress == null) return child;
+                            return Center(child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary));
+                          },
+                        ),
+                        Positioned(
+                          bottom: 0, left: 0, right: 0,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.bottomCenter, end: Alignment.topCenter,
+                                colors: [Colors.black87, Colors.transparent],
+                              ),
+                            ),
+                            child: Text(displayName, style: const TextStyle(color: Colors.white, fontSize: 10)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : Row(
+                    children: [
+                      const SizedBox(width: 8),
+                      Icon(Icons.insert_drive_file, color: AppColors.textSecondary, size: 24),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(displayName, style: TextStyle(color: AppColors.textPrimary, fontSize: 11), overflow: TextOverflow.ellipsis),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                  ),
+          );
+        },
+      ),
+    );
+  }
 }
 
 // --- Model Picker ---
