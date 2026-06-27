@@ -4,6 +4,8 @@ import '../../theme.dart';
 import '../../strings.dart';
 import '../../services/opencode_api.dart';
 
+import '../../utils/responsive_values.dart';
+
 class TerminalScreen extends StatefulWidget {
   final ServerEntry entry;
   final OpenCodeApi api;
@@ -110,11 +112,11 @@ class _TerminalScreenState extends State<TerminalScreen> {
         backgroundColor: bgColor,
         foregroundColor: textColor,
         elevation: 0,
-        title: Text(S.terminal, style: const TextStyle(fontFamily: 'monospace', fontSize: 14)),
+        title: Text(S.terminal, style: TextStyle(fontFamily: 'monospace', fontSize: R.bodyFontSize(context))),
         actions: [
           IconButton(
-            icon: const Icon(Icons.delete_outline, color: AppColors.terminalIcon, size: 20),
-            tooltip: '清除',
+            icon: Icon(Icons.delete_outline, color: AppColors.terminalIcon, size: R.iconSize(context)),
+            tooltip: S.clear,
             onPressed: () => setState(() => _lines.clear()),
           ),
         ],
@@ -124,17 +126,17 @@ class _TerminalScreenState extends State<TerminalScreen> {
           Expanded(
             child: ListView.builder(
               controller: _scrollCtrl,
-              padding: const EdgeInsets.all(12),
+              padding: R.screenPadding(context),
               itemCount: _lines.length,
               itemBuilder: (ctx, i) {
                 final line = _lines[i];
                 return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 1),
+                  padding: EdgeInsets.symmetric(vertical: R.smallSpacing(context) / 10),
                   child: Text(
                     line.text,
                     style: TextStyle(
                       color: line.isInput ? inputColor : line.isError ? errorColor : textColor,
-                      fontSize: 13,
+                      fontSize: R.terminalFontSize(context),
                       fontFamily: 'monospace',
                       height: 1.4,
                     ),
@@ -145,15 +147,20 @@ class _TerminalScreenState extends State<TerminalScreen> {
           ),
           Container(
             color: AppColors.terminalInputBg,
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+            padding: EdgeInsets.fromLTRB(
+              R.spacing(context),
+              R.smallSpacing(context),
+              R.spacing(context),
+              R.smallSpacing(context),
+            ),
             child: Row(
               children: [
-                Text('\$ ', style: TextStyle(color: promptColor, fontSize: 14, fontFamily: 'monospace')),
+                Text('\$ ', style: TextStyle(color: promptColor, fontSize: R.bodyFontSize(context), fontFamily: 'monospace')),
                 Expanded(
                   child: TextField(
                     controller: _inputCtrl,
                     enabled: !_running,
-                    style: TextStyle(color: inputColor, fontSize: 14, fontFamily: 'monospace'),
+                    style: TextStyle(color: inputColor, fontSize: R.bodyFontSize(context), fontFamily: 'monospace'),
                     decoration: const InputDecoration(
                       border: InputBorder.none,
                       isDense: true,
@@ -163,9 +170,9 @@ class _TerminalScreenState extends State<TerminalScreen> {
                   ),
                 ),
                 if (_running)
-                  const SizedBox(
-                    width: 14, height: 14,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.terminalPrompt),
+                  SizedBox(
+                    width: R.smallIconSize(context), height: R.smallIconSize(context),
+                    child: const CircularProgressIndicator(strokeWidth: 2, color: AppColors.terminalPrompt),
                   ),
               ],
             ),

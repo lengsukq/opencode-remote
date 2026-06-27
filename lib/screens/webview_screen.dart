@@ -8,6 +8,8 @@ import '../widgets/server_edit_dialog.dart';
 import '../widgets/app_bottom_sheet.dart';
 import '../widgets/app_snackbar.dart';
 import '../strings.dart';
+
+import '../utils/responsive_values.dart';
 import 'launcher_screen.dart';
 
 class WebViewScreen extends StatefulWidget {
@@ -73,13 +75,13 @@ class _WebViewScreenState extends State<WebViewScreen> {
             children: [
               Padding(
                 padding: const EdgeInsets.all(16),
-                child: Text(S.switchServer, style: TextStyle(color: AppColors.textPrimary, fontSize: 16)),
+                child: Text(S.switchServer, style: TextStyle(color: AppColors.textPrimary, fontSize: R.bodyFontSize(context))),
               ),
               const Divider(),
               ...servers.map((s) => ListTile(
                     leading: Icon(Icons.computer, color: s.id == _entry.id ? AppColors.primary : AppColors.textSecondary),
                     title: Text(s.name, style: TextStyle(color: s.id == _entry.id ? AppColors.primary : AppColors.textPrimary)),
-                    subtitle: Text(s.url, style: TextStyle(color: AppColors.textTertiary, fontSize: 12)),
+                    subtitle: Text(s.url, style: TextStyle(color: AppColors.textTertiary, fontSize: R.smallFontSize(context))),
                     onTap: () => Navigator.pop(ctx, s),
                   )),
               const Divider(),
@@ -91,7 +93,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
                   WidgetsBinding.instance.addPostFrameCallback((_) => _addNew());
                 },
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: R.smallSpacing(context)),
             ],
           ),
         ),
@@ -141,18 +143,18 @@ class _WebViewScreenState extends State<WebViewScreen> {
       child: Scaffold(
         backgroundColor: AppColors.background,
         appBar: AppBar(
-          title: Text(_entry.name, style: const TextStyle(color: AppColors.textPrimary, fontSize: 16)),
+          title: Text(_entry.name, style: TextStyle(color: AppColors.textPrimary, fontSize: R.bodyFontSize(context))),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back, color: AppColors.textSecondary),
             onPressed: _backToLauncher,
           ),
           actions: [
             if (_loading)
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 12),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: R.smallSpacing(context)),
                 child: SizedBox(
-                  width: 18, height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                  width: R.smallIconSize(context), height: R.smallIconSize(context),
+                  child: const CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
                 ),
               ),
             IconButton(

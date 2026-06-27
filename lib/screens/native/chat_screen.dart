@@ -8,6 +8,8 @@ import '../../strings.dart';
 import '../../theme.dart';
 import '../../services/opencode_api.dart';
 import '../../services/event_service.dart';
+
+import '../../utils/responsive_values.dart';
 import '../../widgets/agent_bar.dart';
 import '../../widgets/attachment_preview.dart';
 import '../../widgets/chat_input_bar.dart';
@@ -18,6 +20,7 @@ import '../../widgets/app_snackbar.dart';
 import '../../widgets/app_dialog.dart';
 import '../../widgets/app_bottom_sheet.dart';
 import '../../widgets/app_states.dart';
+import '../../widgets/chat_state.dart';
 import '../../widgets/attachment_picker_sheet.dart';
 import '../../widgets/follow_up_bar.dart';
 import '../../widgets/shell_dialog.dart';
@@ -50,10 +53,10 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _isShellMode = false;
   String? _selectedAgent;
   String? _selectedModel;
-  final _cmdState = _CmdState();
+  final _cmdState = CommandState();
   EventService? _eventService;
   StreamSubscription<ServerEvent>? _eventSub;
-  final _streamState = _StreamState();
+  final _streamState = StreamState();
   List<Map<String, dynamic>> _attachments = [];
   final List<String> _inputHistory = [];
   List<Todo> _todos = [];
@@ -144,11 +147,15 @@ class _ChatScreenState extends State<ChatScreen> {
   void _onInputChanged() {
     final text = _inputCtrl.text;
     final isShell = text.startsWith('!') && !text.startsWith('!/');
-    if (isShell != _isShellMode) setState(() => _isShellMode = isShell);
+    if (isShell != _isShellMode) {
+      setState(() => _isShellMode = isShell);
+    }
     if (text.startsWith('/') && text.length > 1) {
       final query = text.substring(1).toLowerCase();
       setState(() { _cmdState.show = true; _cmdState.filtered = _commands.where((c) => c.id.toLowerCase().contains(query) || c.title.toLowerCase().contains(query)).toList(); });
-    } else if (text.isEmpty || !text.startsWith('/')) setState(() => _cmdState.show = false);
+    } else if (text.isEmpty || !text.startsWith('/')) {
+      setState(() => _cmdState.show = false);
+    }
   }
 
   String _getProjectName() {
@@ -215,7 +222,9 @@ class _ChatScreenState extends State<ChatScreen> {
     if (raw is List) {
       final suggestions = raw.whereType<String>().toList();
       if (!listEquals(suggestions, _followUps)) setState(() => _followUps = suggestions);
-    } else if (_followUps.isNotEmpty) setState(() => _followUps = []);
+    } else if (_followUps.isNotEmpty) {
+      setState(() => _followUps = []);
+    }
   }
 
   void _scrollToBottom() {
@@ -287,7 +296,7 @@ class _ChatScreenState extends State<ChatScreen> {
         case 'camera': final att = await pickImageAttachment(ImageSource.camera); if (att != null && mounted) setState(() => _attachments.add(att));
         case 'file': final att = await pickFileAttachment(); if (att != null && mounted) setState(() => _attachments.add(att));
       }
-    } catch (e) { if (mounted) AppSnackBar.error(context, 'Attachment failed: $e'); }
+    } catch (e) { if (mounted) AppSnackBar.error(context, S.attachmentFailed(e)); }
   }
 
   Future<void> _runShell() async {
@@ -300,7 +309,7 @@ class _ChatScreenState extends State<ChatScreen> {
       await _refreshMessages();
       _waitForFirstReply();
     } catch (e) {
-      if (mounted) { AppSnackBar.error(context, 'Shell failed: $e'); setState(() => _isSending = false); }
+      if (mounted) { AppSnackBar.error(context, S.shellFailed(e)); setState(() => _isSending = false); }
     }
   }
 
@@ -418,8 +427,8 @@ class _ChatScreenState extends State<ChatScreen> {
     }, child: Focus(autofocus: true, child: Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(title: _buildTitle(), actions: [
-        IconButton(icon: const Icon(Icons.terminal, color: AppColors.textSecondary), tooltip: S.shellCommand, onPressed: _runShell),
-        IconButton(icon: const Icon(Icons.refresh, color: AppColors.textSecondary), onPressed: _load),
+        IconButton(icon: Icon(Icons.terminal, color: AppColors.textSecondary, size: R.iconSize(context)), tooltip: S.shellCommand, onPressed: _runShell),
+        IconButton(icon: Icon(Icons.refresh, color: AppColors.textSecondary, size: R.iconSize(context)), onPressed: _load),
       ]),
       body: Column(children: [
         Expanded(child: _buildMessageList()),
@@ -449,9 +458,9 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Widget _buildMessageList() {
     if (_isLoading) return const AppLoadingIndicator();
-    if (_error != null) return Center(child: Text(_error!, style: const TextStyle(color: AppColors.textSecondary)));
-    if (_messages.isEmpty) return Center(child: Text(S.startConversation, style: const TextStyle(color: AppColors.textTertiary)));
-    return ListView.builder(controller: _scrollCtrl, padding: const EdgeInsets.all(16), itemCount: _messages.length, itemBuilder: (ctx, i) {
+    if (_error != null) return AppErrorState(message: _error!, onRetry: _load);
+    if (_messages.isEmpty) return Center(child: Text(S.startConversation, style: TextStyle(color: AppColors.textTertiary, fontSize: R.bodyFontSize(context))));
+    return ListView.builder(controller: _scrollCtrl, padding: R.screenPadding(context), itemCount: _messages.length, itemBuilder: (ctx, i) {
       final isLatest = i == _messages.length - 1;
       final isSecondLatest = !isLatest && (_messages[i].role != 'user') && (i == _messages.length - 2);
       return MessageBubble(
@@ -486,13 +495,4 @@ class _LoadData {
   _LoadData(this.msgs, this.agents, this.providers, this.commands, this.defaults);
 }
 
-class _StreamState {
-  final Map<String, String> deltas = {};
-  final Map<String, Map<String, dynamic>> toolStates = {};
-  void clear() { deltas.clear(); toolStates.clear(); }
-}
 
-class _CmdState {
-  bool show = false;
-  List<Command> filtered = [];
-}

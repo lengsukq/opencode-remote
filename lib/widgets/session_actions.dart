@@ -24,7 +24,7 @@ class SessionActions {
         onReload();
       }
     } catch (e) {
-      if (context.mounted) AppSnackBar.error(context, '中止失败: $e');
+      if (context.mounted) AppSnackBar.error(context, S.abortFailed(e));
     }
   }
 
@@ -70,7 +70,7 @@ class SessionActions {
               if (children.isEmpty)
                 const Padding(
                   padding: EdgeInsets.all(20),
-                  child: Text('无子会话', style: TextStyle(color: AppColors.textTertiary)),
+                  child: Text(S.noChildSessions, style: TextStyle(color: AppColors.textTertiary)),
                 )
               else
                 ...children.map((c) => ListTile(
@@ -111,7 +111,7 @@ class SessionActions {
               if (todos.isEmpty)
                 const Padding(
                   padding: EdgeInsets.all(20),
-                  child: Text('无待办事项', style: TextStyle(color: AppColors.textTertiary)),
+                  child: Text(S.noTodos, style: TextStyle(color: AppColors.textTertiary)),
                 )
               else
                 Expanded(
@@ -151,7 +151,7 @@ class SessionActions {
   ) async {
     final result = await AppDialog.showTextInput(
       context,
-      title: '重命名',
+      title: S.rename,
       initialValue: session.title,
       hintText: S.newTitle,
     );
@@ -180,7 +180,7 @@ class SessionActions {
       }
     } catch (e) {
       if (context.mounted) {
-        AppSnackBar.error(context, '分享失败: $e');
+        AppSnackBar.error(context, S.shareFailed(e));
       }
     }
   }
@@ -267,11 +267,11 @@ class SessionActions {
         title: const Text(S.forkSession, style: TextStyle(color: AppColors.textPrimary)),
         content: const Text(S.forkSessionConfirm, style: TextStyle(color: AppColors.textSecondary)),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消', style: TextStyle(color: AppColors.textSecondary))),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(S.cancel, style: const TextStyle(color: AppColors.textSecondary))),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('分叉'),
+            child: Text(S.fork),
           ),
         ],
       ),
@@ -303,11 +303,11 @@ class SessionActions {
         title: Text(S.deleteSession, style: TextStyle(color: AppColors.textPrimary)),
         content: Text(S.confirmDeleteSession(session.title), style: TextStyle(color: AppColors.textSecondary)),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('取消', style: TextStyle(color: AppColors.textSecondary))),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(S.cancel, style: const TextStyle(color: AppColors.textSecondary))),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('删除'),
+            child: Text(S.delete),
           ),
         ],
       ),

@@ -29,7 +29,7 @@ Future<String?> showApplyCodeDialog(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Write the following code to file:',
+            S.writeCodeToFile,
             style: TextStyle(
               color: AppColors.textSecondary,
               fontSize: 12,
@@ -61,8 +61,8 @@ Future<String?> showApplyCodeDialog(
               color: AppColors.textPrimary,
               fontSize: 13,
             ),
-            decoration: const InputDecoration(
-              labelText: 'File Path',
+            decoration: InputDecoration(
+              labelText: S.filePath,
               hintText: 'lib/main.dart',
               labelStyle: TextStyle(color: AppColors.textSecondary),
               hintStyle: TextStyle(color: AppColors.textTertiary),
@@ -79,9 +79,9 @@ Future<String?> showApplyCodeDialog(
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(ctx),
-          child: const Text(
-            'Cancel',
-            style: TextStyle(color: AppColors.textSecondary),
+          child: Text(
+            S.cancel,
+            style: const TextStyle(color: AppColors.textSecondary),
           ),
         ),
         FilledButton(
@@ -93,7 +93,7 @@ Future<String?> showApplyCodeDialog(
             if (path.isEmpty) return;
             Navigator.pop(ctx, path);
           },
-          child: const Text('Write'),
+          child: Text(S.write),
         ),
       ],
     ),

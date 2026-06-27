@@ -12,6 +12,9 @@ import '../screens/native/config_screen.dart';
 import '../screens/native/terminal_screen.dart';
 import '../screens/settings_sheet.dart';
 import '../utils/project_helpers.dart';
+
+import '../utils/responsive.dart';
+import '../utils/responsive_values.dart';
 import 'project_avatar.dart';
 import 'add_project_dialog.dart';
 import 'app_snackbar.dart';
@@ -150,6 +153,92 @@ class _MainScaffoldState extends State<MainScaffold> {
 
   @override
   Widget build(BuildContext context) {
+    final isPhone = ResponsiveUtils.isPhone(context);
+
+    return isPhone ? _buildPhoneLayout(context) : _buildTabletLayout(context);
+  }
+
+  /// 手机布局：使用 BottomNavigationBar
+  Widget _buildPhoneLayout(BuildContext context) {
+    final isDark = isDarkMode(context);
+    final selectedColor = isDark ? DarkColors.primary : AppColors.primary;
+    final unselectedColor = isDark ? DarkColors.textTertiary : AppColors.textTertiary;
+
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: Text(_getPageTitle()),
+        actions: [
+          if (_activeProject != null)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: Center(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryLight,
+                    borderRadius: BorderRadius.circular(AppColors.kChipBorderRadius),
+                  ),
+                  child: Text(
+                    _activeProject!.name,
+                    style: const TextStyle(
+                      color: AppColors.primary,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          IconButton(
+            icon: Icon(Icons.settings, color: unselectedColor, size: R.iconSize(context)),
+            onPressed: _openSettings,
+          ),
+        ],
+      ),
+      body: _buildPage(),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _navPages.indexOf(_currentPage),
+        onTap: (i) => _navigateTo(_navPages[i]),
+        type: BottomNavigationBarType.fixed,
+        backgroundColor: isDark ? DarkColors.surface : AppColors.surface,
+        selectedItemColor: selectedColor,
+        unselectedItemColor: unselectedColor,
+        selectedFontSize: R.labelFontSize(context),
+        unselectedFontSize: R.labelFontSize(context),
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.dashboard_outlined),
+            activeIcon: Icon(Icons.dashboard),
+            label: S.dashboard,
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.chat_outlined),
+            activeIcon: Icon(Icons.chat),
+            label: S.sessions,
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.folder_outlined),
+            activeIcon: Icon(Icons.folder),
+            label: S.files,
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.monitor_heart_outlined),
+            activeIcon: Icon(Icons.monitor_heart),
+            label: S.diagnostics,
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.terminal_outlined),
+            activeIcon: Icon(Icons.terminal),
+            label: S.terminal,
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 平板布局：使用 NavigationRail
+  Widget _buildTabletLayout(BuildContext context) {
     final isDark = isDarkMode(context);
     final bgColor = isDark ? DarkColors.surface : AppColors.surface;
     final selectedColor = isDark ? DarkColors.primary : AppColors.primary;
@@ -266,5 +355,23 @@ class _MainScaffoldState extends State<MainScaffold> {
         ),
       ),
     );
+  }
+
+  /// 获取页面标题
+  String _getPageTitle() {
+    switch (_currentPage) {
+      case NavPage.dashboard:
+        return S.dashboard;
+      case NavPage.sessions:
+        return S.sessions;
+      case NavPage.files:
+        return S.files;
+      case NavPage.projects:
+        return '项目';
+      case NavPage.config:
+        return S.diagnostics;
+      case NavPage.terminal:
+        return S.terminal;
+    }
   }
 }

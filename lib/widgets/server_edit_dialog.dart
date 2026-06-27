@@ -136,7 +136,7 @@ class _AppServerEditDialogState extends State<AppServerEditDialog> {
                 Switch(
                   value: _useHttps,
                   onChanged: (v) => setState(() => _useHttps = v),
-                  activeColor: AppColors.primary,
+                  activeThumbColor: AppColors.primary,
                 ),
               ],
             ),

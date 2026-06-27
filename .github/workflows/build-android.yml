@@ -23,6 +23,12 @@ jobs:
       - name: Flutter pub get
         run: flutter pub get
 
+      - name: Analyze
+        run: flutter analyze --no-fatal-infos
+
+      - name: Test
+        run: flutter test
+
       - name: Generate CI signing keystore
         run: |
           mkdir -p config/keystore

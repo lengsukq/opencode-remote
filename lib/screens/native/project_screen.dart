@@ -1,9 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../models.dart';
+import '../../strings.dart';
 import '../../theme.dart';
 import '../../services/opencode_api.dart';
 import '../../utils/project_helpers.dart';
+
+import '../../utils/responsive_values.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/app_bottom_sheet.dart';
 import '../../widgets/app_snackbar.dart';
@@ -72,8 +75,11 @@ class _ProjectScreenState extends State<ProjectScreen> {
     setState(() => _loading = true);
     try {
       final projects = await widget.api.getProjects();
+      if (!mounted) return;
       final current = await widget.api.getCurrentProject();
+      if (!mounted) return;
       final vcs = await widget.api.getVcs();
+      if (!mounted) return;
       setState(() {
         _projects = projects;
         _current = current;
@@ -83,6 +89,7 @@ class _ProjectScreenState extends State<ProjectScreen> {
       });
       _applyFilter();
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _loading = false;
         _error = e.toString();
@@ -112,17 +119,17 @@ class _ProjectScreenState extends State<ProjectScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.surface,
-        title: const Text('关闭项目', style: TextStyle(color: AppColors.textPrimary)),
-        content: Text('确定关闭项目"${project.name}"？', style: TextStyle(color: AppColors.textSecondary)),
+        title: Text(S.closeProject, style: const TextStyle(color: AppColors.textPrimary)),
+        content: Text(S.confirmCloseProjectName(project.name), style: TextStyle(color: AppColors.textSecondary)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('取消', style: TextStyle(color: AppColors.textSecondary)),
+            child: Text(S.cancel, style: TextStyle(color: AppColors.textSecondary)),
           ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('关闭'),
+            child: Text(S.close),
           ),
         ],
       ),
@@ -135,7 +142,7 @@ class _ProjectScreenState extends State<ProjectScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('项目'),
+        title: Text(S.project),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh, color: AppColors.textSecondary),
@@ -146,7 +153,7 @@ class _ProjectScreenState extends State<ProjectScreen> {
       body: _loading
           ? const AppLoadingIndicator()
           : _error != null
-              ? Center(child: Text(_error!, style: TextStyle(color: AppColors.textSecondary)))
+              ? AppErrorState(message: _error!, onRetry: _load)
               : Column(
                   children: [
                     _buildSearchBar(),
@@ -164,7 +171,7 @@ class _ProjectScreenState extends State<ProjectScreen> {
         controller: _searchCtrl,
         style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
         decoration: AppInputDecoration.search(
-          hintText: '搜索项目...',
+          hintText: S.searchProjects,
           prefixIcon: const Icon(Icons.search, color: AppColors.textSecondary, size: 20),
           suffixIcon: _searchCtrl.text.isNotEmpty
               ? IconButton(
@@ -181,31 +188,31 @@ class _ProjectScreenState extends State<ProjectScreen> {
 
   Widget _buildProjectList() {
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: R.screenPadding(context),
       children: [
         if (_current != null) ...[
-          Text('当前项目', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-          const SizedBox(height: 8),
+          Text(S.currentProject, style: TextStyle(color: AppColors.textSecondary, fontSize: R.smallFontSize(context))),
+          SizedBox(height: R.smallSpacing(context)),
           _ProjectCard(
             project: _current!,
             isCurrent: true,
             vcs: _vcs,
             onLongPress: () => _handleLongPress(_current!),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: R.mediumSpacing(context)),
         ],
-        Text('所有项目', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-        const SizedBox(height: 8),
+        Text(S.allProjects, style: TextStyle(color: AppColors.textSecondary, fontSize: R.smallFontSize(context))),
+        SizedBox(height: R.smallSpacing(context)),
         ..._buildProjectCards(),
         if (_filteredProjects.isEmpty && _searchCtrl.text.isNotEmpty)
           Padding(
             padding: const EdgeInsets.all(20),
-            child: Text('无匹配项目', style: TextStyle(color: AppColors.textTertiary)),
+            child: Text(S.noMatchingProjects, style: TextStyle(color: AppColors.textTertiary)),
           ),
         if (_projects.isEmpty)
           Padding(
             padding: const EdgeInsets.all(20),
-            child: Text('暂无项目', style: TextStyle(color: AppColors.textTertiary)),
+            child: Text(S.noProjects, style: TextStyle(color: AppColors.textTertiary)),
           ),
         if (_vcs != null) ...[
           const SizedBox(height: 24),
@@ -278,17 +285,17 @@ class _ProjectScreenState extends State<ProjectScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.surface,
-        title: Text('项目: ${project.name}', style: const TextStyle(color: AppColors.textPrimary, fontSize: 16)),
-        content: Text('关闭项目将从列表中移除', style: TextStyle(color: AppColors.textSecondary)),
+        title: Text(S.projectDetail(project.name), style: const TextStyle(color: AppColors.textPrimary, fontSize: 16)),
+        content: Text(S.closeProjectHint, style: TextStyle(color: AppColors.textSecondary)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('取消', style: TextStyle(color: AppColors.textSecondary)),
+            child: Text(S.cancel, style: TextStyle(color: AppColors.textSecondary)),
           ),
           FilledButton.icon(
             style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
             icon: const Icon(Icons.close, size: 16),
-            label: const Text('关闭项目'),
+            label: Text(S.closeProject),
             onPressed: () {
               Navigator.pop(ctx);
               _confirmRemoveProject(project).then((confirmed) {
@@ -314,10 +321,10 @@ class _ProjectScreenState extends State<ProjectScreen> {
               children: [
                 Text(project.name, style: const TextStyle(color: AppColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 12),
-                _detailRow(Icons.folder, '路径', project.path),
+                _detailRow(Icons.folder, S.path, project.path),
                 if (project.id.isNotEmpty) ...[
                   const SizedBox(height: 8),
-                  _detailRow(Icons.tag, 'ID', project.id),
+                  _detailRow(Icons.tag, S.id, project.id),
                 ],
                 const SizedBox(height: 20),
                 SizedBox(
@@ -325,12 +332,12 @@ class _ProjectScreenState extends State<ProjectScreen> {
                   child: FilledButton.icon(
                     style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
                     icon: const Icon(Icons.check_circle, size: 18),
-                    label: Text(project.id == _current?.id ? '当前项目' : '切换到该项目'),
+                    label: Text(project.id == _current?.id ? S.currentProject : S.switchToProject),
                     onPressed: project.id == _current?.id ? null : () {
                       widget.api.directory = project.path;
                       Navigator.pop(ctx);
                       _load();
-                      AppSnackBar.success(context, '已切换到: ${project.name}');
+                      AppSnackBar.success(context, '${S.switchedTo} ${project.name}');
                     },
                   ),
                 ),
@@ -429,7 +436,7 @@ class _ProjectCard extends StatelessWidget {
                           color: AppColors.primaryLight,
                           borderRadius: BorderRadius.circular(AppColors.kCardBorderRadius),
                         ),
-                        child: const Text('当前', style: TextStyle(color: AppColors.primary, fontSize: 9)),
+                        child: const Text(S.current, style: TextStyle(color: AppColors.primary, fontSize: 9)),
                       ),
                     ],
                   ],

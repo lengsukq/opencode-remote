@@ -1,13 +1,47 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models.dart';
+
+const _kSecurePlaceholder = '__SECURE__';
 
 class StorageService {
   static const _keyServers = 'servers';
   static const _keyLastId = 'lastSelectedId';
   static const _keyAppMode = 'app_mode';
   static const _keyHasLaunched = 'hasLaunched';
+  static const _keyMigratedSecure = 'migrated_to_secure_v1';
+
+  static const _secure = FlutterSecureStorage();
+
+  static String _secKey(String serverId) => 'opencode_pw_$serverId';
+
+  static Future<String?> _secureRead(String serverId) async {
+    try {
+      return await _secure.read(key: _secKey(serverId));
+    } catch (e) {
+      _log('StorageService._secureRead: $e');
+      return null;
+    }
+  }
+
+  static Future<void> _secureWrite(String serverId, String password) async {
+    try {
+      await _secure.write(key: _secKey(serverId), value: password);
+    } catch (e) {
+      _log('StorageService._secureWrite: $e');
+    }
+  }
+
+  static Future<void> _secureDelete(String serverId) async {
+    try {
+      await _secure.delete(key: _secKey(serverId));
+    } catch (e) {
+      _log('StorageService._secureDelete: $e');
+    }
+  }
 
   static Future<List<ServerEntry>> loadServers() async {
     final prefs = await SharedPreferences.getInstance();
@@ -16,10 +50,18 @@ class StorageService {
     try {
       final decoded = jsonDecode(raw);
       final list = decoded is List<dynamic> ? decoded : <dynamic>[];
-      return list
-          .map((e) => e is Map<String, dynamic> ? ServerEntry.fromJson(e) : ServerEntry(name: '', url: ''))
-          .toList()
-        ..sort((a, b) => b.lastUsed.compareTo(a.lastUsed));
+      final servers = <ServerEntry>[];
+      for (final e in list) {
+        if (e is! Map<String, dynamic>) continue;
+        final entry = ServerEntry.fromJson(e);
+        if (entry.password == _kSecurePlaceholder) {
+          final realPw = await _secureRead(entry.id);
+          entry.password = realPw ?? '';
+        }
+        servers.add(entry);
+      }
+      servers.sort((a, b) => b.lastUsed.compareTo(a.lastUsed));
+      return servers;
     } catch (e) {
       _log('StorageService.loadServers: $e — raw: ${raw.substring(0, raw.length.clamp(0, 500))}');
       return [];
@@ -28,8 +70,43 @@ class StorageService {
 
   static Future<void> saveServers(List<ServerEntry> servers) async {
     final prefs = await SharedPreferences.getInstance();
-    final raw = jsonEncode(servers.map((e) => e.toJson()).toList());
+    for (final s in servers) {
+      await _secureWrite(s.id, s.password);
+    }
+    final sanitized = servers.map((s) {
+      final json = s.toJson();
+      json['password'] = _kSecurePlaceholder;
+      return json;
+    }).toList();
+    final raw = jsonEncode(sanitized);
     await prefs.setString(_keyServers, raw);
+  }
+
+  static Future<void> migrateToSecureStorage() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.getBool(_keyMigratedSecure) == true) return;
+    final raw = prefs.getString(_keyServers);
+    if (raw == null) {
+      await prefs.setBool(_keyMigratedSecure, true);
+      return;
+    }
+    try {
+      final decoded = jsonDecode(raw);
+      final list = decoded is List<dynamic> ? decoded : <dynamic>[];
+      final servers = <ServerEntry>[];
+      for (final e in list) {
+        if (e is! Map<String, dynamic>) continue;
+        final entry = ServerEntry.fromJson(e);
+        if (entry.password.isNotEmpty && entry.password != _kSecurePlaceholder) {
+          await _secureWrite(entry.id, entry.password);
+        }
+        servers.add(entry);
+      }
+      await saveServers(servers);
+      await prefs.setBool(_keyMigratedSecure, true);
+    } catch (e) {
+      _log('StorageService.migrateToSecureStorage: $e');
+    }
   }
 
   static Future<void> addOrUpdate(ServerEntry entry) async {
@@ -46,6 +123,7 @@ class StorageService {
   static Future<void> delete(String id) async {
     final servers = await loadServers();
     servers.removeWhere((s) => s.id == id);
+    await _secureDelete(id);
     await saveServers(servers);
     final prefs = await SharedPreferences.getInstance();
     if (prefs.getString(_keyLastId) == id) {
@@ -131,8 +209,6 @@ class StorageService {
   }
 
   static void _log(String message) {
-    // debugPrint is acceptable in non-production builds
-    // ignore: use_debug_print_in_production
-    debugPrint(message);
+    if (kDebugMode) debugPrint(message);
   }
 }

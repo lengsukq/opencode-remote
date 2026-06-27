@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
+import '../utils/responsive_values.dart';
 
 /// A section header with standardized styling for form sections.
 ///
@@ -20,7 +21,7 @@ class AppSectionHeader extends StatelessWidget {
     this.title, {
     super.key,
     this.padding = const EdgeInsets.only(bottom: 8),
-    this.fontSize = 12,
+    this.fontSize = 0, // 0 means use responsive default
     this.color,
     this.fontWeight = FontWeight.w600,
   });
@@ -33,7 +34,7 @@ class AppSectionHeader extends StatelessWidget {
         title,
         style: TextStyle(
           color: color ?? AppColors.textSecondary,
-          fontSize: fontSize,
+          fontSize: fontSize > 0 ? fontSize : R.smallFontSize(context),
           fontWeight: fontWeight,
         ),
       ),

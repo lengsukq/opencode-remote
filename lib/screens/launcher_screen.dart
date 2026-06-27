@@ -3,6 +3,8 @@ import '../models.dart';
 import '../theme.dart';
 import '../services/storage_service.dart';
 import '../utils/time_format.dart';
+
+import '../utils/responsive_values.dart';
 import '../widgets/server_edit_dialog.dart';
 import 'settings_sheet.dart';
 import 'webview_screen.dart';
@@ -99,10 +101,10 @@ class _LauncherScreenState extends State<LauncherScreen> {
       appBar: AppBar(
         title: Row(
           children: [
-            const Text('OpenCode Remote'),
-            const SizedBox(width: 8),
+            Text('OpenCode Remote', style: TextStyle(fontSize: R.bodyFontSize(context))),
+            SizedBox(width: R.smallSpacing(context)),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              padding: EdgeInsets.symmetric(horizontal: R.smallSpacing(context), vertical: R.smallSpacing(context) / 3),
               decoration: BoxDecoration(
                 color: _mode == AppMode.native
                     ? AppColors.primaryLight
@@ -112,7 +114,7 @@ class _LauncherScreenState extends State<LauncherScreen> {
               child: Text(
                 _mode == AppMode.native ? S.nativeMode : S.webviewMode,
                 style: TextStyle(
-                  fontSize: 10,
+                  fontSize: R.labelFontSize(context),
                   color: _mode == AppMode.native ? AppColors.primary : AppColors.success,
                 ),
               ),
@@ -121,7 +123,7 @@ class _LauncherScreenState extends State<LauncherScreen> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.settings, color: AppColors.textSecondary),
+            icon: Icon(Icons.settings, color: AppColors.textSecondary, size: R.iconSize(context)),
             tooltip: S.settings,
             onPressed: _openSettings,
           ),
@@ -131,17 +133,17 @@ class _LauncherScreenState extends State<LauncherScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 16),
+            SizedBox(height: R.mediumSpacing(context)),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Text(S.servers, style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+              padding: EdgeInsets.symmetric(horizontal: R.mediumSpacing(context)),
+              child: Text(S.servers, style: TextStyle(color: AppColors.textSecondary, fontSize: R.smallFontSize(context))),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: R.smallSpacing(context)),
             Expanded(
               child: _loading
                   ? const AppLoadingIndicator()
                   : _servers.isEmpty
-                      ? _emptyState()
+                      ? _emptyState(context)
                       : _serverList(),
             ),
           ],
@@ -150,21 +152,21 @@ class _LauncherScreenState extends State<LauncherScreen> {
       floatingActionButton: FloatingActionButton(
         backgroundColor: AppColors.primary,
         onPressed: () => _addServer(),
-        child: const Icon(Icons.add, color: AppColors.surface),
+        child: Icon(Icons.add, color: AppColors.surface, size: R.iconSize(context)),
       ),
     );
   }
 
-  Widget _emptyState() {
+  Widget _emptyState(BuildContext context) {
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.dns_outlined, size: 48, color: AppColors.textTertiary),
-          const SizedBox(height: 16),
-          Text(S.noServers, style: TextStyle(color: AppColors.textSecondary, fontSize: 15)),
-          const SizedBox(height: 8),
-          Text(S.clickToAdd, style: TextStyle(color: AppColors.textTertiary, fontSize: 13)),
+          Icon(Icons.dns_outlined, size: R.iconSize(context) * 2.4, color: AppColors.textTertiary),
+          SizedBox(height: R.mediumSpacing(context)),
+          Text(S.noServers, style: TextStyle(color: AppColors.textSecondary, fontSize: R.bodyFontSize(context))),
+          SizedBox(height: R.smallSpacing(context)),
+          Text(S.clickToAdd, style: TextStyle(color: AppColors.textTertiary, fontSize: R.smallFontSize(context))),
         ],
       ),
     );

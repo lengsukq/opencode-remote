@@ -30,6 +30,10 @@ class EventService {
   bool _cancelled = false;
   int _reconnectAttempts = 0;
   Timer? _reconnectTimer;
+  Timer? _heartbeatTimer;
+  DateTime _lastEventTime = DateTime.now();
+  static const _heartbeatInterval = Duration(seconds: 30);
+  static const _heartbeatTimeout = Duration(seconds: 60);
 
   final _controller = StreamController<ServerEvent>.broadcast();
   Stream<ServerEvent> get events => _controller.stream;
@@ -69,6 +73,7 @@ class EventService {
       }
 
       _reconnectAttempts = 0;
+      _startHeartbeat();
 
       _subscription = response.stream
           .transform(utf8.decoder)
@@ -88,11 +93,25 @@ class EventService {
   final _dataBuffer = StringBuffer();
 
   void _onLine(String line) {
+    _lastEventTime = DateTime.now();
     if (line.startsWith('data: ')) {
       _dataBuffer.write(line.substring(6));
     } else if (line.isEmpty && _dataBuffer.isNotEmpty) {
       _emitEvent();
     }
+  }
+
+  void _startHeartbeat() {
+    _heartbeatTimer?.cancel();
+    _lastEventTime = DateTime.now();
+    _heartbeatTimer = Timer.periodic(_heartbeatInterval, (_) {
+      final elapsed = DateTime.now().difference(_lastEventTime);
+      if (elapsed > _heartbeatTimeout) {
+        _log('EventService heartbeat timeout (${elapsed.inSeconds}s), reconnecting');
+        _heartbeatTimer?.cancel();
+        _scheduleReconnect();
+      }
+    });
   }
 
   void _emitEvent() {
@@ -150,6 +169,7 @@ class EventService {
 
   Future<void> disconnect() async {
     _cancelled = true;
+    _heartbeatTimer?.cancel();
     _reconnectTimer?.cancel();
     await _subscription?.cancel();
     _client?.close();
@@ -163,8 +183,6 @@ class EventService {
   }
 
   void _log(String message) {
-    // debugPrint is acceptable in non-production builds
-    // ignore: use_debug_print_in_production
-    debugPrint(message);
+    if (kDebugMode) debugPrint(message);
   }
 }

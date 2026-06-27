@@ -8,6 +8,8 @@ import '../widgets/main_scaffold.dart';
 import '../widgets/app_card.dart';
 import '../widgets/app_section_header.dart';
 import '../widgets/app_selectable_tile.dart';
+
+import '../utils/responsive_values.dart';
 import 'launcher_screen.dart';
 class SettingsSheet extends StatefulWidget {
   final ServerEntry entry;
@@ -47,10 +49,10 @@ class _SettingsSheetState extends State<SettingsSheet> {
         children: [
           _buildDragHandle(),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            padding: EdgeInsets.symmetric(horizontal: R.dialogPadding(context).left, vertical: R.smallSpacing(context)),
             child: Row(
               children: [
-                Text(S.settings, style: TextStyle(color: AppColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w600)),
+                Text(S.settings, style: TextStyle(color: AppColors.textPrimary, fontSize: R.titleFontSize(context), fontWeight: FontWeight.w600)),
               ],
             ),
           ),
@@ -58,7 +60,7 @@ class _SettingsSheetState extends State<SettingsSheet> {
           _buildModeSection(),
           _buildThemeSection(),
           _buildAboutSection(),
-          const SizedBox(height: 16),
+          SizedBox(height: R.mediumSpacing(context)),
         ],
       ),
     );
@@ -66,7 +68,7 @@ class _SettingsSheetState extends State<SettingsSheet> {
 
   Widget _buildDragHandle() {
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 12),
+      margin: EdgeInsets.symmetric(vertical: R.spacing(context)),
       width: 36, height: 4,
       decoration: BoxDecoration(
         color: AppColors.textTertiary,
@@ -77,12 +79,12 @@ class _SettingsSheetState extends State<SettingsSheet> {
 
   Widget _buildModeSection() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      padding: EdgeInsets.symmetric(horizontal: R.dialogPadding(context).left, vertical: R.smallSpacing(context)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AppSectionHeader(S.runMode),
-          const SizedBox(height: 8),
+          SizedBox(height: R.smallSpacing(context)),
           _ModeTile(
             icon: Icons.public,
             title: S.webviewMode,
@@ -90,7 +92,7 @@ class _SettingsSheetState extends State<SettingsSheet> {
             selected: _mode == AppMode.webview,
             onTap: () => _switchMode(context, AppMode.webview),
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: R.smallSpacing(context) / 2),
           _ModeTile(
             icon: Icons.phone_android,
             title: S.nativeMode,
@@ -105,22 +107,22 @@ class _SettingsSheetState extends State<SettingsSheet> {
 
   Widget _buildThemeSection() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      padding: EdgeInsets.symmetric(horizontal: R.dialogPadding(context).left, vertical: R.smallSpacing(context)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AppSectionHeader(S.theme),
-          const SizedBox(height: 8),
+          SizedBox(height: R.smallSpacing(context)),
           _ThemeTile(icon: Icons.light_mode, title: S.light,
             selected: _themeMode == ThemeMode.light,
             onTap: () => _setTheme(ThemeMode.light),
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: R.smallSpacing(context) / 2),
           _ThemeTile(icon: Icons.dark_mode, title: S.dark,
             selected: _themeMode == ThemeMode.dark,
             onTap: () => _setTheme(ThemeMode.dark),
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: R.smallSpacing(context) / 2),
           _ThemeTile(icon: Icons.settings_brightness, title: S.followSystem,
             selected: _themeMode == ThemeMode.system,
             onTap: () => _setTheme(ThemeMode.system),
@@ -132,12 +134,12 @@ class _SettingsSheetState extends State<SettingsSheet> {
 
   Widget _buildAboutSection() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      padding: EdgeInsets.symmetric(horizontal: R.dialogPadding(context).left, vertical: R.smallSpacing(context)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AppSectionHeader(S.about),
-          const SizedBox(height: 8),
+          SizedBox(height: R.smallSpacing(context)),
           _buildAboutCard(),
         ],
       ),
@@ -150,20 +152,20 @@ class _SettingsSheetState extends State<SettingsSheet> {
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: EdgeInsets.all(R.smallSpacing(context)),
             decoration: BoxDecoration(
               color: AppColors.primaryLight,
               borderRadius: BorderRadius.circular(AppColors.kSmallBorderRadius),
             ),
-            child: const Icon(Icons.code, color: AppColors.primary, size: 20),
+            child: Icon(Icons.code, color: AppColors.primary, size: R.iconSize(context)),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: R.spacing(context)),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(S.appTitle, style: TextStyle(color: AppColors.textPrimary, fontSize: 14, fontWeight: FontWeight.w500)),
-                Text(S.appVersion, style: TextStyle(color: AppColors.textTertiary, fontSize: 12)),
+                Text(S.appTitle, style: TextStyle(color: AppColors.textPrimary, fontSize: R.bodyFontSize(context), fontWeight: FontWeight.w500)),
+                Text(S.appVersion, style: TextStyle(color: AppColors.textTertiary, fontSize: R.smallFontSize(context))),
               ],
             ),
           ),
@@ -212,7 +214,7 @@ class _ModeTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: EdgeInsets.only(bottom: R.smallSpacing(context)),
       child: AppSelectableTile(
         icon: icon,
         title: title,
@@ -235,7 +237,7 @@ class _ThemeTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: EdgeInsets.only(bottom: R.smallSpacing(context)),
       child: AppSelectableTile(
         icon: icon,
         title: title,

@@ -1,12 +1,23 @@
-﻿import 'dart:convert';
+﻿import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models.dart';
+import '../strings.dart';
 
 class OpenCodeApiException implements Exception {
   final int statusCode;
   final String body;
   OpenCodeApiException(this.statusCode, this.body);
+
+  String get friendlyMessage {
+    if (statusCode == 401) return S.errorAuthFailed;
+    if (statusCode == 403) return S.errorPermissionDenied;
+    if (statusCode == 404) return S.errorNotFound;
+    if (statusCode >= 500) return S.errorServerError;
+    return S.errorUnknown;
+  }
+
   @override String toString() => 'OpenCodeApiException($statusCode): $body';
 }
 
@@ -37,7 +48,7 @@ class OpenCodeApi {
     return {};
   }
 
-  static void _log(String m) { debugPrint(m); } // ignore: use_debug_print_in_production
+  static void _log(String m) { if (kDebugMode) debugPrint(m); }
 
   Map<String, String> get headers => {'Authorization': _authHeader, 'Content-Type': 'application/json'};
 
@@ -50,15 +61,35 @@ class OpenCodeApi {
   }
 
   static const _timeout = Duration(seconds: 30);
+  static const _maxRetries = 3;
+  static const _retryDelays = [1, 2, 4];
 
-  Future<http.Response> httpGet(String p) => http.get(buildUri(p), headers: headers).timeout(_timeout);
+  Future<http.Response> _retryable(Future<http.Response> Function() request) async {
+    for (var attempt = 0; attempt < _maxRetries; attempt++) {
+      try {
+        final response = await request().timeout(_timeout);
+        if (response.statusCode < 500) return response;
+        if (attempt == _maxRetries - 1) return response;
+      } on TimeoutException {
+        if (attempt == _maxRetries - 1) rethrow;
+      } catch (e) {
+        if (attempt == _maxRetries - 1) rethrow;
+      }
+      if (attempt < _maxRetries - 1) {
+        await Future.delayed(Duration(seconds: _retryDelays[attempt]));
+      }
+    }
+    throw TimeoutException('Request failed after $_maxRetries attempts');
+  }
+
+  Future<http.Response> httpGet(String p) => _retryable(() => http.get(buildUri(p), headers: headers));
   Future<http.Response> httpPost(String p, {Map<String, dynamic>? body}) =>
-    http.post(buildUri(p), headers: headers, body: body != null ? jsonEncode(body) : null).timeout(_timeout);
+    _retryable(() => http.post(buildUri(p), headers: headers, body: body != null ? jsonEncode(body) : null));
   Future<http.Response> httpPatch(String p, {Map<String, dynamic>? body}) =>
-    http.patch(buildUri(p), headers: headers, body: body != null ? jsonEncode(body) : null).timeout(_timeout);
+    _retryable(() => http.patch(buildUri(p), headers: headers, body: body != null ? jsonEncode(body) : null));
   Future<http.Response> httpPut(String p, {Map<String, dynamic>? body}) =>
-    http.put(buildUri(p), headers: headers, body: body != null ? jsonEncode(body) : null).timeout(_timeout);
-  Future<http.Response> httpDelete(String p) => http.delete(buildUri(p), headers: headers).timeout(_timeout);
+    _retryable(() => http.put(buildUri(p), headers: headers, body: body != null ? jsonEncode(body) : null));
+  Future<http.Response> httpDelete(String p) => _retryable(() => http.delete(buildUri(p), headers: headers));
 
   void check(http.Response r) { if (r.statusCode >= 400) throw OpenCodeApiException(r.statusCode, r.body); }
   void addIfNotNull(Map<String, dynamic> b, String k, dynamic v) { if (v != null) b[k] = v; }

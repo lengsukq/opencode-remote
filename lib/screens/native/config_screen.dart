@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../models.dart';
 import '../../theme.dart';
 import '../../services/opencode_api.dart';
+
+import '../../utils/responsive_values.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/app_input_decoration.dart';
 import '../../widgets/app_section_header.dart';
@@ -41,11 +43,17 @@ class _ConfigScreenState extends State<ConfigScreen> {
     setState(() => _loading = true);
     try {
       final config = await _safeCall(() => widget.api.getConfig());
+      if (!mounted) return;
       final configProviders = await _safeCall(() => widget.api.getConfigProviders());
+      if (!mounted) return;
       final lspRaw = await _safeCall(() => widget.api.getLspStatus());
+      if (!mounted) return;
       final formattersRaw = await _safeCall(() => widget.api.getFormatterStatus());
+      if (!mounted) return;
       final mcpRaw = await _safeCall(() => widget.api.getMcpStatus());
+      if (!mounted) return;
       final authRaw = await _safeCall(() => widget.api.getProviderAuth());
+      if (!mounted) return;
       setState(() {
         _config = config is Config ? config : null;
         _configProviders = configProviders is Map<String, dynamic> ? configProviders : null;
@@ -141,25 +149,25 @@ class _ConfigScreenState extends State<ConfigScreen> {
       body: _loading
           ? const AppLoadingIndicator()
           : _error != null
-              ? Center(child: Text(_error!, style: TextStyle(color: AppColors.textSecondary)))
+              ? AppErrorState(message: _error!, onRetry: _load)
               : RefreshIndicator(
                   color: AppColors.primary,
                   onRefresh: _load,
                   child: ListView(
-                    padding: const EdgeInsets.all(16),
+                    padding: R.screenPadding(context),
                     children: [
-                      _sectionHeader('配置'),
+                      _sectionHeader(S.config),
                       _configCard(),
-                      const SizedBox(height: 20),
-                      _sectionHeader('提供商与默认模型'),
+                      SizedBox(height: R.mediumSpacing(context)),
+                      _sectionHeader(S.providersAndDefaults),
                       _providersCard(),
-                      const SizedBox(height: 20),
-                      _sectionHeader('工具状态'),
+                      SizedBox(height: R.mediumSpacing(context)),
+                      _sectionHeader(S.toolStatus),
                       _toolsCard(),
-                      const SizedBox(height: 20),
-                      _sectionHeader('认证方式'),
+                      SizedBox(height: R.mediumSpacing(context)),
+                      _sectionHeader(S.authMethods),
                       _authCard(),
-                      const SizedBox(height: 40),
+                      SizedBox(height: R.largeSpacing(context)),
                     ],
                   ),
                 ),
@@ -171,7 +179,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
   }
 
   Widget _configCard() {
-    if (_config == null) return _card('加载配置失败', Icons.error, AppColors.danger);
+    if (_config == null) return _card(S.loadConfigFailed, Icons.error, AppColors.danger);
     final data = _config!.data;
     final entries = data.entries.take(10).toList();
     return AppCard(
@@ -199,7 +207,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
           if (data.length > 10)
             Padding(
               padding: const EdgeInsets.only(top: 4),
-              child: Text('... 还有 ${data.length - 10} 项', style: TextStyle(color: AppColors.textTertiary, fontSize: 11)),
+              child: Text(S.moreItems(data.length - 10), style: TextStyle(color: AppColors.textTertiary, fontSize: 11)),
             ),
           const SizedBox(height: 8),
           Align(
@@ -216,7 +224,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
   }
 
   Widget _providersCard() {
-    if (_configProviders == null) return _card('加载失败', Icons.error, AppColors.danger);
+    if (_configProviders == null) return _card(S.loadFailed, Icons.error, AppColors.danger);
     final rawProviders = _configProviders!['providers'];
     final rawDefaults = _configProviders!['default'];
     final providers = rawProviders is List ? rawProviders : <dynamic>[];
@@ -234,7 +242,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
           if (defaults.isEmpty) Text('  ${S.noDefaultModel}', style: TextStyle(color: AppColors.textTertiary, fontSize: 12)),
           if (providers.isNotEmpty) ...[
             const SizedBox(height: 8),
-            Text('提供商 (${providers.length}):', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+            Text(S.providersCount(providers.length), style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
             const SizedBox(height: 4),
             ...providers.take(10).map((p) {
               final pMap = p is Map<String, dynamic> ? p : <String, dynamic>{};
@@ -256,7 +264,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
         children: [
           _toolGroup(S.lspServer, _lsp.map((l) => _toolEntry(l.name, l.state)).toList()),
           const SizedBox(height: 12),
-          _toolGroup(S.formatter, _formatters.map((f) => _toolEntry(f.name, f.enabled ? 'enabled' : 'disabled')).toList()),
+          _toolGroup(S.formatter, _formatters.map((f) => _toolEntry(f.name, f.enabled ? S.enabled : S.disabled)).toList()),
           const SizedBox(height: 12),
           _toolGroup(S.mcpServer, _mcp.entries.map((e) => _toolEntry(e.key, e.value.status)).toList()),
         ],
@@ -271,7 +279,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
         Text(title, style: TextStyle(color: AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.w500)),
         const SizedBox(height: 4),
         if (entries.isEmpty)
-          Text('  无', style: TextStyle(color: AppColors.textTertiary, fontSize: 12))
+          Text(S.none, style: TextStyle(color: AppColors.textTertiary, fontSize: 12))
         else
           ...entries,
       ],

@@ -18,6 +18,7 @@ void main() async {
     setupWebViewPlatform();
   }
 
+  await StorageService.migrateToSecureStorage();
   final hasLaunched = await StorageService.hasLaunched();
   final themeMode = await StorageService.getThemeMode();
   themeNotifier.value = themeMode;

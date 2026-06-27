@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../models.dart';
 import '../../theme.dart';
 import '../../services/opencode_api.dart';
+
+import '../../utils/responsive_values.dart';
 import '../../widgets/app_full_screen_dialog.dart';
 import '../../widgets/app_snackbar.dart';
 import '../../strings.dart';
@@ -87,10 +89,24 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
   Future<void> _loadRoot() async {
     setState(() => _loading = true);
     try {
-      final initialPath = widget.activeProject?.path ?? '';
-      final files = await widget.api.listFiles(initialPath);
+      // 优先使用 activeProject.path，其次使用 api.directory
+      final initialPath = widget.activeProject?.path ?? widget.api.directory ?? '';
+      
+      // 如果没有路径，尝试获取当前项目
+      String pathToUse = initialPath;
+      if (pathToUse.isEmpty) {
+        try {
+          final currentProject = await widget.api.getCurrentProject();
+          pathToUse = currentProject.path;
+          widget.api.directory = pathToUse;
+        } catch (e) {
+          debugPrint('FileBrowserScreen._loadRoot: failed to get current project: $e');
+        }
+      }
+      
+      final files = await widget.api.listFiles(pathToUse);
       final rootNode = _TreeNode(
-        node: FileNode(name: initialPath.isNotEmpty ? initialPath.split('/').last : '/', path: initialPath, type: 'directory'),
+        node: FileNode(name: pathToUse.isNotEmpty ? pathToUse.split('/').last : '/', path: pathToUse, type: 'directory'),
         depth: -1,
         expanded: true,
       );
@@ -98,7 +114,7 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
         ..addAll(files.where((f) => f.type != 'directory').map((f) => _TreeNode(node: f, depth: 0))));
       setState(() {
         _roots = [rootNode];
-        _currentPath = initialPath;
+        _currentPath = pathToUse;
         _loading = false;
         _error = null;
       });
@@ -341,7 +357,7 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
       return const Center(child: AppLoadingIndicator());
     }
     if (_error != null) {
-      return Center(child: Text(_error!, style: TextStyle(color: AppColors.textSecondary)));
+      return AppErrorState(message: _error!, onRetry: _loadRoot);
     }
     final visible = _visibleNodes;
     if (visible.isEmpty) {
@@ -393,25 +409,25 @@ class _TreeFileTile extends StatelessWidget {
       onTap: onTap,
       child: Padding(
         padding: EdgeInsets.only(
-          left: 12.0 + node.depth * 20.0,
-          right: 12,
-          top: 6,
-          bottom: 6,
+          left: R.smallSpacing(context) + node.depth * R.treeIndent(context),
+          right: R.smallSpacing(context),
+          top: R.smallSpacing(context) / 2,
+          bottom: R.smallSpacing(context) / 2,
         ),
         child: Row(
           children: [
             if (node.loading)
-              const SizedBox(
-                width: 16, height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2),
+              SizedBox(
+                width: R.smallIconSize(context), height: R.smallIconSize(context),
+                child: const CircularProgressIndicator(strokeWidth: 2),
               )
             else
-              Icon(_icon, color: node.isDirectory ? AppColors.warning : AppColors.textSecondary, size: 16),
-            const SizedBox(width: 8),
+              Icon(_icon, color: node.isDirectory ? AppColors.warning : AppColors.textSecondary, size: R.smallIconSize(context)),
+            SizedBox(width: R.smallSpacing(context)),
             Expanded(
               child: Text(
                 node.node.name,
-                style: const TextStyle(color: AppColors.textPrimary, fontSize: 13),
+                style: TextStyle(color: AppColors.textPrimary, fontSize: R.bodyFontSize(context)),
                 overflow: TextOverflow.ellipsis,
               ),
             ),

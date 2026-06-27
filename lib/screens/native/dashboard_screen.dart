@@ -5,6 +5,9 @@ import '../../theme.dart';
 import '../../services/storage_service.dart';
 import '../../services/opencode_api.dart';
 
+import '../../utils/animations.dart';
+import '../../utils/responsive_values.dart';
+
 import '../settings_sheet.dart';
 import '../../widgets/app_dialog.dart';
 import '../../widgets/app_bottom_sheet.dart';
@@ -16,17 +19,16 @@ import '../../widgets/dashboard_cards.dart';
 
 class DashboardScreen extends StatefulWidget {
   final ServerEntry entry;
-  final OpenCodeApi? api;
+  final OpenCodeApi api;
   final Project? activeProject;
 
-  const DashboardScreen({super.key, required this.entry, this.api, this.activeProject});
+  const DashboardScreen({super.key, required this.entry, required this.api, this.activeProject});
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  late OpenCodeApi _api;
   late ServerEntry _entry;
   HealthStatus? _health;
   List<Session> _recentSessions = [];
@@ -37,7 +39,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void initState() {
     super.initState();
     _entry = widget.entry;
-    _initApi();
     _load();
   }
 
@@ -49,23 +50,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  void _initApi() {
-    if (widget.api != null) {
-      _api = widget.api!;
-      return;
-    }
-    _api = OpenCodeApi(
-      baseUrl: _entry.url,
-      username: _entry.username,
-      password: _entry.password,
-    );
-  }
-
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
-      final health = await _api.getHealth();
-      final sessions = await _api.getSessions();
+      final health = await widget.api.getHealth();
+      final sessions = await widget.api.getSessions();
       sessions.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
       List<Session> filtered;
       if (widget.activeProject != null) {
@@ -77,7 +66,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       } else {
         filtered = sessions.take(5).toList();
       }
-      if (!mounted) return;
+      if (!context.mounted) return;
       setState(() {
         _health = health;
         _recentSessions = filtered;
@@ -85,7 +74,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         _error = null;
       });
     } catch (e) {
-      if (mounted) {
+      if (context.mounted) {
         setState(() {
           _loading = false;
           _error = e.toString();
@@ -103,7 +92,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _switchServer() async {
     final servers = await StorageService.loadServers();
-    if (!mounted) return;
+    if (!context.mounted) return;
 
     final selected = await AppBottomSheet.show<ServerEntry>(
       context: context,
@@ -114,7 +103,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             children: [
               Padding(
                 padding: const EdgeInsets.all(16),
-                child: Text('切换服务器', style: TextStyle(color: AppColors.textPrimary, fontSize: 16)),
+                child: Text(S.switchServer, style: TextStyle(color: AppColors.textPrimary, fontSize: 16)),
               ),
               const Divider(),
               ...servers.map((s) => ListTile(
@@ -133,12 +122,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
       selected.lastUsed = DateTime.now().millisecondsSinceEpoch;
       await StorageService.addOrUpdate(selected);
       await StorageService.setLastSelectedId(selected.id);
-      if (!mounted) return;
+      if (!context.mounted) return;
       setState(() {
         _entry = selected;
         _loading = true;
       });
-      _initApi();
       _load();
     }
   }
@@ -150,6 +138,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       hintText: S.providerIdHint,
     );
     if (providerID == null || providerID.isEmpty) return;
+    if (!context.mounted) return;
     final apiKey = await AppDialog.showTextInput(
       context,
       title: S.apiKey,
@@ -158,10 +147,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
     if (apiKey == null || apiKey.isEmpty) return;
     try {
-      await _api.setAuth(providerID, {'apiKey': apiKey});
-      if (mounted) AppSnackBar.success(context, '认证已设置');
+      await widget.api.setAuth(providerID, {'apiKey': apiKey});
+      if (context.mounted) AppSnackBar.success(context, S.authSet);
     } catch (e) {
-      if (mounted) AppSnackBar.error(context, S.setAuthFailed(e));
+      if (context.mounted) AppSnackBar.error(context, S.setAuthFailed(e));
     }
   }
 
@@ -186,14 +175,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
             onSelected: (v) async {
               if (v == 'dispose') {
                 try {
-                  await _api.disposeInstance();
-                  if (mounted) AppSnackBar.show(context, S.instanceDisposed);
+                  await widget.api.disposeInstance();
+                  if (context.mounted) AppSnackBar.show(context, S.instanceDisposed);
                 } catch (e) {
-                  if (mounted) AppSnackBar.error(context, S.disposeFailed(e));
+                  if (context.mounted) AppSnackBar.error(context, S.disposeFailed(e));
                 }
               } else if (v == 'log') {
-                await _api.writeLog('client', 'info', 'Dashboard health check from remote app', extra: {'url': _entry.url});
-                if (mounted) AppSnackBar.show(context, S.logWritten);
+                await widget.api.writeLog('client', 'info', 'Dashboard health check from remote app', extra: {'url': _entry.url});
+                if (context.mounted) AppSnackBar.show(context, S.logWritten);
               } else if (v == 'auth') {
                 await _showAuthDialog();
               }
@@ -220,20 +209,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _errorView() {
     return ListView(
-      padding: const EdgeInsets.all(20),
+      padding: R.screenPadding(context),
       children: [
-        const SizedBox(height: 40),
-        Icon(Icons.cloud_off, size: 48, color: AppColors.textTertiary),
-        const SizedBox(height: 12),
-        Text(S.connectionFailed, style: TextStyle(color: AppColors.textSecondary, fontSize: 16)),
-        const SizedBox(height: 8),
-        Text(_error!, style: TextStyle(color: AppColors.textTertiary, fontSize: 12), textAlign: TextAlign.center),
-        const SizedBox(height: 20),
+        SizedBox(height: R.largeSpacing(context)),
+        Icon(Icons.cloud_off, size: R.iconSize(context) * 2.4, color: AppColors.textTertiary),
+        SizedBox(height: R.spacing(context)),
+        Text(S.connectionFailed, style: TextStyle(color: AppColors.textSecondary, fontSize: R.bodyFontSize(context))),
+        SizedBox(height: R.smallSpacing(context)),
+        Text(_error!, style: TextStyle(color: AppColors.textTertiary, fontSize: R.smallFontSize(context)), textAlign: TextAlign.center),
+        SizedBox(height: R.mediumSpacing(context)),
         FilledButton.icon(
           style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
           onPressed: _load,
-          icon: const Icon(Icons.refresh, size: 18),
-          label: const Text('重试'),
+          icon: Icon(Icons.refresh, size: R.smallIconSize(context)),
+          label: Text(S.retry, style: TextStyle(fontSize: R.bodyFontSize(context))),
         ),
       ],
     );
@@ -241,38 +230,41 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildContent() {
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: R.screenPadding(context),
       children: [
         DashboardStatusCard(health: _health, url: widget.entry.url),
         if (widget.activeProject != null) ...[
-          const SizedBox(height: 16),
+          SizedBox(height: R.mediumSpacing(context)),
           DashboardProjectContextCard(project: widget.activeProject!),
         ],
-        const SizedBox(height: 20),
+        SizedBox(height: R.mediumSpacing(context)),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(S.recentSessions, style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+            Text(S.recentSessions, style: TextStyle(color: AppColors.textSecondary, fontSize: R.smallFontSize(context))),
             TextButton(
-              onPressed: () => Navigator.push(context, MaterialPageRoute(
-                builder: (_) => SessionListScreen(entry: widget.entry, api: _api, activeProject: widget.activeProject),
+              onPressed: () => Navigator.push(context, AppAnimations.slideInRoute(
+                SessionListScreen(entry: widget.entry, api: widget.api, activeProject: widget.activeProject),
               )),
-              child: const Text(S.viewAll, style: TextStyle(color: AppColors.primary, fontSize: 12)),
+              child: Text(S.viewAll, style: TextStyle(color: AppColors.primary, fontSize: R.smallFontSize(context))),
             ),
           ],
         ),
-        const SizedBox(height: 8),
-        ..._recentSessions.map((s) => DashboardSessionCard(session: s, api: _api, entry: widget.entry, activeProject: widget.activeProject)),
+        SizedBox(height: R.smallSpacing(context)),
+        ..._recentSessions.asMap().entries.map((entry) => AppAnimations.listItemAnimation(
+          index: entry.key,
+          child: DashboardSessionCard(session: entry.value, api: widget.api, entry: widget.entry, activeProject: widget.activeProject),
+        )),
         if (_recentSessions.isEmpty)
           Padding(
-            padding: const EdgeInsets.all(20),
+            padding: R.screenPadding(context),
             child: Text(
               widget.activeProject != null ? "'${widget.activeProject!.name}' ${S.noSessions}" : S.noSessions,
-              style: TextStyle(color: AppColors.textTertiary, fontSize: 13),
+              style: TextStyle(color: AppColors.textTertiary, fontSize: R.bodyFontSize(context)),
             ),
           ),
-        const SizedBox(height: 20),
-        DashboardQuickActions(api: _api, entry: widget.entry, activeProject: widget.activeProject),
+        SizedBox(height: R.mediumSpacing(context)),
+        DashboardQuickActions(api: widget.api, entry: widget.entry, activeProject: widget.activeProject),
       ],
     );
   }

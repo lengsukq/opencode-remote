@@ -6,6 +6,8 @@ import '../theme.dart';
 import '../services/storage_service.dart';
 import '../screens/launcher_screen.dart';
 
+import '../utils/responsive_values.dart';
+
 class OnboardingScreen extends StatelessWidget {
   const OnboardingScreen({super.key});
 
@@ -23,7 +25,7 @@ class OnboardingScreen extends StatelessWidget {
         child: SafeArea(
           child: Center(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32),
+              padding: EdgeInsets.symmetric(horizontal: R.largeSpacing(context)),
               child: _buildModeSelectionCard(context),
             ),
           ),
@@ -34,10 +36,10 @@ class OnboardingScreen extends StatelessWidget {
 
   Widget _buildModeSelectionCard(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: R.dialogPadding(context),
       decoration: BoxDecoration(
         color: AppColors.surface.withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(R.borderRadius(context) * 2),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.08),
@@ -47,19 +49,19 @@ class OnboardingScreen extends StatelessWidget {
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(R.borderRadius(context) * 2),
         child: BackdropFilter(
           filter: _blurFilter(),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const SizedBox(height: 24),
-              _buildHeader(),
-              const SizedBox(height: 32),
+              SizedBox(height: R.mediumSpacing(context)),
+              _buildHeader(context),
+              SizedBox(height: R.largeSpacing(context)),
               _buildWebViewMode(context),
-              const SizedBox(height: 12),
+              SizedBox(height: R.spacing(context)),
               _buildNativeMode(context),
-              const SizedBox(height: 24),
+              SizedBox(height: R.mediumSpacing(context)),
             ],
           ),
         ),
@@ -67,32 +69,32 @@ class OnboardingScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(BuildContext context) {
     return Column(
       children: [
         Container(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(R.mediumSpacing(context)),
           decoration: BoxDecoration(
             color: AppColors.primaryLight,
-            borderRadius: BorderRadius.circular(AppColors.kMediumBorderRadius),
+            borderRadius: BorderRadius.circular(R.borderRadius(context)),
           ),
-          child: const Icon(Icons.code, color: AppColors.primary, size: 40),
+          child: Icon(Icons.code, color: AppColors.primary, size: R.iconSize(context) * 2),
         ),
-        const SizedBox(height: 20),
-        const Text(
+        SizedBox(height: R.mediumSpacing(context)),
+        Text(
           'OpenCode Remote',
           style: TextStyle(
-            fontSize: 28,
+            fontSize: R.titleFontSize(context) * 1.5,
             fontWeight: FontWeight.w700,
             color: AppColors.textPrimary,
             letterSpacing: -0.5,
           ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: R.smallSpacing(context)),
         Text(
           S.chooseMode,
           style: TextStyle(
-            fontSize: 15,
+            fontSize: R.bodyFontSize(context),
             color: AppColors.textSecondary,
           ),
         ),
@@ -103,7 +105,7 @@ class OnboardingScreen extends StatelessWidget {
   Widget _buildWebViewMode(BuildContext context) {
     return _ModeOption(
       icon: Icons.public,
-      title: 'WebView 模式',
+      title: S.webviewMode,
       subtitle: S.webviewDesc,
       onTap: () => _selectMode(context, AppMode.webview),
     );
@@ -146,10 +148,10 @@ class _ModeOption extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(20),
+        padding: R.cardPadding(context),
         decoration: BoxDecoration(
           color: AppColors.surface.withValues(alpha: 0.7),
-          borderRadius: BorderRadius.circular(AppColors.kMediumBorderRadius),
+          borderRadius: BorderRadius.circular(R.borderRadius(context)),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.06),
@@ -161,30 +163,30 @@ class _ModeOption extends StatelessWidget {
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(R.spacing(context)),
               decoration: BoxDecoration(
                 color: AppColors.primaryLight,
-                borderRadius: BorderRadius.circular(AppColors.kDefaultBorderRadius),
+                borderRadius: BorderRadius.circular(R.borderRadius(context)),
               ),
-              child: Icon(icon, color: AppColors.primary, size: 28),
+              child: Icon(icon, color: AppColors.primary, size: R.iconSize(context)),
             ),
-            const SizedBox(width: 16),
+            SizedBox(width: R.spacing(context)),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
-                      fontSize: 17,
+                    style: TextStyle(
+                      fontSize: R.subtitleFontSize(context),
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimary,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: R.smallSpacing(context) / 2),
                   Text(
                     subtitle,
-                    style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                    style: TextStyle(fontSize: R.smallFontSize(context), color: AppColors.textSecondary),
                   ),
                 ],
               ),

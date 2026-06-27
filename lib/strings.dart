@@ -45,13 +45,15 @@ class S {
   static const unnamedSession = '未命名会话';
   static const createFailed = '创建失败';
   static const sessionAborted = '会话已中止';
-  static const abortFailed = '中止失败';
+  static String abortFailed(Object e) => '中止失败: $e';
   static const shared = '已分享';
   static const unshared = '已取消分享';
-  static const shareFailed = '分享失败';
+  static String shareFailed(Object e) => '分享失败: $e';
 
   // === Chat ===
   static const sendFailed = '发送失败';
+  static String attachmentFailed(Object e) => '附件失败: $e';
+  static String shellFailed(Object e) => 'Shell 执行失败: $e';
   static const messageActions = '消息操作';
   static const copyContent = '复制内容';
   static const selectAgent = '选择 Agent';
@@ -59,6 +61,11 @@ class S {
   static const addAttachment = '添加附件';
   static const runShellCommand = '运行 Shell 命令';
   static const applyCodeToFile = '应用代码到文件';
+  static const writeCodeToFile = 'Write the following code to file:';
+  static const filePath = 'File Path';
+  static const write = 'Write';
+  static const messageDetails = 'Message Details';
+  static const role = 'Role';
   static const enterMessage = '输入消息... (/ 查看命令)';
   static const enterShellCommand = '输入 shell 命令...';
   static const allowOnce = '允许一次';
@@ -125,10 +132,15 @@ class S {
   static const id = 'ID';
   static const switchToProject = '切换到该项目';
   static const switchedTo = '已切换到:';
+  static const current = '当前';
   static const allSessions = '全部会话';
   static const noActiveProject = '选择一个项目开始';
   static const closeProject = '关闭项目';
   static const confirmCloseProject = '确定关闭该项目？';
+  static String confirmCloseProjectName(Object name) => '确定关闭项目"$name"？';
+  static String projectDetail(Object name) => '项目: $name';
+  static const closeProjectHint = '关闭项目将从列表中移除';
+  static const noMatchingProjects = '无匹配项目';
   static const projectAdded = '项目已添加';
   static const projectRemoved = '项目已关闭';
   static const searchProjects = '搜索项目...';
@@ -171,6 +183,9 @@ class S {
   static const image = 'Image';
   static const camera = 'Camera';
   static const file = 'File';
+  static const fromGallery = 'From Gallery';
+  static const takeAPhoto = 'Take a Photo';
+  static const fromLocalStorage = 'From Local Storage';
 
   // === Config ===
   static const diagnosticsAndConfig = '诊断与配置';
@@ -186,6 +201,16 @@ class S {
   static const noDefaultModel = '无默认模型';
   static const noAuthInfo = '无认证信息';
   static const authSet = '认证已设置';
+  static const config = '配置';
+  static const providersAndDefaults = '提供商与默认模型';
+  static const toolStatus = '工具状态';
+  static const authMethods = '认证方式';
+  static const loadConfigFailed = '加载配置失败';
+  static String moreItems(Object count) => '... 还有 $count 项';
+  static String providersCount(Object count) => '提供商 ($count):';
+  static const none = ' 无';
+  static const enabled = 'enabled';
+  static const disabled = 'disabled';
 
   // === Dashboard ===
   static const recentSessions = '最近会话';
@@ -227,6 +252,13 @@ class S {
   static String childSessionsFailed(Object e) => '获取子会话失败: $e';
   static String todoFailed(Object e) => '获取待办失败: $e';
   static String renameFailed(Object e) => '重命名失败: $e';
+
+  // === Error Messages ===
+  static const errorAuthFailed = '认证失败，请检查用户名和密码';
+  static const errorPermissionDenied = '没有权限执行此操作';
+  static const errorNotFound = '请求的资源不存在';
+  static const errorServerError = '服务器错误，请稍后重试';
+  static const errorUnknown = '未知错误';
 
   // === Onboarding ===
   static const appTitle = 'OpenCode Remote';

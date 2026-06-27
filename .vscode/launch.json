@@ -1,20 +1,7 @@
 {
   "version": "0.2.0",
   "configurations": [
-    {
-      "name": "Flutter Web (web-server)",
-      "type": "dart",
-      "request": "launch",
-      "program": "lib/main.dart",
-      "flutterMode": "debug",
-      "deviceId": "web-server",
-      "args": [
-        "--web-port",
-        "8081",
-        "--web-hostname",
-        "0.0.0.0"
-      ]
-    },
+    // ── Flutter ──
     {
       "name": "Flutter (mobile)",
       "type": "dart",
@@ -22,57 +9,24 @@
       "program": "lib/main.dart",
       "flutterMode": "debug"
     },
+    // ── OpenCode Server ──
     {
-      "name": "Flutter (release mode)",
-      "type": "dart",
-      "request": "launch",
-      "program": "lib/main.dart",
-      "flutterMode": "release"
-    },
-    {
-      "name": "Flutter (profile mode)",
-      "type": "dart",
-      "request": "launch",
-      "program": "lib/main.dart",
-      "flutterMode": "profile"
-    },
-    {
-      "name": "Flutter Attach",
-      "type": "dart",
-      "request": "attach",
-      "deviceId": "flutter"
-    },
-    {
-      "name": "Flutter Test",
-      "type": "dart",
-      "request": "launch",
-      "program": "test/widget_test.dart"
-    },
-    {
-      "name": "Flutter Web (release)",
-      "type": "dart",
-      "request": "launch",
-      "program": "lib/main.dart",
-      "flutterMode": "release",
-      "deviceId": "web-server",
-      "args": [
-        "--web-port",
-        "8083",
-        "--web-hostname",
-        "0.0.0.0"
-      ]
-    },
-    {
-      "name": "OpenCode Server",
+      "name": "OpenCode Server (macOS)",
       "type": "node",
       "request": "launch",
-      "program": "${userHome}/.opencode/bin/opencode.exe",
-      "args": ["serve", "--port", "4096"],
+      "runtimeExecutable": "opencode",
+      "args": ["serve", "--hostname", "0.0.0.0", "--port", "4096"],
       "cwd": "${workspaceFolder}",
-      "console": "integratedTerminal",
-      "windows": {
-        "program": "${userHome}/.opencode/bin/opencode.exe"
-      }
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "OpenCode Server (Windows)",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "${userHome}/.opencode/bin/opencode.exe",
+      "args": ["serve", "--hostname", "0.0.0.0", "--port", "4096"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal"
     }
   ]
 }

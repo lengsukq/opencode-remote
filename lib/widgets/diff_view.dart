@@ -123,11 +123,8 @@ class DiffHunkView {
     required this.deletions,
   });
 
-  DiffHunkView.fromContent(int oldStart, int newStart, String content)
-      : oldStart = oldStart,
-        newStart = newStart,
-        content = content,
-        additions = '\n$content'.split('\n').where((l) => l.startsWith('+')).length,
+  DiffHunkView.fromContent(this.oldStart, this.newStart, this.content)
+      : additions = '\n$content'.split('\n').where((l) => l.startsWith('+')).length,
         deletions = '\n$content'.split('\n').where((l) => l.startsWith('-')).length;
 }
 

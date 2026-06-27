@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/part.dart';
 import '../models/session.dart';
+import '../strings.dart';
 import '../theme.dart';
 
 /// Shows a dialog with detailed information about a message.
@@ -13,9 +14,9 @@ void showMessageDetail(BuildContext context, SessionMessageResponse detail) {
         mainAxisSize: MainAxisSize.min,
         children: [
           AppBar(
-            title: const Text(
-              'Message Details',
-              style: TextStyle(color: AppColors.textPrimary, fontSize: 14),
+            title: Text(
+              S.messageDetails,
+              style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
             ),
             leading: IconButton(
               icon: const Icon(Icons.close, color: AppColors.textSecondary),
@@ -26,8 +27,8 @@ void showMessageDetail(BuildContext context, SessionMessageResponse detail) {
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                _buildInfoRow('ID', detail.info.id),
-                _buildInfoRow('Role', detail.info.role),
+                _buildInfoRow(S.id, detail.info.id),
+                _buildInfoRow(S.role, detail.info.role),
                 _buildInfoRow('Parts', detail.parts.length.toString()),
                 const SizedBox(height: 12),
                 Text(

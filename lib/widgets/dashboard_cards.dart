@@ -4,6 +4,8 @@ import '../strings.dart';
 import '../theme.dart';
 import '../services/opencode_api.dart';
 import '../utils/time_format.dart';
+import '../utils/responsive.dart';
+import '../utils/responsive_values.dart';
 import '../widgets/app_card.dart';
 import '../screens/native/session_list_screen.dart';
 import '../screens/native/file_browser_screen.dart';
@@ -24,7 +26,7 @@ class DashboardStatusCard extends StatelessWidget {
     final isHealthy = health?.healthy ?? false;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: R.screenPadding(context),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppColors.kDefaultBorderRadius),
@@ -48,22 +50,22 @@ class DashboardStatusCard extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: R.smallSpacing(context)),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(host, style: const TextStyle(color: AppColors.textPrimary, fontSize: 14, fontWeight: FontWeight.w500)),
-                const SizedBox(height: 2),
+                Text(host, style: TextStyle(color: AppColors.textPrimary, fontSize: R.bodyFontSize(context), fontWeight: FontWeight.w500)),
+                SizedBox(height: 2),
                 Text(
                   isHealthy ? 'v${health?.version ?? "?"} \u00b7 ${S.connected}' : S.unableToConnect,
-                  style: TextStyle(color: isHealthy ? AppColors.success : AppColors.danger, fontSize: 12),
+                  style: TextStyle(color: isHealthy ? AppColors.success : AppColors.danger, fontSize: R.smallFontSize(context)),
                 ),
               ],
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            padding: EdgeInsets.symmetric(horizontal: R.smallSpacing(context), vertical: 4),
             decoration: BoxDecoration(
               color: isHealthy ? AppColors.success.withValues(alpha: 0.1) : AppColors.danger.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(AppColors.kChipBorderRadius),
@@ -72,7 +74,7 @@ class DashboardStatusCard extends StatelessWidget {
               isHealthy ? S.online : S.offline,
               style: TextStyle(
                 color: isHealthy ? AppColors.success : AppColors.danger,
-                fontSize: 11,
+                fontSize: R.labelFontSize(context),
               ),
             ),
           ),
@@ -106,30 +108,30 @@ class DashboardSessionCard extends StatelessWidget {
             ));
           },
           child: Padding(
-            padding: const EdgeInsets.all(12),
+            padding: R.cardPadding(context),
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: EdgeInsets.all(R.smallSpacing(context)),
                   decoration: BoxDecoration(
                     color: AppColors.primaryLight,
                     borderRadius: BorderRadius.circular(AppColors.kSmallBorderRadius),
                   ),
-                  child: const Icon(Icons.chat, color: AppColors.primary, size: 16),
+                  child: Icon(Icons.chat, color: AppColors.primary, size: R.smallIconSize(context)),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: R.spacing(context)),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(session.title.isNotEmpty ? session.title : '未命名会话',
-                          style: const TextStyle(color: AppColors.textPrimary, fontSize: 13)),
-                      const SizedBox(height: 2),
-                      Text(timeStr, style: TextStyle(color: AppColors.textTertiary, fontSize: 11)),
+                          style: TextStyle(color: AppColors.textPrimary, fontSize: R.smallFontSize(context))),
+                      SizedBox(height: 2),
+                      Text(timeStr, style: TextStyle(color: AppColors.textTertiary, fontSize: R.labelFontSize(context))),
                     ],
                   ),
                 ),
-                Icon(Icons.chevron_right, color: AppColors.textTertiary, size: 16),
+                Icon(Icons.chevron_right, color: AppColors.textTertiary, size: R.smallIconSize(context)),
               ],
             ),
           ),
@@ -148,30 +150,56 @@ class DashboardQuickActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isPhone = ResponsiveUtils.isPhone(context);
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(S.quickActions, style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(child: DashboardActionButton(icon: Icons.add, label: '新建会话', color: AppColors.primary, onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => SessionListScreen(entry: entry, api: api, activeProject: activeProject)));
-            })),
-            const SizedBox(width: 8),
-            Expanded(child: DashboardActionButton(icon: Icons.folder, label: '文件浏览', color: AppColors.success, onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => FileBrowserScreen(entry: entry, api: api, activeProject: activeProject)));
-            })),
-            const SizedBox(width: 8),
-            Expanded(child: DashboardActionButton(icon: Icons.swap_horiz, label: '切换项目', color: AppColors.warning, onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => ProjectScreen(entry: entry, api: api)));
-            })),
-            const SizedBox(width: 8),
-            Expanded(child: DashboardActionButton(icon: Icons.monitor_heart, label: '诊断', color: AppColors.primary, onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => ConfigScreen(entry: entry, api: api)));
-            })),
-          ],
-        ),
+        Text(S.quickActions, style: TextStyle(color: AppColors.textSecondary, fontSize: R.smallFontSize(context))),
+        SizedBox(height: R.smallSpacing(context)),
+        if (isPhone)
+          GridView.count(
+            crossAxisCount: 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            mainAxisSpacing: R.smallSpacing(context),
+            crossAxisSpacing: R.smallSpacing(context),
+            childAspectRatio: 1.5,
+            children: [
+              DashboardActionButton(icon: Icons.add, label: '新建会话', color: AppColors.primary, onTap: () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => SessionListScreen(entry: entry, api: api, activeProject: activeProject)));
+              }),
+              DashboardActionButton(icon: Icons.folder, label: '文件浏览', color: AppColors.success, onTap: () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => FileBrowserScreen(entry: entry, api: api, activeProject: activeProject)));
+              }),
+              DashboardActionButton(icon: Icons.swap_horiz, label: '切换项目', color: AppColors.warning, onTap: () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => ProjectScreen(entry: entry, api: api)));
+              }),
+              DashboardActionButton(icon: Icons.monitor_heart, label: '诊断', color: AppColors.primary, onTap: () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => ConfigScreen(entry: entry, api: api)));
+              }),
+            ],
+          )
+        else
+          Row(
+            children: [
+              Expanded(child: DashboardActionButton(icon: Icons.add, label: '新建会话', color: AppColors.primary, onTap: () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => SessionListScreen(entry: entry, api: api, activeProject: activeProject)));
+              })),
+              SizedBox(width: R.smallSpacing(context)),
+              Expanded(child: DashboardActionButton(icon: Icons.folder, label: '文件浏览', color: AppColors.success, onTap: () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => FileBrowserScreen(entry: entry, api: api, activeProject: activeProject)));
+              })),
+              SizedBox(width: R.smallSpacing(context)),
+              Expanded(child: DashboardActionButton(icon: Icons.swap_horiz, label: '切换项目', color: AppColors.warning, onTap: () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => ProjectScreen(entry: entry, api: api)));
+              })),
+              SizedBox(width: R.smallSpacing(context)),
+              Expanded(child: DashboardActionButton(icon: Icons.monitor_heart, label: '诊断', color: AppColors.primary, onTap: () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => ConfigScreen(entry: entry, api: api)));
+              })),
+            ],
+          ),
       ],
     );
   }
@@ -190,17 +218,18 @@ class DashboardActionButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16),
+        padding: EdgeInsets.symmetric(vertical: R.mediumSpacing(context)),
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(AppColors.kCardBorderRadius),
           border: Border.all(color: AppColors.border),
         ),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: color, size: 24),
-            const SizedBox(height: 8),
-            Text(label, style: TextStyle(color: AppColors.textSecondary, fontSize: 11)),
+            Icon(icon, color: color, size: R.iconSize(context)),
+            SizedBox(height: R.smallSpacing(context)),
+            Text(label, style: TextStyle(color: AppColors.textSecondary, fontSize: R.labelFontSize(context))),
           ],
         ),
       ),
@@ -216,7 +245,7 @@ class DashboardProjectContextCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: R.screenPadding(context),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppColors.kDefaultBorderRadius),
@@ -228,26 +257,26 @@ class DashboardProjectContextCard extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(10),
+            padding: EdgeInsets.all(R.spacing(context)),
             decoration: BoxDecoration(
               color: AppColors.primaryLight,
               borderRadius: BorderRadius.circular(AppColors.kCardBorderRadius),
             ),
-            child: const Icon(Icons.folder, color: AppColors.primary, size: 22),
+            child: Icon(Icons.folder, color: AppColors.primary, size: 22),
           ),
-          const SizedBox(width: 14),
+          SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   project.name,
-                  style: const TextStyle(color: AppColors.textPrimary, fontSize: 15, fontWeight: FontWeight.w600),
+                  style: TextStyle(color: AppColors.textPrimary, fontSize: R.subtitleFontSize(context), fontWeight: FontWeight.w600),
                 ),
-                const SizedBox(height: 3),
+                SizedBox(height: 3),
                 Text(
                   project.path,
-                  style: TextStyle(color: AppColors.textTertiary, fontSize: 11),
+                  style: TextStyle(color: AppColors.textTertiary, fontSize: R.labelFontSize(context)),
                   overflow: TextOverflow.ellipsis,
                 ),
               ],

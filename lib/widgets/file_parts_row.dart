@@ -16,7 +16,7 @@ class FilePartsRow extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         shrinkWrap: true,
         itemCount: parts.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
         itemBuilder: (ctx, i) {
           final p = parts[i];
           final file = p.file;
@@ -40,7 +40,7 @@ class FilePartsRow extends StatelessWidget {
                         Image.network(
                           file.url,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Center(
+                          errorBuilder: (_, _, _) => Center(
                             child: Icon(Icons.broken_image, color: AppColors.textSecondary, size: 28),
                           ),
                           loadingBuilder: (_, child, progress) {

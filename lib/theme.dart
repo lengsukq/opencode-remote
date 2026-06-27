@@ -99,3 +99,108 @@ class DarkColors {
   static const terminalIcon = Color(0xFF888888);
   static const terminalInputBg = Color(0xFF252526);
 }
+
+/// 响应式主题工具类
+///
+/// 提供基于设备类型的响应式主题值
+class ResponsiveTheme {
+  ResponsiveTheme._();
+
+  /// 获取响应式的圆角半径
+  static double getBorderRadius(BuildContext context, {String size = 'default'}) {
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final isPhone = screenWidth < 600;
+
+    switch (size) {
+      case 'small':
+        return isPhone ? 8 : 10;
+      case 'medium':
+        return isPhone ? 12 : 14;
+      case 'large':
+        return isPhone ? 16 : 20;
+      default:
+        return isPhone ? 12 : 14;
+    }
+  }
+
+  /// 获取响应式的阴影
+  static List<BoxShadow> getShadow(BuildContext context, {String size = 'default'}) {
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final isPhone = screenWidth < 600;
+
+    switch (size) {
+      case 'small':
+        return [
+          BoxShadow(
+            color: AppColors.shadow,
+            blurRadius: isPhone ? 4 : 6,
+            offset: Offset(0, isPhone ? 1 : 2),
+          ),
+        ];
+      case 'large':
+        return [
+          BoxShadow(
+            color: AppColors.shadowStrong,
+            blurRadius: isPhone ? 12 : 16,
+            offset: Offset(0, isPhone ? 4 : 6),
+          ),
+        ];
+      default:
+        return [
+          BoxShadow(
+            color: AppColors.shadow,
+            blurRadius: isPhone ? 8 : 10,
+            offset: Offset(0, isPhone ? 2 : 3),
+          ),
+        ];
+    }
+  }
+
+  /// 获取响应式的边框
+  static Border getBorder(BuildContext context, {Color? color}) {
+    return Border.all(
+      color: color ?? AppColors.border,
+      width: 1,
+    );
+  }
+
+  /// 获取响应式的内边距
+  static EdgeInsets getPadding(BuildContext context, {String size = 'default'}) {
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final isPhone = screenWidth < 600;
+
+    switch (size) {
+      case 'small':
+        return EdgeInsets.all(isPhone ? 8 : 12);
+      case 'medium':
+        return EdgeInsets.all(isPhone ? 12 : 16);
+      case 'large':
+        return EdgeInsets.all(isPhone ? 16 : 20);
+      default:
+        return EdgeInsets.all(isPhone ? 12 : 14);
+    }
+  }
+
+  /// 获取响应式的字体大小
+  static double getFontSize(BuildContext context, {String size = 'body'}) {
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final isPhone = screenWidth < 600;
+
+    switch (size) {
+      case 'caption':
+        return isPhone ? 10 : 11;
+      case 'small':
+        return isPhone ? 11 : 12;
+      case 'body':
+        return isPhone ? 13 : 14;
+      case 'subtitle':
+        return isPhone ? 14 : 15;
+      case 'title':
+        return isPhone ? 16 : 18;
+      case 'headline':
+        return isPhone ? 20 : 24;
+      default:
+        return isPhone ? 13 : 14;
+    }
+  }
+}

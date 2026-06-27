@@ -3,6 +3,8 @@ import '../../models.dart';
 import '../../strings.dart';
 import '../../theme.dart';
 import '../../services/opencode_api.dart';
+
+import '../../utils/responsive_values.dart';
 import '../../widgets/app_dialog.dart';
 import '../../widgets/app_bottom_sheet.dart';
 import '../../widgets/app_snackbar.dart';
@@ -62,14 +64,14 @@ class _SessionListScreenState extends State<SessionListScreen> {
     try {
       final sessions = await widget.api.getSessions();
       sessions.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-      if (!mounted) return;
+      if (!context.mounted) return;
       setState(() {
         _sessions = sessions;
         _loading = false;
         _error = null;
       });
     } catch (e) {
-      if (mounted) {
+      if (context.mounted) {
         setState(() {
           _loading = false;
           _error = e.toString();
@@ -81,17 +83,17 @@ class _SessionListScreenState extends State<SessionListScreen> {
   Future<void> _createSession() async {
     final result = await AppDialog.showTextInput(
       context,
-      title: '新建会话',
-      hintText: '会话标题（可选）',
-      confirmLabel: '创建空会话',
+      title: S.newSession,
+      hintText: S.sessionTitleHint,
+      confirmLabel: S.createEmptySession,
     );
     if (result == null) return;
     try {
       await widget.api.createSession(title: result.trim().isNotEmpty ? result.trim() : null);
       await _load();
     } catch (e) {
-      if (mounted) {
-        AppSnackBar.error(context, '创建失败: $e');
+      if (context.mounted) {
+        AppSnackBar.error(context, '${S.createFailed}: $e');
       }
     }
   }
@@ -114,6 +116,7 @@ class _SessionListScreenState extends State<SessionListScreen> {
       ],
     );
     if (action == null) return;
+    if (!context.mounted) return;
     switch (action) {
       case 'rename':
         await SessionActions.rename(context, widget.api, session, _load);
@@ -141,6 +144,12 @@ class _SessionListScreenState extends State<SessionListScreen> {
   @override
   Widget build(BuildContext context) {
     final displaySessions = _filteredSessions;
+    final searchPadding = R.edgeInsets(
+      context,
+      phone: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+      tablet: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+    );
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -165,19 +174,19 @@ class _SessionListScreenState extends State<SessionListScreen> {
         children: [
           if (_searching)
             Container(
-              padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+              padding: searchPadding,
               color: AppColors.surface,
               child: TextField(
                 controller: _searchCtrl,
                 autofocus: true,
-                style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
+                style: TextStyle(color: AppColors.textPrimary, fontSize: R.bodyFontSize(context)),
                 decoration: InputDecoration(
                   hintText: '搜索会话标题...',
                   hintStyle: TextStyle(color: AppColors.textTertiary),
-                  prefixIcon: Icon(Icons.search, color: AppColors.textSecondary, size: 20),
+                  prefixIcon: Icon(Icons.search, color: AppColors.textSecondary, size: R.smallIconSize(context)),
                   suffixIcon: _searchCtrl.text.isNotEmpty
                     ? IconButton(
-                        icon: Icon(Icons.clear, color: AppColors.textSecondary, size: 18),
+                        icon: Icon(Icons.clear, color: AppColors.textSecondary, size: R.smallIconSize(context)),
                         onPressed: () {
                           _searchCtrl.clear();
                           setState(() {});
@@ -186,7 +195,7 @@ class _SessionListScreenState extends State<SessionListScreen> {
                     : null,
                   filled: true,
                   fillColor: AppColors.background,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                  contentPadding: EdgeInsets.symmetric(vertical: R.smallSpacing(context)),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppColors.kSmallBorderRadius), borderSide: BorderSide(color: AppColors.border)),
                   enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(AppColors.kSmallBorderRadius), borderSide: BorderSide(color: AppColors.border)),
                   focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(AppColors.kSmallBorderRadius), borderSide: BorderSide(color: AppColors.borderFocused)),
@@ -201,23 +210,23 @@ class _SessionListScreenState extends State<SessionListScreen> {
               child: _loading
                   ? const AppLoadingIndicator()
                   : _error != null
-                      ? Center(child: Text(_error!, style: TextStyle(color: AppColors.textSecondary)))
+                      ? AppErrorState(message: _error!, onRetry: _load)
                       : displaySessions.isEmpty
                           ? Center(
                               child: Padding(
-                                padding: const EdgeInsets.all(20),
+                                padding: R.screenPadding(context),
                                 child: Text(
                                   _searching
                                       ? S.noMatchingSessions
                                       : widget.activeProject != null
                                           ? "'${widget.activeProject!.name}' 中${S.noSessions}"
                                           : S.noSessions,
-                                  style: TextStyle(color: AppColors.textTertiary),
+                                  style: TextStyle(color: AppColors.textTertiary, fontSize: R.bodyFontSize(context)),
                                 ),
                               ),
                             )
                           : ListView.builder(
-                              padding: const EdgeInsets.all(12),
+                              padding: R.listPadding(context),
                               itemCount: displaySessions.length,
                               itemBuilder: (ctx, i) => _SessionTile(
                                 session: displaySessions[i],
@@ -248,37 +257,41 @@ class _SessionTile extends StatelessWidget {
     final timeStr = '${dt.month}/${dt.day} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
+      padding: R.edgeInsets(
+        context,
+        phone: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
+        tablet: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+      ),
       child: AppCard(
         child: InkWell(
           borderRadius: BorderRadius.circular(AppColors.kCardBorderRadius),
           onTap: onTap,
           onLongPress: onLongPress,
           child: Padding(
-            padding: AppColors.kPaddingCard,
+            padding: R.cardPadding(context),
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(10),
+                  padding: EdgeInsets.all(R.smallSpacing(context) + 2),
                   decoration: BoxDecoration(
                     color: AppColors.primaryLight,
                     borderRadius: BorderRadius.circular(AppColors.kSmallBorderRadius),
                   ),
-                  child: const Icon(Icons.chat_outlined, color: AppColors.primary, size: 20),
+                  child: Icon(Icons.chat_outlined, color: AppColors.primary, size: R.iconSize(context)),
                 ),
-                const SizedBox(width: 14),
+                SizedBox(width: R.spacing(context)),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(session.title.isNotEmpty ? session.title : '未命名会话',
-                          style: const TextStyle(color: AppColors.textPrimary, fontSize: 14, fontWeight: FontWeight.w500)),
-                      const SizedBox(height: 3),
-                      Text(timeStr, style: TextStyle(color: AppColors.textTertiary, fontSize: 11)),
+                          style: TextStyle(color: AppColors.textPrimary, fontSize: R.bodyFontSize(context), fontWeight: FontWeight.w500)),
+                      SizedBox(height: R.smallSpacing(context) / 2),
+                      Text(timeStr, style: TextStyle(color: AppColors.textTertiary, fontSize: R.labelFontSize(context))),
                     ],
                   ),
                 ),
-                Icon(Icons.chevron_right, color: AppColors.textTertiary, size: 18),
+                Icon(Icons.chevron_right, color: AppColors.textTertiary, size: R.smallIconSize(context)),
               ],
             ),
           ),
