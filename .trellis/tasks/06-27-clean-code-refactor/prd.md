@@ -71,8 +71,27 @@
 | F21 | `lib/services/config_service.dart` | 拆分 | 从 opencode_api 拆分 | ~60 |
 | F22 | `lib/widgets/app_selectable_tile.dart` | 共享组件 | 4+ 重复选择型 Tile | ~60 |
 
-**合计新增**: ~22 个文件  
-**合计删除**: 1 个文件 (`agent_chip.dart` — 合并到 `agent_bar.dart`)
+**合计新增**: ~22 个文件（已完成 14 个共享组件 + 3 个工具组件）  
+**合计删除**: 1 个文件 (`agent_chip.dart` — 合并到 `agent_bar.dart` ✅)
+
+---
+
+## 2b. 完成度追踪
+
+| 类别 | 计划 | 已完成 | 状态 |
+|------|------|--------|------|
+| 共享组件 | 10+ | **17 个** | ✅ |
+| 新文件 | 22 | 17 | 进行中 |
+| 修改文件 | 29 | 18 | 进行中 |
+| Phase A Bug 修复 | 7 items | 7 | ✅ |
+| Phase B 共享组件 | 9 items | 9 | ✅ |
+| Phase C 代码组织 | 2 items | 0 | ⏳ |
+| Phase D 主题系统 | 2 items | 2 | ✅ |
+| Phase E 方法长度 | 18 items | 0 | ⏳ |
+| Phase F API 治理 | 3 items | 3 | ✅ |
+| Phase G 字符串集中 | 1 item | 1 | ✅ |
+| Phase H 安全正确性 | 5 items | 2 | 部分 |
+| Phase I 死代码清理 | 4 items | 1 | 部分 |
 
 ---
 
@@ -1215,12 +1234,85 @@ static const _kContextWindowSize = 128000;
 
 ---
 
-## 8. 参考
+## 8. 剩余工作 Recovery Plan
 
-- [Round 1 Review 报告](../archive/2026-06/06-13-code-review/research/clean-code-review.md)
-- [Round 2 Review 报告](../archive/2026-06/06-13-code-review-r2/research/re-review-report.md)
-- [Round 3 Review 报告](../archive/2026-06/06-13-code-review-r2/research/sub-agent-review-report.md)
-- [前端质量规范](../../spec/frontend/quality-guidelines.md)
-- [类型安全规范](../../spec/frontend/type-safety.md)
-- [组件规范](../../spec/frontend/component-guidelines.md)
-- [代码复用思考指南](../../spec/guides/code-reuse-thinking-guide.md)
+### Phase C — 拆分 God 文件
+
+#### C.1 拆分 `models.dart`（46 个类，34KB）
+
+按领域拆分为独立文件，`models.dart` 保留为 barrel 文件：
+
+| 新文件 | 包含类 | 优先级 |
+|--------|--------|--------|
+| `models/server_entry.dart` | `ServerEntry`, `AppMode` | P0 |
+| `models/session.dart` | `Session`, `SessionModelRef`, `SessionSummary`, `SessionTokens`, `SessionShare`, `SessionRevert`, `SessionStatus` | P0 |
+| `models/message.dart` | `Message`, `MessageEventType`, `MessageFrom` | P0 |
+| `models/part.dart` | `Part`, `PartData` + 所有 Part 子类 | P1 |
+| `models/provider.dart` | `Provider`, `ProviderModel`, `ProviderAuthMethod` 等 | P1 |
+| `models/file.dart` | `FileNode`, `FileContent`, `FileStatus` | P1 |
+| `models/tool.dart` | `ToolEntry`, `ToolIDs` | P2 |
+| `models/search.dart` | `SearchMatch`, `SearchSubmatch`, `Symbol` | P2 |
+
+**验收标准:**
+- [ ] `models.dart` 保留为 barrel 文件（重新导出）
+- [ ] 每个子文件 ≤ 200 行
+- [ ] 所有现有 import `models.dart` 的代码无需改动
+- [ ] `flutter analyze` 零错误
+
+#### C.2 提取 `BaseApiService` 公共基类
+
+`opencode_api.dart` 中 HTTP 基础设施方法可提取到 `BaseApiService`：
+
+- [ ] `_get`, `_post`, `_patch`, `_put`, `_delete`, `_check`, `_buildUri`, `_safeList`, `_safeMap` 提取到基类
+- [ ] `_addIfNotNull`, `_timeoutSeconds`, `_headers` 移到基类
+- [ ] Auth header 生成提取到 `AuthHelper`
+
+### Phase E — 方法长度治理
+
+当前仍有 14 个方法超过 30 行。按优先级：
+
+#### E.1 Build 方法拆分
+
+| # | 方法 | 当前 | 策略 | 优先级 |
+|---|------|------|------|--------|
+| M01 | `chat_screen.dart build()` | ~70 行 | `_buildAppBar()`, `_buildBody()`, `_buildMessageList()` | P0 |
+| M02 | `settings_sheet.dart build()` | ~70 行 | 使用 `AppSectionHeader` + sub-widgets | P0 |
+| M03 | `onboarding_screen.dart build()` | ~80 行 | `_buildHeader()`, `_buildModeOptions()` | P1 |
+| M04 | `message_bubble.dart build()` | ~40 行 | 提取 `MarkdownStyleSheet` 为静态 getter | P1 |
+| M05 | `file_browser_screen.dart _buildSearchResults()` | ~70 行 | `_buildFileResults()`, `_buildSymbolResults()` | P2 |
+
+#### E.2 业务方法拆分
+
+| # | 方法 | 当前 | 策略 | 优先级 |
+|---|------|------|------|--------|
+| M06 | `session_list_screen.dart _showSessionActions()` | ~92 行 | 数据驱动 ListTile builder | P1 |
+| M07 | `chat_screen.dart _applyCode()` | ~67 行 | 提取 `CodePreviewDialog` | P1 |
+| M08 | `dashboard_screen.dart _showAuthDialog()` | ~60 行 | 两个独立 dialog builder | P2 |
+| M09 | `tool_part_widget.dart _buildInput()` | ~55 行 | `_buildWriteInput()`, `_buildBashInput()` | P2 |
+| M10 | `message_bubble.dart _buildBubble()` | ~57 行 | 提取 MarkdownStyleSheet | P2 |
+| M11 | `file_browser_screen.dart _showFileContent()` vs `_readFileByPath()` | 重复 | 使用 `AppFullScreenDialog` | P2 |
+| M12 | `models.dart Message.fromInfo()` | ~50 行 | `_parseTime()`, `_parseTokens()` | P2 |
+
+---
+
+## 9. 当前状态快照
+
+```
+flutter analyze: 0 errors, 0 warnings, 11 info
+
+已完成:
+  Phase A (Bug 修复)      7/7   ✅  _modelRef, _checkBool, timeout, storage
+  Phase B (共享组件)       9/9   ✅  17 个组件
+  Phase D (主题系统)       2/2   ✅  terminal colors, constants
+  Phase F (API 治理)       3/3   ✅  _addIfNotNull, _safeMap
+  Phase G (字符串集中)     1/1   ✅  lib/strings.dart (120+ 常量)
+  组件规范知识库          1/1   ✅  component-guidelines.md
+
+剩余:
+  Phase C (代码组织)      0/2   ⏳  models.dart + opencode_api.dart 拆分
+  Phase E (方法长度)      0/12  ⏳  14 个超长方法需拆分
+  Phase H (安全正确性)    ~2/5  ⏳  mounted 检查, _sendingState enum
+  Phase I (死代码清理)    ~1/4  ⏳  disposeInstance, clearChildren, dart:math
+
+下一次提交应聚焦: Phase C → Phase E
+```
