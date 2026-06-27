@@ -10,6 +10,7 @@ import '../widgets/app_snackbar.dart';
 import '../strings.dart';
 
 import '../utils/responsive_values.dart';
+import '../utils/glass_effect.dart';
 import 'launcher_screen.dart';
 
 class WebViewScreen extends StatefulWidget {
@@ -40,25 +41,41 @@ class _WebViewScreenState extends State<WebViewScreen> {
 
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setNavigationDelegate(NavigationDelegate(
-        onPageStarted: (_) => setState(() => _loading = true),
-        onPageFinished: (_) => setState(() => _loading = false),
-        onWebResourceError: (error) {
-          if (mounted) {
-            AppSnackBar.error(context, '${S.connectionFailed}: ${error.description}');
-          }
-        },
-      ));
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onPageStarted: (_) => setState(() => _loading = true),
+          onPageFinished: (_) => setState(() => _loading = false),
+          onWebResourceError: (error) {
+            if (mounted) {
+              AppSnackBar.error(
+                context,
+                '${S.connectionFailed}: ${error.description}',
+              );
+            }
+          },
+        ),
+      );
 
     if (password.isNotEmpty) {
       final bytes = utf8.encode('$username:$password');
       final auth = base64.encode(bytes);
-      _controller.loadRequest(
-        Uri.parse(url),
-        headers: {'Authorization': 'Basic $auth'},
-      );
+      final uri = Uri.tryParse(url);
+      if (uri == null) {
+        if (mounted) {
+          AppSnackBar.error(context, '${S.connectionFailed}: Invalid URL');
+        }
+        return;
+      }
+      _controller.loadRequest(uri, headers: {'Authorization': 'Basic $auth'});
     } else {
-      _controller.loadRequest(Uri.parse(url));
+      final uri = Uri.tryParse(url);
+      if (uri == null) {
+        if (mounted) {
+          AppSnackBar.error(context, '${S.connectionFailed}: Invalid URL');
+        }
+        return;
+      }
+      _controller.loadRequest(uri);
     }
   }
 
@@ -75,22 +92,53 @@ class _WebViewScreenState extends State<WebViewScreen> {
             children: [
               Padding(
                 padding: const EdgeInsets.all(16),
-                child: Text(S.switchServer, style: TextStyle(color: AppColors.textPrimary, fontSize: R.bodyFontSize(context))),
+                child: Text(
+                  S.switchServer,
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: R.bodyFontSize(context),
+                  ),
+                ),
               ),
               const Divider(),
-              ...servers.map((s) => ListTile(
-                    leading: Icon(Icons.computer, color: s.id == _entry.id ? AppColors.primary : AppColors.textSecondary),
-                    title: Text(s.name, style: TextStyle(color: s.id == _entry.id ? AppColors.primary : AppColors.textPrimary)),
-                    subtitle: Text(s.url, style: TextStyle(color: AppColors.textTertiary, fontSize: R.smallFontSize(context))),
-                    onTap: () => Navigator.pop(ctx, s),
-                  )),
+              ...servers.map(
+                (s) => ListTile(
+                  leading: Icon(
+                    Icons.computer,
+                    color: s.id == _entry.id
+                        ? AppColors.primary
+                        : AppColors.textSecondary,
+                  ),
+                  title: Text(
+                    s.name,
+                    style: TextStyle(
+                      color: s.id == _entry.id
+                          ? AppColors.primary
+                          : AppColors.textPrimary,
+                    ),
+                  ),
+                  subtitle: Text(
+                    s.url,
+                    style: TextStyle(
+                      color: AppColors.textTertiary,
+                      fontSize: R.smallFontSize(context),
+                    ),
+                  ),
+                  onTap: () => Navigator.pop(ctx, s),
+                ),
+              ),
               const Divider(),
               ListTile(
-                leading: Icon(Icons.add, color: AppColors.textSecondary),
-                title: const Text(S.addNewServer, style: TextStyle(color: AppColors.textPrimary)),
+                leading: const Icon(Icons.add, color: AppColors.textSecondary),
+                title: const Text(
+                  S.addNewServer,
+                  style: TextStyle(color: AppColors.textPrimary),
+                ),
                 onTap: () {
                   Navigator.pop(ctx);
-                  WidgetsBinding.instance.addPostFrameCallback((_) => _addNew());
+                  WidgetsBinding.instance.addPostFrameCallback(
+                    (_) => _addNew(),
+                  );
                 },
               ),
               SizedBox(height: R.smallSpacing(context)),
@@ -142,8 +190,14 @@ class _WebViewScreenState extends State<WebViewScreen> {
       canPop: true,
       child: Scaffold(
         backgroundColor: AppColors.background,
-        appBar: AppBar(
-          title: Text(_entry.name, style: TextStyle(color: AppColors.textPrimary, fontSize: R.bodyFontSize(context))),
+        appBar: GlassNavBar(
+          title: Text(
+            _entry.name,
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: R.bodyFontSize(context),
+            ),
+          ),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back, color: AppColors.textSecondary),
             onPressed: _backToLauncher,
@@ -151,14 +205,23 @@ class _WebViewScreenState extends State<WebViewScreen> {
           actions: [
             if (_loading)
               Padding(
-                padding: EdgeInsets.symmetric(horizontal: R.smallSpacing(context)),
+                padding: EdgeInsets.symmetric(
+                  horizontal: R.smallSpacing(context),
+                ),
                 child: SizedBox(
-                  width: R.smallIconSize(context), height: R.smallIconSize(context),
-                  child: const CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                  width: R.smallIconSize(context),
+                  height: R.smallIconSize(context),
+                  child: const CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AppColors.primary,
+                  ),
                 ),
               ),
             IconButton(
-              icon: const Icon(Icons.swap_horiz, color: AppColors.textSecondary),
+              icon: const Icon(
+                Icons.swap_horiz,
+                color: AppColors.textSecondary,
+              ),
               tooltip: S.switchServer,
               onPressed: _switchServer,
             ),

@@ -5,6 +5,7 @@ import '../services/storage_service.dart';
 import '../utils/time_format.dart';
 
 import '../utils/responsive_values.dart';
+import '../utils/glass_effect.dart';
 import '../widgets/server_edit_dialog.dart';
 import 'settings_sheet.dart';
 import 'webview_screen.dart';
@@ -12,7 +13,6 @@ import '../widgets/main_scaffold.dart';
 import '../strings.dart';
 import '../widgets/app_bottom_sheet.dart';
 import '../widgets/app_states.dart';
-import '../widgets/app_card.dart';
 
 class LauncherScreen extends StatefulWidget {
   final AppMode? initialMode;
@@ -73,7 +73,9 @@ class _LauncherScreenState extends State<LauncherScreen> {
     AppBottomSheet.show(
       context: context,
       child: SettingsSheet(
-        entry: _servers.isNotEmpty ? _servers.first : ServerEntry(name: '', url: ''),
+        entry: _servers.isNotEmpty
+            ? _servers.first
+            : ServerEntry(name: '', url: ''),
         currentMode: _mode,
       ),
     );
@@ -101,32 +103,47 @@ class _LauncherScreenState extends State<LauncherScreen> {
       appBar: AppBar(
         title: Row(
           children: [
-            Text('OpenCode Remote', style: TextStyle(fontSize: R.bodyFontSize(context))),
+            Text(
+              'OpenCode Remote',
+              style: TextStyle(fontSize: R.bodyFontSize(context)),
+            ),
             SizedBox(width: R.smallSpacing(context)),
             Container(
-              padding: EdgeInsets.symmetric(horizontal: R.smallSpacing(context), vertical: R.smallSpacing(context) / 3),
+              padding: EdgeInsets.symmetric(
+                horizontal: R.smallSpacing(context),
+                vertical: R.smallSpacing(context) / 3,
+              ),
               decoration: BoxDecoration(
                 color: _mode == AppMode.native
                     ? AppColors.primaryLight
                     : AppColors.successLight,
-                borderRadius: BorderRadius.circular(AppColors.kChipBorderRadius),
+                borderRadius: BorderRadius.circular(
+                  AppColors.kChipBorderRadius,
+                ),
               ),
               child: Text(
                 _mode == AppMode.native ? S.nativeMode : S.webviewMode,
                 style: TextStyle(
                   fontSize: R.labelFontSize(context),
-                  color: _mode == AppMode.native ? AppColors.primary : AppColors.success,
+                  color: _mode == AppMode.native
+                      ? AppColors.primary
+                      : AppColors.success,
                 ),
               ),
             ),
           ],
         ),
         actions: [
-          IconButton(
-            icon: Icon(Icons.settings, color: AppColors.textSecondary, size: R.iconSize(context)),
-            tooltip: S.settings,
-            onPressed: _openSettings,
-          ),
+          if (_servers.isNotEmpty)
+            IconButton(
+              icon: Icon(
+                Icons.settings,
+                color: AppColors.textSecondary,
+                size: R.iconSize(context),
+              ),
+              tooltip: S.settings,
+              onPressed: _openSettings,
+            ),
         ],
       ),
       body: SafeArea(
@@ -135,16 +152,24 @@ class _LauncherScreenState extends State<LauncherScreen> {
           children: [
             SizedBox(height: R.mediumSpacing(context)),
             Padding(
-              padding: EdgeInsets.symmetric(horizontal: R.mediumSpacing(context)),
-              child: Text(S.servers, style: TextStyle(color: AppColors.textSecondary, fontSize: R.smallFontSize(context))),
+              padding: EdgeInsets.symmetric(
+                horizontal: R.mediumSpacing(context),
+              ),
+              child: Text(
+                S.servers,
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: R.smallFontSize(context),
+                ),
+              ),
             ),
             SizedBox(height: R.smallSpacing(context)),
             Expanded(
               child: _loading
                   ? const AppLoadingIndicator()
                   : _servers.isEmpty
-                      ? _emptyState(context)
-                      : _serverList(),
+                  ? _emptyState(context)
+                  : _serverList(),
             ),
           ],
         ),
@@ -152,7 +177,11 @@ class _LauncherScreenState extends State<LauncherScreen> {
       floatingActionButton: FloatingActionButton(
         backgroundColor: AppColors.primary,
         onPressed: () => _addServer(),
-        child: Icon(Icons.add, color: AppColors.surface, size: R.iconSize(context)),
+        child: Icon(
+          Icons.add,
+          color: AppColors.surface,
+          size: R.iconSize(context),
+        ),
       ),
     );
   }
@@ -162,11 +191,27 @@ class _LauncherScreenState extends State<LauncherScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.dns_outlined, size: R.iconSize(context) * 2.4, color: AppColors.textTertiary),
+          Icon(
+            Icons.dns_outlined,
+            size: R.iconSize(context) * 2.4,
+            color: AppColors.textTertiary,
+          ),
           SizedBox(height: R.mediumSpacing(context)),
-          Text(S.noServers, style: TextStyle(color: AppColors.textSecondary, fontSize: R.bodyFontSize(context))),
+          Text(
+            S.noServers,
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: R.bodyFontSize(context),
+            ),
+          ),
           SizedBox(height: R.smallSpacing(context)),
-          Text(S.clickToAdd, style: TextStyle(color: AppColors.textTertiary, fontSize: R.smallFontSize(context))),
+          Text(
+            S.clickToAdd,
+            style: TextStyle(
+              color: AppColors.textTertiary,
+              fontSize: R.smallFontSize(context),
+            ),
+          ),
         ],
       ),
     );
@@ -223,16 +268,16 @@ class _ServerCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final uri = Uri.tryParse(entry.url);
-    final host = uri != null && uri.host.isNotEmpty ? '${uri.host}:${uri.port}' : entry.url;
+    final host = uri != null && uri.host.isNotEmpty
+        ? '${uri.host}:${uri.port}'
+        : entry.url;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
-      child: AppCard(
-        child: InkWell(
-        borderRadius: BorderRadius.circular(AppColors.kCardBorderRadius),
+      child: GestureDetector(
         onTap: onTap,
         onLongPress: onLongPress,
-        child: Padding(
+        child: GlassCard(
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
@@ -241,34 +286,56 @@ class _ServerCard extends StatelessWidget {
                 height: 42,
                 decoration: BoxDecoration(
                   color: AppColors.primaryLight,
-                  borderRadius: BorderRadius.circular(AppColors.kSmallBorderRadius),
+                  borderRadius: BorderRadius.circular(
+                    AppColors.kSmallBorderRadius,
+                  ),
                 ),
-                child: const Icon(Icons.computer, color: AppColors.primary, size: 22),
+                child: const Icon(
+                  Icons.computer,
+                  color: AppColors.primary,
+                  size: 22,
+                ),
               ),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(entry.name,
-                        style: const TextStyle(
-                            color: AppColors.textPrimary,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w500)),
+                    Text(
+                      entry.name,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                     const SizedBox(height: 3),
-                    Text(host,
-                        style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                    Text(
+                      host,
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
                     const SizedBox(height: 2),
-                    Text('${S.lastUsed} $timeStr',
-                        style: TextStyle(color: AppColors.textTertiary, fontSize: 11)),
+                    Text(
+                      '${S.lastUsed} $timeStr',
+                      style: const TextStyle(
+                        color: AppColors.textTertiary,
+                        fontSize: 11,
+                      ),
+                    ),
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right, color: AppColors.textTertiary, size: 20),
+              const Icon(
+                Icons.chevron_right,
+                color: AppColors.textTertiary,
+                size: 20,
+              ),
             ],
           ),
         ),
-      ),
       ),
     );
   }

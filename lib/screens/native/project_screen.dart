@@ -7,7 +7,7 @@ import '../../services/opencode_api.dart';
 import '../../utils/project_helpers.dart';
 
 import '../../utils/responsive_values.dart';
-import '../../widgets/app_card.dart';
+import '../../utils/glass_effect.dart';
 import '../../widgets/app_bottom_sheet.dart';
 import '../../widgets/app_snackbar.dart';
 import '../../widgets/app_states.dart';
@@ -63,10 +63,13 @@ class _ProjectScreenState extends State<ProjectScreen> {
       if (query.isEmpty) {
         _filteredProjects = List.from(_projects);
       } else {
-        _filteredProjects = _projects.where((p) =>
-          p.name.toLowerCase().contains(query) ||
-          p.path.toLowerCase().contains(query)
-        ).toList();
+        _filteredProjects = _projects
+            .where(
+              (p) =>
+                  p.name.toLowerCase().contains(query) ||
+                  p.path.toLowerCase().contains(query),
+            )
+            .toList();
       }
     });
   }
@@ -119,17 +122,26 @@ class _ProjectScreenState extends State<ProjectScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.surface,
-        title: Text(S.closeProject, style: const TextStyle(color: AppColors.textPrimary)),
-        content: Text(S.confirmCloseProjectName(project.name), style: TextStyle(color: AppColors.textSecondary)),
+        title: const Text(
+          S.closeProject,
+          style: TextStyle(color: AppColors.textPrimary),
+        ),
+        content: Text(
+          S.confirmCloseProjectName(project.name),
+          style: const TextStyle(color: AppColors.textSecondary),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text(S.cancel, style: TextStyle(color: AppColors.textSecondary)),
+            child: const Text(
+              S.cancel,
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
           ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
             onPressed: () => Navigator.pop(ctx, true),
-            child: Text(S.close),
+            child: const Text(S.close),
           ),
         ],
       ),
@@ -142,7 +154,7 @@ class _ProjectScreenState extends State<ProjectScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text(S.project),
+        title: const Text(S.project),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh, color: AppColors.textSecondary),
@@ -150,16 +162,21 @@ class _ProjectScreenState extends State<ProjectScreen> {
           ),
         ],
       ),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: AppColors.primary,
+        onPressed: () => _showProjectDetail,
+        child: const Icon(Icons.add, color: Colors.white),
+      ),
       body: _loading
           ? const AppLoadingIndicator()
           : _error != null
-              ? AppErrorState(message: _error!, onRetry: _load)
-              : Column(
-                  children: [
-                    _buildSearchBar(),
-                    Expanded(child: _buildProjectList()),
-                  ],
-                ),
+          ? AppErrorState(message: _error!, onRetry: _load)
+          : Column(
+              children: [
+                _buildSearchBar(),
+                Expanded(child: _buildProjectList()),
+              ],
+            ),
     );
   }
 
@@ -172,10 +189,18 @@ class _ProjectScreenState extends State<ProjectScreen> {
         style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
         decoration: AppInputDecoration.search(
           hintText: S.searchProjects,
-          prefixIcon: const Icon(Icons.search, color: AppColors.textSecondary, size: 20),
+          prefixIcon: const Icon(
+            Icons.search,
+            color: AppColors.textSecondary,
+            size: 20,
+          ),
           suffixIcon: _searchCtrl.text.isNotEmpty
               ? IconButton(
-                  icon: Icon(Icons.clear, color: AppColors.textSecondary, size: 18),
+                  icon: const Icon(
+                    Icons.clear,
+                    color: AppColors.textSecondary,
+                    size: 18,
+                  ),
                   onPressed: () {
                     _searchCtrl.clear();
                   },
@@ -191,7 +216,13 @@ class _ProjectScreenState extends State<ProjectScreen> {
       padding: R.screenPadding(context),
       children: [
         if (_current != null) ...[
-          Text(S.currentProject, style: TextStyle(color: AppColors.textSecondary, fontSize: R.smallFontSize(context))),
+          Text(
+            S.currentProject,
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: R.smallFontSize(context),
+            ),
+          ),
           SizedBox(height: R.smallSpacing(context)),
           _ProjectCard(
             project: _current!,
@@ -201,18 +232,30 @@ class _ProjectScreenState extends State<ProjectScreen> {
           ),
           SizedBox(height: R.mediumSpacing(context)),
         ],
-        Text(S.allProjects, style: TextStyle(color: AppColors.textSecondary, fontSize: R.smallFontSize(context))),
+        Text(
+          S.allProjects,
+          style: TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: R.smallFontSize(context),
+          ),
+        ),
         SizedBox(height: R.smallSpacing(context)),
         ..._buildProjectCards(),
         if (_filteredProjects.isEmpty && _searchCtrl.text.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Text(S.noMatchingProjects, style: TextStyle(color: AppColors.textTertiary)),
+          const Padding(
+            padding: EdgeInsets.all(20),
+            child: Text(
+              S.noMatchingProjects,
+              style: TextStyle(color: AppColors.textTertiary),
+            ),
           ),
         if (_projects.isEmpty)
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Text(S.noProjects, style: TextStyle(color: AppColors.textTertiary)),
+          const Padding(
+            padding: EdgeInsets.all(20),
+            child: Text(
+              S.noProjects,
+              style: TextStyle(color: AppColors.textTertiary),
+            ),
           ),
         if (_vcs != null) ...[
           const SizedBox(height: 24),
@@ -223,20 +266,22 @@ class _ProjectScreenState extends State<ProjectScreen> {
   }
 
   List<Widget> _buildProjectCards() {
-    final items = _filteredProjects
-        .where((p) => _current?.id != p.id)
-        .toList();
+    final items = _filteredProjects.where((p) => _current?.id != p.id).toList();
     if (items.length < 2) {
-      return items.map((p) => Padding(
-        padding: const EdgeInsets.only(bottom: 6),
-        child: _ProjectCard(
-          key: ValueKey(p.id),
-          project: p,
-          isCurrent: false,
-          onTap: () => _showProjectDetail(p),
-          onLongPress: () => _handleLongPress(p),
-        ),
-      )).toList();
+      return items
+          .map(
+            (p) => Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: _ProjectCard(
+                key: ValueKey(p.id),
+                project: p,
+                isCurrent: false,
+                onTap: () => _showProjectDetail(p),
+                onLongPress: () => _handleLongPress(p),
+              ),
+            ),
+          )
+          .toList();
     }
     // Use ReorderableListView for 2+ non-current projects
     return [
@@ -273,7 +318,10 @@ class _ProjectScreenState extends State<ProjectScreen> {
             _applyFilter();
           });
           // 持久化排序顺序
-          final ids = _projects.where((p) => _current?.id != p.id).map((p) => p.id).toList();
+          final ids = _projects
+              .where((p) => _current?.id != p.id)
+              .map((p) => p.id)
+              .toList();
           unawaited(ProjectHelpers.saveOrder(widget.entry.id, ids));
         },
       ),
@@ -285,17 +333,26 @@ class _ProjectScreenState extends State<ProjectScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.surface,
-        title: Text(S.projectDetail(project.name), style: const TextStyle(color: AppColors.textPrimary, fontSize: 16)),
-        content: Text(S.closeProjectHint, style: TextStyle(color: AppColors.textSecondary)),
+        title: Text(
+          S.projectDetail(project.name),
+          style: const TextStyle(color: AppColors.textPrimary, fontSize: 16),
+        ),
+        content: const Text(
+          S.closeProjectHint,
+          style: TextStyle(color: AppColors.textSecondary),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text(S.cancel, style: TextStyle(color: AppColors.textSecondary)),
+            child: const Text(
+              S.cancel,
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
           ),
           FilledButton.icon(
             style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
             icon: const Icon(Icons.close, size: 16),
-            label: Text(S.closeProject),
+            label: const Text(S.closeProject),
             onPressed: () {
               Navigator.pop(ctx);
               _confirmRemoveProject(project).then((confirmed) {
@@ -319,7 +376,14 @@ class _ProjectScreenState extends State<ProjectScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(project.name, style: const TextStyle(color: AppColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w600)),
+                Text(
+                  project.name,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 const SizedBox(height: 12),
                 _detailRow(Icons.folder, S.path, project.path),
                 if (project.id.isNotEmpty) ...[
@@ -330,15 +394,26 @@ class _ProjectScreenState extends State<ProjectScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton.icon(
-                    style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                    ),
                     icon: const Icon(Icons.check_circle, size: 18),
-                    label: Text(project.id == _current?.id ? S.currentProject : S.switchToProject),
-                    onPressed: project.id == _current?.id ? null : () {
-                      widget.api.directory = project.path;
-                      Navigator.pop(ctx);
-                      _load();
-                      AppSnackBar.success(context, '${S.switchedTo} ${project.name}');
-                    },
+                    label: Text(
+                      project.id == _current?.id
+                          ? S.currentProject
+                          : S.switchToProject,
+                    ),
+                    onPressed: project.id == _current?.id
+                        ? null
+                        : () {
+                            widget.api.directory = project.path;
+                            Navigator.pop(ctx);
+                            _load();
+                            AppSnackBar.success(
+                              context,
+                              '${S.switchedTo} ${project.name}',
+                            );
+                          },
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -355,8 +430,16 @@ class _ProjectScreenState extends State<ProjectScreen> {
       children: [
         Icon(icon, color: AppColors.primary, size: 16),
         const SizedBox(width: 8),
-        Text('$label: ', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
-        Expanded(child: Text(value, style: const TextStyle(color: AppColors.textPrimary, fontSize: 13))),
+        Text(
+          '$label: ',
+          style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: const TextStyle(color: AppColors.textPrimary, fontSize: 13),
+          ),
+        ),
       ],
     );
   }
@@ -395,19 +478,19 @@ class _ProjectCard extends StatelessWidget {
       ),
     );
 
-    final card = AppCard(
-      borderColor: isCurrent ? AppColors.primary : null,
-      boxShadow: [
-        BoxShadow(color: AppColors.shadow, blurRadius: 4, offset: const Offset(0, 1)),
-      ],
+    final card = GlassCard(
       child: Row(
         children: [
           if (dragIndex != null)
             ReorderableDragStartListener(
               index: dragIndex!,
-              child: Padding(
-                padding: const EdgeInsets.only(right: 4),
-                child: Icon(Icons.drag_handle, color: AppColors.textTertiary, size: 20),
+              child: const Padding(
+                padding: EdgeInsets.only(right: 4),
+                child: Icon(
+                  Icons.drag_handle,
+                  color: AppColors.textTertiary,
+                  size: 20,
+                ),
               ),
             ),
           if (dragIndex != null)
@@ -424,19 +507,34 @@ class _ProjectCard extends StatelessWidget {
                     Flexible(
                       child: Text(
                         project.name,
-                        style: const TextStyle(color: AppColors.textPrimary, fontSize: 14, fontWeight: FontWeight.w500),
+                        style: const TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     if (isCurrent) ...[
                       const SizedBox(width: 6),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 5,
+                          vertical: 1,
+                        ),
                         decoration: BoxDecoration(
                           color: AppColors.primaryLight,
-                          borderRadius: BorderRadius.circular(AppColors.kCardBorderRadius),
+                          borderRadius: BorderRadius.circular(
+                            AppColors.kCardBorderRadius,
+                          ),
                         ),
-                        child: const Text(S.current, style: TextStyle(color: AppColors.primary, fontSize: 9)),
+                        child: const Text(
+                          S.current,
+                          style: TextStyle(
+                            color: AppColors.primary,
+                            fontSize: 9,
+                          ),
+                        ),
                       ),
                     ],
                   ],
@@ -444,7 +542,10 @@ class _ProjectCard extends StatelessWidget {
                 const SizedBox(height: 3),
                 Text(
                   project.path,
-                  style: TextStyle(color: AppColors.textTertiary, fontSize: 11),
+                  style: const TextStyle(
+                    color: AppColors.textTertiary,
+                    fontSize: 11,
+                  ),
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
@@ -455,27 +556,39 @@ class _ProjectCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
                 color: AppColors.success.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(AppColors.kCardBorderRadius),
+                borderRadius: BorderRadius.circular(
+                  AppColors.kCardBorderRadius,
+                ),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.call_split, color: AppColors.success, size: 10),
+                  const Icon(
+                    Icons.call_split,
+                    color: AppColors.success,
+                    size: 10,
+                  ),
                   const SizedBox(width: 3),
-                  Text(vcs!.branch ?? 'main', style: const TextStyle(color: AppColors.success, fontSize: 10)),
+                  Text(
+                    vcs!.branch ?? 'main',
+                    style: const TextStyle(
+                      color: AppColors.success,
+                      fontSize: 10,
+                    ),
+                  ),
                 ],
               ),
             ),
           if (onTap != null)
-            Icon(Icons.chevron_right, color: AppColors.textTertiary, size: 18),
+            const Icon(
+              Icons.chevron_right,
+              color: AppColors.textTertiary,
+              size: 18,
+            ),
         ],
       ),
     );
 
-    return GestureDetector(
-      onTap: onTap,
-      onLongPress: onLongPress,
-      child: card,
-    );
+    return GestureDetector(onTap: onTap, onLongPress: onLongPress, child: card);
   }
 }

@@ -4,6 +4,7 @@ import '../../theme.dart';
 import '../../services/opencode_api.dart';
 
 import '../../utils/responsive_values.dart';
+import '../../utils/glass_effect.dart';
 import '../../widgets/app_full_screen_dialog.dart';
 import '../../widgets/app_snackbar.dart';
 import '../../strings.dart';
@@ -15,7 +16,12 @@ class FileBrowserScreen extends StatefulWidget {
   final OpenCodeApi api;
   final Project? activeProject;
 
-  const FileBrowserScreen({super.key, required this.entry, required this.api, this.activeProject});
+  const FileBrowserScreen({
+    super.key,
+    required this.entry,
+    required this.api,
+    this.activeProject,
+  });
 
   @override
   State<FileBrowserScreen> createState() => _FileBrowserScreenState();
@@ -90,8 +96,9 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
     setState(() => _loading = true);
     try {
       // 优先使用 activeProject.path，其次使用 api.directory
-      final initialPath = widget.activeProject?.path ?? widget.api.directory ?? '';
-      
+      final initialPath =
+          widget.activeProject?.path ?? widget.api.directory ?? '';
+
       // 如果没有路径，尝试获取当前项目
       String pathToUse = initialPath;
       if (pathToUse.isEmpty) {
@@ -100,18 +107,33 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
           pathToUse = currentProject.path;
           widget.api.directory = pathToUse;
         } catch (e) {
-          debugPrint('FileBrowserScreen._loadRoot: failed to get current project: $e');
+          debugPrint(
+            'FileBrowserScreen._loadRoot: failed to get current project: $e',
+          );
         }
       }
-      
+
       final files = await widget.api.listFiles(pathToUse);
       final rootNode = _TreeNode(
-        node: FileNode(name: pathToUse.isNotEmpty ? pathToUse.split('/').last : '/', path: pathToUse, type: 'directory'),
+        node: FileNode(
+          name: pathToUse.isNotEmpty ? pathToUse.split('/').last : '/',
+          path: pathToUse,
+          type: 'directory',
+        ),
         depth: -1,
         expanded: true,
       );
-      rootNode.setChildren(files.where((f) => f.type == 'directory').map((f) => _TreeNode(node: f, depth: 0)).toList()
-        ..addAll(files.where((f) => f.type != 'directory').map((f) => _TreeNode(node: f, depth: 0))));
+      rootNode.setChildren(
+        files
+            .where((f) => f.type == 'directory')
+            .map((f) => _TreeNode(node: f, depth: 0))
+            .toList()
+          ..addAll(
+            files
+                .where((f) => f.type != 'directory')
+                .map((f) => _TreeNode(node: f, depth: 0)),
+          ),
+      );
       setState(() {
         _roots = [rootNode];
         _currentPath = pathToUse;
@@ -136,10 +158,9 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
       setState(() => node.loading = true);
       try {
         final files = await widget.api.listFiles(node.node.path);
-        final children = files.map((f) => _TreeNode(
-          node: f,
-          depth: node.depth + 1,
-        )).toList();
+        final children = files
+            .map((f) => _TreeNode(node: f, depth: node.depth + 1))
+            .toList();
         setState(() {
           node.setChildren(children);
           node.expanded = true;
@@ -171,7 +192,11 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
           padding: const EdgeInsets.all(16),
           child: SelectableText(
             content.content,
-            style: const TextStyle(color: AppColors.textPrimary, fontSize: 12, fontFamily: 'monospace'),
+            style: const TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 12,
+              fontFamily: 'monospace',
+            ),
           ),
         ),
       );
@@ -196,15 +221,31 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            Icon(Icons.image, size: 64, color: AppColors.textTertiary),
+            const Icon(Icons.image, size: 64, color: AppColors.textTertiary),
             const SizedBox(height: 12),
-            Text(node.name, style: TextStyle(color: AppColors.textPrimary, fontSize: 14)),
+            Text(
+              node.name,
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 14,
+              ),
+            ),
             if (node.size != null) ...[
               const SizedBox(height: 4),
-              Text('${node.size} bytes', style: TextStyle(color: AppColors.textTertiary, fontSize: 12)),
+              Text(
+                '${node.size} bytes',
+                style: const TextStyle(
+                  color: AppColors.textTertiary,
+                  fontSize: 12,
+                ),
+              ),
             ],
             const SizedBox(height: 16),
-            Text(S.imagePreviewHint, style: TextStyle(color: AppColors.textSecondary, fontSize: 13), textAlign: TextAlign.center),
+            const Text(
+              S.imagePreviewHint,
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+              textAlign: TextAlign.center,
+            ),
           ],
         ),
       ),
@@ -214,7 +255,15 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
   Future<void> _readFileByPath(String path) async {
     final name = path.split('/').last;
     final ext = name.contains('.') ? name.split('.').last.toLowerCase() : '';
-    final isImage = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg'].contains(ext);
+    final isImage = [
+      'png',
+      'jpg',
+      'jpeg',
+      'gif',
+      'webp',
+      'bmp',
+      'svg',
+    ].contains(ext);
     if (isImage) {
       if (!mounted) return;
       await AppFullScreenDialog.show(
@@ -225,11 +274,21 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
           padding: const EdgeInsets.all(20),
           child: Column(
             children: [
-              Icon(Icons.image, size: 64, color: AppColors.textTertiary),
+              const Icon(Icons.image, size: 64, color: AppColors.textTertiary),
               const SizedBox(height: 12),
-              Text(name, style: TextStyle(color: AppColors.textPrimary, fontSize: 14)),
+              Text(
+                name,
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 14,
+                ),
+              ),
               const SizedBox(height: 16),
-              Text(S.imagePreviewHint, style: TextStyle(color: AppColors.textSecondary, fontSize: 13), textAlign: TextAlign.center),
+              const Text(
+                S.imagePreviewHint,
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                textAlign: TextAlign.center,
+              ),
             ],
           ),
         ),
@@ -246,7 +305,11 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
           padding: const EdgeInsets.all(16),
           child: SelectableText(
             content.content,
-            style: const TextStyle(color: AppColors.textPrimary, fontSize: 12, fontFamily: 'monospace'),
+            style: const TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 12,
+              fontFamily: 'monospace',
+            ),
           ),
         ),
       );
@@ -254,6 +317,54 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
       if (mounted) {
         AppSnackBar.error(context, '${S.readFailed}: $e');
       }
+    }
+  }
+
+  // --- Navigation ---
+  void _goBack() {
+    if (_history.length > 1) {
+      _history.removeLast();
+      final prevPath = _history.last;
+      _navigateToPath(prevPath, addToHistory: false);
+    }
+  }
+
+  void _navigateToPath(String path, {bool addToHistory = true}) async {
+    setState(() => _loading = true);
+    try {
+      final files = await widget.api.listFiles(path);
+      final rootNode = _TreeNode(
+        node: FileNode(
+          name: path.isNotEmpty ? path.split('/').last : '/',
+          path: path,
+          type: 'directory',
+        ),
+        depth: -1,
+        expanded: true,
+      );
+      rootNode.setChildren(
+        files
+            .where((f) => f.type == 'directory')
+            .map((f) => _TreeNode(node: f, depth: 0))
+            .toList()
+          ..addAll(
+            files
+                .where((f) => f.type != 'directory')
+                .map((f) => _TreeNode(node: f, depth: 0)),
+          ),
+      );
+      setState(() {
+        _roots = [rootNode];
+        _currentPath = path;
+        _loading = false;
+        _error = null;
+      });
+      if (addToHistory) _history.add(path);
+    } catch (e) {
+      setState(() {
+        _loading = false;
+        _error = e.toString();
+      });
     }
   }
 
@@ -286,9 +397,10 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
   Widget _buildBreadcrumb() {
     if (_currentPath.isEmpty) return const SizedBox.shrink();
     final segments = _currentPath.split('/');
-    return Container(
+    return GlassCard(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      color: AppColors.surface,
+      borderRadius: 0,
+      margin: EdgeInsets.zero,
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
@@ -297,7 +409,11 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
             ...segments.map((seg) {
               return Row(
                 children: [
-                  Icon(Icons.chevron_right, size: 14, color: AppColors.textTertiary),
+                  const Icon(
+                    Icons.chevron_right,
+                    size: 14,
+                    color: AppColors.textTertiary,
+                  ),
                   _breadcrumbItem(seg, () {}),
                 ],
               );
@@ -308,14 +424,18 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
     );
   }
 
-  Widget _breadcrumbItem(String label, VoidCallback onTap, {bool isFirst = false}) {
+  Widget _breadcrumbItem(
+    String label,
+    VoidCallback onTap, {
+    bool isFirst = false,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
         child: Text(
           label,
-          style: TextStyle(
+          style: const TextStyle(
             color: AppColors.textSecondary,
             fontSize: 12,
             fontFamily: 'monospace',
@@ -328,15 +448,22 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
 
   PreferredSizeWidget _browserAppBar() {
     return AppBar(
-      leading: _history.isNotEmpty
+      leading: _history.length > 1
           ? IconButton(
-              icon: const Icon(Icons.arrow_back, color: AppColors.textSecondary),
-              onPressed: () {},
+              icon: const Icon(
+                Icons.arrow_back,
+                color: AppColors.textSecondary,
+              ),
+              onPressed: _goBack,
             )
           : null,
-      title: Text(_currentPath.isEmpty
-          ? (widget.activeProject != null ? '${widget.activeProject!.name} / ${S.fileBrowser}' : S.fileBrowser)
-          : _currentPath.split('/').last),
+      title: Text(
+        _currentPath.isEmpty
+            ? (widget.activeProject != null
+                  ? '${widget.activeProject!.name} / ${S.fileBrowser}'
+                  : S.fileBrowser)
+            : _currentPath.split('/').last,
+      ),
       actions: [
         IconButton(
           icon: const Icon(Icons.refresh, color: AppColors.textSecondary),
@@ -361,7 +488,12 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
     }
     final visible = _visibleNodes;
     if (visible.isEmpty) {
-      return Center(child: Text(S.emptyDir, style: TextStyle(color: AppColors.textTertiary)));
+      return const Center(
+        child: Text(
+          S.emptyDir,
+          style: TextStyle(color: AppColors.textTertiary),
+        ),
+      );
     }
     return ListView.builder(
       padding: const EdgeInsets.all(4),
@@ -391,47 +523,71 @@ class _TreeFileTile extends StatelessWidget {
   const _TreeFileTile({required this.node, required this.onTap});
 
   IconData get _icon {
-    if (node.isDirectory) return node.expanded ? Icons.folder_open : Icons.folder;
+    if (node.isDirectory) {
+      return node.expanded ? Icons.folder_open : Icons.folder;
+    }
     final ext = node.node.name.split('.').lastOrNull ?? '';
     switch (ext) {
-      case 'dart': return Icons.code;
-      case 'md': return Icons.description;
-      case 'yaml': case 'yml': return Icons.settings;
-      case 'json': return Icons.data_object;
-      case 'png': case 'jpg': case 'svg': return Icons.image;
-      default: return Icons.insert_drive_file;
+      case 'dart':
+        return Icons.code;
+      case 'md':
+        return Icons.description;
+      case 'yaml':
+      case 'yml':
+        return Icons.settings;
+      case 'json':
+        return Icons.data_object;
+      case 'png':
+      case 'jpg':
+      case 'svg':
+        return Icons.image;
+      default:
+        return Icons.insert_drive_file;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: EdgeInsets.only(
-          left: R.smallSpacing(context) + node.depth * R.treeIndent(context),
-          right: R.smallSpacing(context),
-          top: R.smallSpacing(context) / 2,
-          bottom: R.smallSpacing(context) / 2,
-        ),
-        child: Row(
-          children: [
-            if (node.loading)
-              SizedBox(
-                width: R.smallIconSize(context), height: R.smallIconSize(context),
-                child: const CircularProgressIndicator(strokeWidth: 2),
-              )
-            else
-              Icon(_icon, color: node.isDirectory ? AppColors.warning : AppColors.textSecondary, size: R.smallIconSize(context)),
-            SizedBox(width: R.smallSpacing(context)),
-            Expanded(
-              child: Text(
-                node.node.name,
-                style: TextStyle(color: AppColors.textPrimary, fontSize: R.bodyFontSize(context)),
-                overflow: TextOverflow.ellipsis,
+    return Padding(
+      padding: EdgeInsets.only(
+        left: R.smallSpacing(context) + node.depth * R.treeIndent(context),
+        right: R.smallSpacing(context),
+        top: R.smallSpacing(context) / 2,
+        bottom: R.smallSpacing(context) / 2,
+      ),
+      child: GestureDetector(
+        onTap: onTap,
+        child: GlassCard(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Row(
+            children: [
+              if (node.loading)
+                SizedBox(
+                  width: R.smallIconSize(context),
+                  height: R.smallIconSize(context),
+                  child: const CircularProgressIndicator(strokeWidth: 2),
+                )
+              else
+                Icon(
+                  _icon,
+                  color: node.isDirectory
+                      ? AppColors.warning
+                      : AppColors.textSecondary,
+                  size: R.smallIconSize(context),
+                ),
+              SizedBox(width: R.smallSpacing(context)),
+              Expanded(
+                child: Text(
+                  node.node.name,
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: R.bodyFontSize(context),
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

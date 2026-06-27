@@ -1,12 +1,11 @@
-import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import '../models.dart';
 import '../strings.dart';
 import '../theme.dart';
 import '../services/storage_service.dart';
 import '../screens/launcher_screen.dart';
-
 import '../utils/responsive_values.dart';
+import '../utils/glass_effect.dart';
 
 class OnboardingScreen extends StatelessWidget {
   const OnboardingScreen({super.key});
@@ -25,7 +24,9 @@ class OnboardingScreen extends StatelessWidget {
         child: SafeArea(
           child: Center(
             child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: R.largeSpacing(context)),
+              padding: EdgeInsets.symmetric(
+                horizontal: R.largeSpacing(context),
+              ),
               child: _buildModeSelectionCard(context),
             ),
           ),
@@ -35,36 +36,31 @@ class OnboardingScreen extends StatelessWidget {
   }
 
   Widget _buildModeSelectionCard(BuildContext context) {
-    return Container(
-      padding: R.dialogPadding(context),
-      decoration: BoxDecoration(
-        color: AppColors.surface.withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(R.borderRadius(context) * 2),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 30,
-            offset: const Offset(0, 10),
+    return GlassCard(
+      padding: EdgeInsets.zero,
+      borderRadius: R.borderRadius(context) * 2,
+      blurIntensity: 30,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(height: R.mediumSpacing(context)),
+          _buildHeader(context),
+          SizedBox(height: R.largeSpacing(context)),
+          Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: R.dialogPadding(context).left,
+            ),
+            child: _buildWebViewMode(context),
           ),
+          SizedBox(height: R.spacing(context)),
+          Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: R.dialogPadding(context).left,
+            ),
+            child: _buildNativeMode(context),
+          ),
+          SizedBox(height: R.mediumSpacing(context)),
         ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(R.borderRadius(context) * 2),
-        child: BackdropFilter(
-          filter: _blurFilter(),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SizedBox(height: R.mediumSpacing(context)),
-              _buildHeader(context),
-              SizedBox(height: R.largeSpacing(context)),
-              _buildWebViewMode(context),
-              SizedBox(height: R.spacing(context)),
-              _buildNativeMode(context),
-              SizedBox(height: R.mediumSpacing(context)),
-            ],
-          ),
-        ),
       ),
     );
   }
@@ -78,7 +74,11 @@ class OnboardingScreen extends StatelessWidget {
             color: AppColors.primaryLight,
             borderRadius: BorderRadius.circular(R.borderRadius(context)),
           ),
-          child: Icon(Icons.code, color: AppColors.primary, size: R.iconSize(context) * 2),
+          child: Icon(
+            Icons.code,
+            color: AppColors.primary,
+            size: R.iconSize(context) * 2,
+          ),
         ),
         SizedBox(height: R.mediumSpacing(context)),
         Text(
@@ -147,19 +147,8 @@ class _ModeOption extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
+      child: GlassCard(
         padding: R.cardPadding(context),
-        decoration: BoxDecoration(
-          color: AppColors.surface.withValues(alpha: 0.7),
-          borderRadius: BorderRadius.circular(R.borderRadius(context)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.06),
-              blurRadius: 20,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
         child: Row(
           children: [
             Container(
@@ -168,7 +157,11 @@ class _ModeOption extends StatelessWidget {
                 color: AppColors.primaryLight,
                 borderRadius: BorderRadius.circular(R.borderRadius(context)),
               ),
-              child: Icon(icon, color: AppColors.primary, size: R.iconSize(context)),
+              child: Icon(
+                icon,
+                color: AppColors.primary,
+                size: R.iconSize(context),
+              ),
             ),
             SizedBox(width: R.spacing(context)),
             Expanded(
@@ -186,17 +179,18 @@ class _ModeOption extends StatelessWidget {
                   SizedBox(height: R.smallSpacing(context) / 2),
                   Text(
                     subtitle,
-                    style: TextStyle(fontSize: R.smallFontSize(context), color: AppColors.textSecondary),
+                    style: TextStyle(
+                      fontSize: R.smallFontSize(context),
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ],
               ),
             ),
-            Icon(Icons.chevron_right, color: AppColors.textTertiary),
+            const Icon(Icons.chevron_right, color: AppColors.textTertiary),
           ],
         ),
       ),
     );
   }
 }
-
-ImageFilter _blurFilter() => ImageFilter.blur(sigmaX: 30, sigmaY: 30);

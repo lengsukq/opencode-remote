@@ -5,13 +5,19 @@ import '../../strings.dart';
 import '../../services/opencode_api.dart';
 
 import '../../utils/responsive_values.dart';
+import '../../utils/glass_effect.dart';
 
 class TerminalScreen extends StatefulWidget {
   final ServerEntry entry;
   final OpenCodeApi api;
   final Project? activeProject;
 
-  const TerminalScreen({super.key, required this.entry, required this.api, this.activeProject});
+  const TerminalScreen({
+    super.key,
+    required this.entry,
+    required this.api,
+    this.activeProject,
+  });
 
   @override
   State<TerminalScreen> createState() => _TerminalScreenState();
@@ -22,7 +28,11 @@ class _TerminalLine {
   final bool isInput;
   final bool isError;
 
-  _TerminalLine({required this.text, this.isInput = false, this.isError = false});
+  _TerminalLine({
+    required this.text,
+    this.isInput = false,
+    this.isError = false,
+  });
 }
 
 class _TerminalScreenState extends State<TerminalScreen> {
@@ -47,7 +57,9 @@ class _TerminalScreenState extends State<TerminalScreen> {
       _sessionId = session.id;
       _addLine(_TerminalLine(text: 'Ready. Type a command.', isInput: false));
     } catch (e) {
-      _addLine(_TerminalLine(text: 'Init error: $e (fallback mode)', isError: true));
+      _addLine(
+        _TerminalLine(text: 'Init error: $e (fallback mode)', isError: true),
+      );
     }
     _addLine(_TerminalLine(text: '---', isInput: false));
   }
@@ -79,7 +91,13 @@ class _TerminalScreenState extends State<TerminalScreen> {
 
     setState(() => _running = true);
     try {
-      final sid = _sessionId.isNotEmpty ? _sessionId : widget.entry.id;
+      final sid = _sessionId.isNotEmpty ? _sessionId : await _ensureSession();
+      if (sid == null) {
+        _addLine(
+          _TerminalLine(text: 'Error: No session available', isError: true),
+        );
+        return;
+      }
       final response = await widget.api.runShell(sid, command: command);
       final message = response.info;
       final content = message.content;
@@ -92,6 +110,17 @@ class _TerminalScreenState extends State<TerminalScreen> {
     setState(() => _running = false);
   }
 
+  Future<String?> _ensureSession() async {
+    if (_sessionId.isNotEmpty) return _sessionId;
+    try {
+      final session = await widget.api.createSession(title: '__terminal__');
+      _sessionId = session.id;
+      return session.id;
+    } catch (e) {
+      return null;
+    }
+  }
+
   void _onKeyEvent(String command) {
     _inputCtrl.clear();
     _runCommand(command);
@@ -101,9 +130,11 @@ class _TerminalScreenState extends State<TerminalScreen> {
   Widget build(BuildContext context) {
     final isDark = isDarkMode(context);
     final bgColor = isDark ? AppColors.terminalBg : AppColors.terminalBgLight;
-    final textColor = isDark ? AppColors.terminalText : AppColors.terminalTextLight;
-    final inputColor = AppColors.terminalInput;
-    final errorColor = AppColors.terminalError;
+    final textColor = isDark
+        ? AppColors.terminalText
+        : AppColors.terminalTextLight;
+    const inputColor = AppColors.terminalInput;
+    const errorColor = AppColors.terminalError;
     const promptColor = AppColors.terminalPrompt;
 
     return Scaffold(
@@ -112,10 +143,20 @@ class _TerminalScreenState extends State<TerminalScreen> {
         backgroundColor: bgColor,
         foregroundColor: textColor,
         elevation: 0,
-        title: Text(S.terminal, style: TextStyle(fontFamily: 'monospace', fontSize: R.bodyFontSize(context))),
+        title: Text(
+          S.terminal,
+          style: TextStyle(
+            fontFamily: 'monospace',
+            fontSize: R.bodyFontSize(context),
+          ),
+        ),
         actions: [
           IconButton(
-            icon: Icon(Icons.delete_outline, color: AppColors.terminalIcon, size: R.iconSize(context)),
+            icon: Icon(
+              Icons.delete_outline,
+              color: AppColors.terminalIcon,
+              size: R.iconSize(context),
+            ),
             tooltip: S.clear,
             onPressed: () => setState(() => _lines.clear()),
           ),
@@ -131,11 +172,17 @@ class _TerminalScreenState extends State<TerminalScreen> {
               itemBuilder: (ctx, i) {
                 final line = _lines[i];
                 return Padding(
-                  padding: EdgeInsets.symmetric(vertical: R.smallSpacing(context) / 10),
+                  padding: EdgeInsets.symmetric(
+                    vertical: R.smallSpacing(context) / 10,
+                  ),
                   child: Text(
                     line.text,
                     style: TextStyle(
-                      color: line.isInput ? inputColor : line.isError ? errorColor : textColor,
+                      color: line.isInput
+                          ? inputColor
+                          : line.isError
+                          ? errorColor
+                          : textColor,
                       fontSize: R.terminalFontSize(context),
                       fontFamily: 'monospace',
                       height: 1.4,
@@ -145,22 +192,34 @@ class _TerminalScreenState extends State<TerminalScreen> {
               },
             ),
           ),
-          Container(
-            color: AppColors.terminalInputBg,
+          GlassCard(
+            margin: const EdgeInsets.fromLTRB(8, 4, 8, 8),
             padding: EdgeInsets.fromLTRB(
               R.spacing(context),
               R.smallSpacing(context),
               R.spacing(context),
               R.smallSpacing(context),
             ),
+            borderRadius: 14,
             child: Row(
               children: [
-                Text('\$ ', style: TextStyle(color: promptColor, fontSize: R.bodyFontSize(context), fontFamily: 'monospace')),
+                Text(
+                  '\$ ',
+                  style: TextStyle(
+                    color: promptColor,
+                    fontSize: R.bodyFontSize(context),
+                    fontFamily: 'monospace',
+                  ),
+                ),
                 Expanded(
                   child: TextField(
                     controller: _inputCtrl,
                     enabled: !_running,
-                    style: TextStyle(color: inputColor, fontSize: R.bodyFontSize(context), fontFamily: 'monospace'),
+                    style: TextStyle(
+                      color: inputColor,
+                      fontSize: R.bodyFontSize(context),
+                      fontFamily: 'monospace',
+                    ),
                     decoration: const InputDecoration(
                       border: InputBorder.none,
                       isDense: true,
@@ -171,8 +230,12 @@ class _TerminalScreenState extends State<TerminalScreen> {
                 ),
                 if (_running)
                   SizedBox(
-                    width: R.smallIconSize(context), height: R.smallIconSize(context),
-                    child: const CircularProgressIndicator(strokeWidth: 2, color: AppColors.terminalPrompt),
+                    width: R.smallIconSize(context),
+                    height: R.smallIconSize(context),
+                    child: const CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: AppColors.terminalPrompt,
+                    ),
                   ),
               ],
             ),

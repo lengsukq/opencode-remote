@@ -5,11 +5,11 @@ import '../../theme.dart';
 import '../../services/opencode_api.dart';
 
 import '../../utils/responsive_values.dart';
+import '../../utils/glass_effect.dart';
 import '../../widgets/app_dialog.dart';
 import '../../widgets/app_bottom_sheet.dart';
 import '../../widgets/app_snackbar.dart';
 import 'chat_screen.dart';
-import '../../widgets/app_card.dart';
 import '../../widgets/app_states.dart';
 import '../../widgets/session_actions.dart';
 
@@ -18,7 +18,12 @@ class SessionListScreen extends StatefulWidget {
   final OpenCodeApi api;
   final Project? activeProject;
 
-  const SessionListScreen({super.key, required this.entry, required this.api, this.activeProject});
+  const SessionListScreen({
+    super.key,
+    required this.entry,
+    required this.api,
+    this.activeProject,
+  });
 
   @override
   State<SessionListScreen> createState() => _SessionListScreenState();
@@ -30,13 +35,18 @@ class _SessionListScreenState extends State<SessionListScreen> {
   String? _error;
   bool _searching = false;
   final _searchCtrl = TextEditingController();
+  String _searchQuery = '';
 
   List<Session> get _filteredSessions {
-    if (!_searching || _searchCtrl.text.isEmpty) return _sessions;
-    final q = _searchCtrl.text.toLowerCase();
-    return _sessions.where((s) =>
-      s.title.toLowerCase().contains(q) || s.id.toLowerCase().contains(q)
-    ).toList();
+    if (!_searching || _searchQuery.isEmpty) return _sessions;
+    final q = _searchQuery.toLowerCase();
+    return _sessions
+        .where(
+          (s) =>
+              s.title.toLowerCase().contains(q) ||
+              s.id.toLowerCase().contains(q),
+        )
+        .toList();
   }
 
   @override
@@ -64,14 +74,14 @@ class _SessionListScreenState extends State<SessionListScreen> {
     try {
       final sessions = await widget.api.getSessions();
       sessions.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-      if (!context.mounted) return;
+      if (!mounted) return;
       setState(() {
         _sessions = sessions;
         _loading = false;
         _error = null;
       });
     } catch (e) {
-      if (context.mounted) {
+      if (mounted) {
         setState(() {
           _loading = false;
           _error = e.toString();
@@ -89,10 +99,12 @@ class _SessionListScreenState extends State<SessionListScreen> {
     );
     if (result == null) return;
     try {
-      await widget.api.createSession(title: result.trim().isNotEmpty ? result.trim() : null);
+      await widget.api.createSession(
+        title: result.trim().isNotEmpty ? result.trim() : null,
+      );
       await _load();
     } catch (e) {
-      if (context.mounted) {
+      if (mounted) {
         AppSnackBar.error(context, '${S.createFailed}: $e');
       }
     }
@@ -103,20 +115,61 @@ class _SessionListScreenState extends State<SessionListScreen> {
       context,
       title: session.title.isNotEmpty ? session.title : S.unnamedSession,
       options: [
-        const BottomSheetOption(icon: Icons.edit, label: '重命名', value: 'rename'),
-        const BottomSheetOption(icon: Icons.share, label: S.share, value: 'share'),
-        const BottomSheetOption(icon: Icons.stop, label: S.abort, value: 'abort'),
-        const BottomSheetOption(icon: Icons.block, label: S.stopSharing, value: 'unshare'),
-        const BottomSheetOption(icon: Icons.account_tree, label: S.childSessions, value: 'children'),
-        const BottomSheetOption(icon: Icons.checklist, label: S.todoList, value: 'todo'),
-        const BottomSheetOption(icon: Icons.difference, label: S.diff, value: 'diff'),
-        const BottomSheetOption(icon: Icons.summarize, label: S.summarize, value: 'summarize'),
-        const BottomSheetOption(icon: Icons.call_split, label: S.fork, value: 'fork'),
-        const BottomSheetOption(icon: Icons.delete, label: S.delete, value: 'delete', destructive: true),
+        const BottomSheetOption(
+          icon: Icons.edit,
+          label: '重命名',
+          value: 'rename',
+        ),
+        const BottomSheetOption(
+          icon: Icons.share,
+          label: S.share,
+          value: 'share',
+        ),
+        const BottomSheetOption(
+          icon: Icons.stop,
+          label: S.abort,
+          value: 'abort',
+        ),
+        const BottomSheetOption(
+          icon: Icons.block,
+          label: S.stopSharing,
+          value: 'unshare',
+        ),
+        const BottomSheetOption(
+          icon: Icons.account_tree,
+          label: S.childSessions,
+          value: 'children',
+        ),
+        const BottomSheetOption(
+          icon: Icons.checklist,
+          label: S.todoList,
+          value: 'todo',
+        ),
+        const BottomSheetOption(
+          icon: Icons.difference,
+          label: S.diff,
+          value: 'diff',
+        ),
+        const BottomSheetOption(
+          icon: Icons.summarize,
+          label: S.summarize,
+          value: 'summarize',
+        ),
+        const BottomSheetOption(
+          icon: Icons.call_split,
+          label: S.fork,
+          value: 'fork',
+        ),
+        const BottomSheetOption(
+          icon: Icons.delete,
+          label: S.delete,
+          value: 'delete',
+          destructive: true,
+        ),
       ],
     );
     if (action == null) return;
-    if (!context.mounted) return;
+    if (!mounted) return;
     switch (action) {
       case 'rename':
         await SessionActions.rename(context, widget.api, session, _load);
@@ -153,22 +206,29 @@ class _SessionListScreenState extends State<SessionListScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text(widget.activeProject != null ? '${widget.activeProject!.name} / ${S.sessions}' : '${S.sessions}列表'),
+        title: Text(
+          widget.activeProject != null
+              ? '${widget.activeProject!.name} / ${S.sessions}'
+              : '${S.sessions}列表',
+        ),
         actions: [
           IconButton(
-            icon: Icon(_searching ? Icons.search_off : Icons.search, color: AppColors.textSecondary),
+            icon: Icon(
+              _searching ? Icons.search_off : Icons.search,
+              color: AppColors.textSecondary,
+            ),
             tooltip: '搜索',
             onPressed: () => setState(() {
               _searching = !_searching;
               if (!_searching) _searchCtrl.clear();
             }),
           ),
-          IconButton(
-            icon: const Icon(Icons.add, color: AppColors.textSecondary),
-            tooltip: '新建会话',
-            onPressed: _createSession,
-          ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: AppColors.primary,
+        onPressed: _createSession,
+        child: const Icon(Icons.add, color: Colors.white),
       ),
       body: Column(
         children: [
@@ -179,28 +239,59 @@ class _SessionListScreenState extends State<SessionListScreen> {
               child: TextField(
                 controller: _searchCtrl,
                 autofocus: true,
-                style: TextStyle(color: AppColors.textPrimary, fontSize: R.bodyFontSize(context)),
+                style: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: R.bodyFontSize(context),
+                ),
                 decoration: InputDecoration(
                   hintText: '搜索会话标题...',
-                  hintStyle: TextStyle(color: AppColors.textTertiary),
-                  prefixIcon: Icon(Icons.search, color: AppColors.textSecondary, size: R.smallIconSize(context)),
+                  hintStyle: const TextStyle(color: AppColors.textTertiary),
+                  prefixIcon: Icon(
+                    Icons.search,
+                    color: AppColors.textSecondary,
+                    size: R.smallIconSize(context),
+                  ),
                   suffixIcon: _searchCtrl.text.isNotEmpty
-                    ? IconButton(
-                        icon: Icon(Icons.clear, color: AppColors.textSecondary, size: R.smallIconSize(context)),
-                        onPressed: () {
-                          _searchCtrl.clear();
-                          setState(() {});
-                        },
-                      )
-                    : null,
+                      ? IconButton(
+                          icon: Icon(
+                            Icons.clear,
+                            color: AppColors.textSecondary,
+                            size: R.smallIconSize(context),
+                          ),
+                          onPressed: () {
+                            _searchCtrl.clear();
+                            setState(() {});
+                          },
+                        )
+                      : null,
                   filled: true,
                   fillColor: AppColors.background,
-                  contentPadding: EdgeInsets.symmetric(vertical: R.smallSpacing(context)),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppColors.kSmallBorderRadius), borderSide: BorderSide(color: AppColors.border)),
-                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(AppColors.kSmallBorderRadius), borderSide: BorderSide(color: AppColors.border)),
-                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(AppColors.kSmallBorderRadius), borderSide: BorderSide(color: AppColors.borderFocused)),
+                  contentPadding: EdgeInsets.symmetric(
+                    vertical: R.smallSpacing(context),
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(
+                      AppColors.kSmallBorderRadius,
+                    ),
+                    borderSide: BorderSide.none,
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(
+                      AppColors.kSmallBorderRadius,
+                    ),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(
+                      AppColors.kSmallBorderRadius,
+                    ),
+                    borderSide: const BorderSide(
+                      color: AppColors.borderFocused,
+                      width: 1.5,
+                    ),
+                  ),
                 ),
-                onChanged: (_) => setState(() {}),
+                onChanged: (v) => setState(() => _searchQuery = v),
               ),
             ),
           Expanded(
@@ -210,32 +301,43 @@ class _SessionListScreenState extends State<SessionListScreen> {
               child: _loading
                   ? const AppLoadingIndicator()
                   : _error != null
-                      ? AppErrorState(message: _error!, onRetry: _load)
-                      : displaySessions.isEmpty
-                          ? Center(
-                              child: Padding(
-                                padding: R.screenPadding(context),
-                                child: Text(
-                                  _searching
-                                      ? S.noMatchingSessions
-                                      : widget.activeProject != null
-                                          ? "'${widget.activeProject!.name}' 中${S.noSessions}"
-                                          : S.noSessions,
-                                  style: TextStyle(color: AppColors.textTertiary, fontSize: R.bodyFontSize(context)),
-                                ),
-                              ),
-                            )
-                          : ListView.builder(
-                              padding: R.listPadding(context),
-                              itemCount: displaySessions.length,
-                              itemBuilder: (ctx, i) => _SessionTile(
-                                session: displaySessions[i],
-                                onTap: () => Navigator.push(context, MaterialPageRoute(
-                                  builder: (_) => ChatScreen(session: displaySessions[i], entry: widget.entry, api: widget.api),
-                                )),
-                                onLongPress: () => _showSessionActions(displaySessions[i]),
-                              ),
+                  ? AppErrorState(message: _error!, onRetry: _load)
+                  : displaySessions.isEmpty
+                  ? Center(
+                      child: Padding(
+                        padding: R.screenPadding(context),
+                        child: Text(
+                          _searching
+                              ? S.noMatchingSessions
+                              : widget.activeProject != null
+                              ? "'${widget.activeProject!.name}' 中${S.noSessions}"
+                              : S.noSessions,
+                          style: TextStyle(
+                            color: AppColors.textTertiary,
+                            fontSize: R.bodyFontSize(context),
+                          ),
+                        ),
+                      ),
+                    )
+                  : ListView.builder(
+                      padding: R.listPadding(context),
+                      itemCount: displaySessions.length,
+                      itemBuilder: (ctx, i) => _SessionTile(
+                        session: displaySessions[i],
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ChatScreen(
+                              session: displaySessions[i],
+                              entry: widget.entry,
+                              api: widget.api,
                             ),
+                          ),
+                        ),
+                        onLongPress: () =>
+                            _showSessionActions(displaySessions[i]),
+                      ),
+                    ),
             ),
           ),
         ],
@@ -249,12 +351,17 @@ class _SessionTile extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback? onLongPress;
 
-  const _SessionTile({required this.session, required this.onTap, this.onLongPress});
+  const _SessionTile({
+    required this.session,
+    required this.onTap,
+    this.onLongPress,
+  });
 
   @override
   Widget build(BuildContext context) {
     final dt = DateTime.fromMillisecondsSinceEpoch(session.updatedAt);
-    final timeStr = '${dt.month}/${dt.day} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+    final timeStr =
+        '${dt.month}/${dt.day} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
 
     return Padding(
       padding: R.edgeInsets(
@@ -262,38 +369,57 @@ class _SessionTile extends StatelessWidget {
         phone: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
         tablet: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
       ),
-      child: AppCard(
-        child: InkWell(
-          borderRadius: BorderRadius.circular(AppColors.kCardBorderRadius),
-          onTap: onTap,
-          onLongPress: onLongPress,
-          child: Padding(
-            padding: R.cardPadding(context),
-            child: Row(
-              children: [
-                Container(
-                  padding: EdgeInsets.all(R.smallSpacing(context) + 2),
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryLight,
-                    borderRadius: BorderRadius.circular(AppColors.kSmallBorderRadius),
-                  ),
-                  child: Icon(Icons.chat_outlined, color: AppColors.primary, size: R.iconSize(context)),
-                ),
-                SizedBox(width: R.spacing(context)),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(session.title.isNotEmpty ? session.title : '未命名会话',
-                          style: TextStyle(color: AppColors.textPrimary, fontSize: R.bodyFontSize(context), fontWeight: FontWeight.w500)),
-                      SizedBox(height: R.smallSpacing(context) / 2),
-                      Text(timeStr, style: TextStyle(color: AppColors.textTertiary, fontSize: R.labelFontSize(context))),
-                    ],
+      child: GestureDetector(
+        onTap: onTap,
+        onLongPress: onLongPress,
+        child: GlassCard(
+          padding: R.cardPadding(context),
+          child: Row(
+            children: [
+              Container(
+                padding: EdgeInsets.all(R.smallSpacing(context) + 2),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryLight,
+                  borderRadius: BorderRadius.circular(
+                    AppColors.kSmallBorderRadius,
                   ),
                 ),
-                Icon(Icons.chevron_right, color: AppColors.textTertiary, size: R.smallIconSize(context)),
-              ],
-            ),
+                child: Icon(
+                  Icons.chat_outlined,
+                  color: AppColors.primary,
+                  size: R.iconSize(context),
+                ),
+              ),
+              SizedBox(width: R.spacing(context)),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      session.title.isNotEmpty ? session.title : '未命名会话',
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: R.bodyFontSize(context),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    SizedBox(height: R.smallSpacing(context) / 2),
+                    Text(
+                      timeStr,
+                      style: TextStyle(
+                        color: AppColors.textTertiary,
+                        fontSize: R.labelFontSize(context),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.chevron_right,
+                color: AppColors.textTertiary,
+                size: R.smallIconSize(context),
+              ),
+            ],
           ),
         ),
       ),
