@@ -15,14 +15,13 @@ class ProjectHelpers {
   static String _orderKey(String serverId) => 'project_order:$serverId';
 
   /// Persists [projects] for the given [serverId].
-  static Future<void> saveProjects(String serverId, List<Project> projects) async {
+  static Future<void> saveProjects(
+    String serverId,
+    List<Project> projects,
+  ) async {
     final prefs = await SharedPreferences.getInstance();
     final data = projects
-        .map((p) => {
-              'id': p.id,
-              'name': p.name,
-              'path': p.path,
-            })
+        .map((p) => {'id': p.id, 'name': p.name, 'path': p.path})
         .toList();
     await prefs.setString(_key(serverId), jsonEncode(data));
   }
@@ -45,7 +44,10 @@ class ProjectHelpers {
   }
 
   /// Persists a custom display order (list of project IDs) for [serverId].
-  static Future<void> saveOrder(String serverId, List<String> projectIds) async {
+  static Future<void> saveOrder(
+    String serverId,
+    List<String> projectIds,
+  ) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_orderKey(serverId), jsonEncode(projectIds));
   }

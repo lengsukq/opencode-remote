@@ -10,8 +10,11 @@ class AppAnimations {
         const begin = Offset(1.0, 0.0);
         const end = Offset.zero;
         const curve = Curves.easeInOutCubic;
-        var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-        var offsetAnimation = animation.drive(tween);
+        final tween = Tween(
+          begin: begin,
+          end: end,
+        ).chain(CurveTween(curve: curve));
+        final offsetAnimation = animation.drive(tween);
         return SlideTransition(position: offsetAnimation, child: child);
       },
       transitionDuration: const Duration(milliseconds: 300),
@@ -34,8 +37,11 @@ class AppAnimations {
     return PageRouteBuilder<T>(
       pageBuilder: (context, animation, secondaryAnimation) => page,
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
-        var scaleTween = Tween(begin: 0.95, end: 1.0).chain(CurveTween(curve: Curves.easeOutCubic));
-        var fadeTween = Tween(begin: 0.0, end: 1.0);
+        final scaleTween = Tween(
+          begin: 0.95,
+          end: 1.0,
+        ).chain(CurveTween(curve: Curves.easeOutCubic));
+        final fadeTween = Tween(begin: 0.0, end: 1.0);
         return ScaleTransition(
           scale: animation.drive(scaleTween),
           child: FadeTransition(
@@ -57,10 +63,7 @@ class AppAnimations {
       position: Tween<Offset>(
         begin: const Offset(0, 1),
         end: Offset.zero,
-      ).animate(CurvedAnimation(
-        parent: animation,
-        curve: Curves.easeOutCubic,
-      )),
+      ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic)),
       child: child,
     );
   }
@@ -89,19 +92,13 @@ class AppAnimations {
   }
 
   /// 带弹性的缩放动画
-  static Widget bounceScale({
-    required Widget child,
-    required bool animate,
-  }) {
+  static Widget bounceScale({required Widget child, required bool animate}) {
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0.0, end: animate ? 1.0 : 0.0),
       duration: const Duration(milliseconds: 400),
       curve: Curves.elasticOut,
       builder: (context, value, child) {
-        return Transform.scale(
-          scale: value,
-          child: child,
-        );
+        return Transform.scale(scale: value, child: child);
       },
       child: child,
     );
@@ -126,7 +123,8 @@ class _PulseWidget extends StatefulWidget {
   State<_PulseWidget> createState() => _PulseWidgetState();
 }
 
-class _PulseWidgetState extends State<_PulseWidget> with SingleTickerProviderStateMixin {
+class _PulseWidgetState extends State<_PulseWidget>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
 
@@ -134,9 +132,10 @@ class _PulseWidgetState extends State<_PulseWidget> with SingleTickerProviderSta
   void initState() {
     super.initState();
     _controller = AnimationController(vsync: this, duration: widget.duration);
-    _animation = Tween(begin: 0.8, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _animation = Tween(
+      begin: 0.8,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
     _controller.repeat(reverse: true);
   }
 
@@ -151,10 +150,7 @@ class _PulseWidgetState extends State<_PulseWidget> with SingleTickerProviderSta
     return AnimatedBuilder(
       animation: _animation,
       builder: (context, child) {
-        return Opacity(
-          opacity: _animation.value,
-          child: child,
-        );
+        return Opacity(opacity: _animation.value, child: child);
       },
       child: widget.child,
     );

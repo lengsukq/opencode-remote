@@ -89,12 +89,7 @@ class ResponsiveContainer extends StatelessWidget {
   final Widget Function(BuildContext context)? tablet;
   final Widget Function(BuildContext context)? desktop;
 
-  const ResponsiveContainer({
-    super.key,
-    this.phone,
-    this.tablet,
-    this.desktop,
-  });
+  const ResponsiveContainer({super.key, this.phone, this.tablet, this.desktop});
 
   @override
   Widget build(BuildContext context) {
@@ -104,7 +99,9 @@ class ResponsiveContainer extends StatelessWidget {
       case ScreenType.phone:
         return phone?.call(context) ?? const SizedBox.shrink();
       case ScreenType.tablet:
-        return tablet?.call(context) ?? phone?.call(context) ?? const SizedBox.shrink();
+        return tablet?.call(context) ??
+            phone?.call(context) ??
+            const SizedBox.shrink();
       case ScreenType.desktop:
         return desktop?.call(context) ??
             tablet?.call(context) ??

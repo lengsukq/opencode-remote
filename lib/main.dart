@@ -56,67 +56,13 @@ class _OpenCodeRemoteState extends State<OpenCodeRemote> {
 
   void _onThemeChanged() => setState(() {});
 
-  ThemeData _lightTheme() => ThemeData(
-    useMaterial3: true,
-    brightness: Brightness.light,
-    scaffoldBackgroundColor: AppColors.background,
-    colorScheme: ColorScheme.light(
-      primary: AppColors.primary,
-      surface: AppColors.surface,
-    ),
-    appBarTheme: AppBarTheme(
-      backgroundColor: AppColors.surface,
-      foregroundColor: AppColors.textPrimary,
-      elevation: 0,
-      scrolledUnderElevation: 0.5,
-    ),
-    cardTheme: CardThemeData(
-      color: AppColors.surface,
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: AppColors.border),
-      ),
-    ),
-    dividerTheme: DividerThemeData(color: AppColors.border),
-    dialogTheme: DialogThemeData(backgroundColor: AppColors.surface),
-    bottomSheetTheme: BottomSheetThemeData(backgroundColor: AppColors.surface),
-  );
-
-  ThemeData _darkTheme() => ThemeData(
-    useMaterial3: true,
-    brightness: Brightness.dark,
-    scaffoldBackgroundColor: DarkColors.background,
-    colorScheme: ColorScheme.dark(
-      primary: DarkColors.primary,
-      surface: DarkColors.surface,
-    ),
-    appBarTheme: AppBarTheme(
-      backgroundColor: DarkColors.surface,
-      foregroundColor: DarkColors.textPrimary,
-      elevation: 0,
-      scrolledUnderElevation: 0.5,
-    ),
-    cardTheme: CardThemeData(
-      color: DarkColors.surface,
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: DarkColors.border),
-      ),
-    ),
-    dividerTheme: DividerThemeData(color: DarkColors.border),
-    dialogTheme: DialogThemeData(backgroundColor: DarkColors.surface),
-    bottomSheetTheme: BottomSheetThemeData(backgroundColor: DarkColors.surface),
-  );
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'OpenCode Remote',
       debugShowCheckedModeBanner: false,
-      theme: _lightTheme(),
-      darkTheme: _darkTheme(),
+      theme: IOSTheme.light,
+      darkTheme: IOSTheme.dark,
       themeMode: themeNotifier.value,
       home: _buildHome(),
     );
