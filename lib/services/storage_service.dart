@@ -63,7 +63,7 @@ class StorageService {
       servers.sort((a, b) => b.lastUsed.compareTo(a.lastUsed));
       return servers;
     } catch (e) {
-      _log('StorageService.loadServers: $e — raw: ${raw.substring(0, raw.length.clamp(0, 500))}');
+      _log('StorageService.loadServers: parse error (${e.runtimeType})');
       return [];
     }
   }
@@ -97,7 +97,8 @@ class StorageService {
       for (final e in list) {
         if (e is! Map<String, dynamic>) continue;
         final entry = ServerEntry.fromJson(e);
-        if (entry.password.isNotEmpty && entry.password != _kSecurePlaceholder) {
+        if (entry.password.isNotEmpty &&
+            entry.password != _kSecurePlaceholder) {
           await _secureWrite(entry.id, entry.password);
         }
         servers.add(entry);
@@ -166,7 +167,10 @@ class StorageService {
 
   static Future<void> setAppMode(AppMode mode) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_keyAppMode, mode == AppMode.native ? 'native' : 'webview');
+    await prefs.setString(
+      _keyAppMode,
+      mode == AppMode.native ? 'native' : 'webview',
+    );
   }
 
   static Future<bool> hasLaunched() async {

@@ -19,12 +19,15 @@ class TodoBanner extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(Icons.checklist, size: 16, color: AppColors.primary),
+          const Icon(Icons.checklist, size: 16, color: AppColors.primary),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               pct >= 1.0 ? 'All todos completed!' : '$done/$total done',
-              style: TextStyle(color: AppColors.textPrimary, fontSize: 12),
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 12,
+              ),
             ),
           ),
           if (pct < 1.0)
@@ -35,7 +38,7 @@ class TodoBanner extends StatelessWidget {
               minHeight: 4,
             ),
           if (pct >= 1.0)
-            Icon(Icons.check_circle, size: 16, color: AppColors.success),
+            const Icon(Icons.check_circle, size: 16, color: AppColors.success),
         ],
       ),
     );

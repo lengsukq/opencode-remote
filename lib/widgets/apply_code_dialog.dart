@@ -20,20 +20,17 @@ Future<String?> showApplyCodeDialog(
     context: context,
     builder: (ctx) => AlertDialog(
       backgroundColor: AppColors.surface,
-      title: Text(
+      title: const Text(
         S.applyCodeToFile,
-        style: const TextStyle(color: AppColors.textPrimary),
+        style: TextStyle(color: AppColors.textPrimary),
       ),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          const Text(
             S.writeCodeToFile,
-            style: TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 12,
-            ),
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
           ),
           const SizedBox(height: 6),
           Container(
@@ -43,9 +40,7 @@ Future<String?> showApplyCodeDialog(
               borderRadius: BorderRadius.circular(6),
             ),
             child: Text(
-              code.length > 200
-                  ? '${code.substring(0, 200)}...'
-                  : code,
+              code.length > 200 ? '${code.substring(0, 200)}...' : code,
               style: const TextStyle(
                 color: AppColors.textPrimary,
                 fontSize: 11,
@@ -57,11 +52,8 @@ Future<String?> showApplyCodeDialog(
           TextField(
             controller: pathCtrl,
             autofocus: true,
-            style: const TextStyle(
-              color: AppColors.textPrimary,
-              fontSize: 13,
-            ),
-            decoration: InputDecoration(
+            style: const TextStyle(color: AppColors.textPrimary, fontSize: 13),
+            decoration: const InputDecoration(
               labelText: S.filePath,
               hintText: 'lib/main.dart',
               labelStyle: TextStyle(color: AppColors.textSecondary),
@@ -79,21 +71,19 @@ Future<String?> showApplyCodeDialog(
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(ctx),
-          child: Text(
+          child: const Text(
             S.cancel,
-            style: const TextStyle(color: AppColors.textSecondary),
+            style: TextStyle(color: AppColors.textSecondary),
           ),
         ),
         FilledButton(
-          style: FilledButton.styleFrom(
-            backgroundColor: AppColors.primary,
-          ),
+          style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
           onPressed: () {
             final path = pathCtrl.text.trim();
             if (path.isEmpty) return;
             Navigator.pop(ctx, path);
           },
-          child: Text(S.write),
+          child: const Text(S.write),
         ),
       ],
     ),

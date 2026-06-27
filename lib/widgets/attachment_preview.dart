@@ -39,20 +39,39 @@ class AttachmentPreview extends StatelessWidget {
                       borderRadius: BorderRadius.circular(4),
                       child: Image.memory(
                         _dataUriBytes(att['url'] as String? ?? ''),
-                        width: 32, height: 32, fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => Icon(Icons.image, size: 18, color: AppColors.textSecondary),
+                        width: 32,
+                        height: 32,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) => const Icon(
+                          Icons.image,
+                          size: 18,
+                          color: AppColors.textSecondary,
+                        ),
                       ),
                     )
-                  : Icon(Icons.attach_file, size: 18, color: AppColors.textSecondary),
+                  : const Icon(
+                      Icons.attach_file,
+                      size: 18,
+                      color: AppColors.textSecondary,
+                    ),
               label: Text(
                 name.length > 20 ? '${name.substring(0, 17)}...' : name,
-                style: TextStyle(color: AppColors.textPrimary, fontSize: 12),
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 12,
+                ),
               ),
-              deleteIcon: Icon(Icons.close, size: 14, color: AppColors.textTertiary),
+              deleteIcon: const Icon(
+                Icons.close,
+                size: 14,
+                color: AppColors.textTertiary,
+              ),
               onDeleted: () => onRemove(i),
               backgroundColor: AppColors.background,
-              side: BorderSide(color: AppColors.border),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              side: const BorderSide(color: AppColors.border),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
               visualDensity: VisualDensity.compact,
             );
           },

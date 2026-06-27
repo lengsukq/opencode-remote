@@ -17,9 +17,9 @@ class RevertBanner extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(Icons.undo, size: 16, color: AppColors.warning),
+          const Icon(Icons.undo, size: 16, color: AppColors.warning),
           const SizedBox(width: 8),
-          Expanded(
+          const Expanded(
             child: Text(
               'Message reverted',
               style: TextStyle(color: AppColors.textPrimary, fontSize: 12),
@@ -27,7 +27,10 @@ class RevertBanner extends StatelessWidget {
           ),
           TextButton(
             onPressed: onRestore,
-            child: Text('Restore', style: TextStyle(color: AppColors.warning, fontSize: 12)),
+            child: const Text(
+              'Restore',
+              style: TextStyle(color: AppColors.warning, fontSize: 12),
+            ),
           ),
         ],
       ),

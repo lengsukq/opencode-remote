@@ -49,7 +49,9 @@ class ProjectAvatar extends StatelessWidget {
                       shape: BoxShape.circle,
                       color: isActive ? AppColors.primaryLight : bgColor,
                       border: Border.all(
-                        color: isActive ? AppColors.primary : Colors.transparent,
+                        color: isActive
+                            ? AppColors.primary
+                            : Colors.transparent,
                         width: 2,
                       ),
                     ),
@@ -71,9 +73,14 @@ class ProjectAvatar extends StatelessWidget {
                     bottom: -2,
                     child: Container(
                       constraints: const BoxConstraints(maxWidth: 60),
-                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 1,
+                      ),
                       decoration: BoxDecoration(
-                        color: isDark ? DarkColors.surfaceAlt : AppColors.surface,
+                        color: isDark
+                            ? DarkColors.surfaceAlt
+                            : AppColors.surface,
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
                           color: isDark ? DarkColors.border : AppColors.border,
@@ -84,7 +91,9 @@ class ProjectAvatar extends StatelessWidget {
                         currentBranch!,
                         style: TextStyle(
                           fontSize: 8,
-                          color: isDark ? DarkColors.textSecondary : AppColors.textSecondary,
+                          color: isDark
+                              ? DarkColors.textSecondary
+                              : AppColors.textSecondary,
                         ),
                         overflow: TextOverflow.ellipsis,
                         maxLines: 1,

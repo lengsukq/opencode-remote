@@ -23,7 +23,9 @@ class FilePartsRow extends StatelessWidget {
           if (file == null) return const SizedBox.shrink();
           final isImage = file.mime.startsWith('image/');
           final shortName = file.filename ?? file.url.split('/').last;
-          final displayName = shortName.length > 20 ? '${shortName.substring(0, 17)}...' : shortName;
+          final displayName = shortName.length > 20
+              ? '${shortName.substring(0, 17)}...'
+              : shortName;
           return Container(
             width: 140,
             decoration: BoxDecoration(
@@ -40,25 +42,46 @@ class FilePartsRow extends StatelessWidget {
                         Image.network(
                           file.url,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) => Center(
-                            child: Icon(Icons.broken_image, color: AppColors.textSecondary, size: 28),
+                          errorBuilder: (_, _, _) => const Center(
+                            child: Icon(
+                              Icons.broken_image,
+                              color: AppColors.textSecondary,
+                              size: 28,
+                            ),
                           ),
                           loadingBuilder: (_, child, progress) {
                             if (progress == null) return child;
-                            return Center(child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary));
+                            return const Center(
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: AppColors.primary,
+                              ),
+                            );
                           },
                         ),
                         Positioned(
-                          bottom: 0, left: 0, right: 0,
+                          bottom: 0,
+                          left: 0,
+                          right: 0,
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                            decoration: BoxDecoration(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 3,
+                            ),
+                            decoration: const BoxDecoration(
                               gradient: LinearGradient(
-                                begin: Alignment.bottomCenter, end: Alignment.topCenter,
-                                colors: [AppColors.overlayDark, Colors.transparent],
+                                begin: Alignment.bottomCenter,
+                                end: Alignment.topCenter,
+                                colors: [Color(0xDD000000), Colors.transparent],
                               ),
                             ),
-                            child: Text(displayName, style: const TextStyle(color: AppColors.surface, fontSize: 10)),
+                            child: Text(
+                              displayName,
+                              style: const TextStyle(
+                                color: AppColors.surface,
+                                fontSize: 10,
+                              ),
+                            ),
                           ),
                         ),
                       ],
@@ -67,10 +90,21 @@ class FilePartsRow extends StatelessWidget {
                 : Row(
                     children: [
                       const SizedBox(width: 8),
-                      Icon(Icons.insert_drive_file, color: AppColors.textSecondary, size: 24),
+                      const Icon(
+                        Icons.insert_drive_file,
+                        color: AppColors.textSecondary,
+                        size: 24,
+                      ),
                       const SizedBox(width: 6),
                       Expanded(
-                        child: Text(displayName, style: TextStyle(color: AppColors.textPrimary, fontSize: 11), overflow: TextOverflow.ellipsis),
+                        child: Text(
+                          displayName,
+                          style: const TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 11,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                       const SizedBox(width: 8),
                     ],

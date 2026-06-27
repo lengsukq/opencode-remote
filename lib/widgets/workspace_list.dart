@@ -86,22 +86,39 @@ class _WorkspaceListState extends State<WorkspaceList> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
                 children: [
-                  const Icon(Icons.call_split, color: AppColors.primary, size: 18),
+                  const Icon(
+                    Icons.call_split,
+                    color: AppColors.primary,
+                    size: 18,
+                  ),
                   const SizedBox(width: 10),
-                  Text(
+                  const Text(
                     '分支',
-                    style: TextStyle(color: AppColors.textPrimary, fontSize: 14, fontWeight: FontWeight.w500),
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                   const SizedBox(width: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.primaryLight,
-                      borderRadius: BorderRadius.circular(AppColors.kChipBorderRadius),
+                      borderRadius: BorderRadius.circular(
+                        AppColors.kChipBorderRadius,
+                      ),
                     ),
                     child: Text(
                       currentBranch.isNotEmpty ? currentBranch : 'unknown',
-                      style: TextStyle(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.w500),
+                      style: const TextStyle(
+                        color: AppColors.primary,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
                   const Spacer(),
@@ -119,43 +136,58 @@ class _WorkspaceListState extends State<WorkspaceList> {
             if (_loading)
               const Padding(
                 padding: EdgeInsets.all(20),
-                child: Center(child: SizedBox(
-                  width: 18, height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
-                )),
+                child: Center(
+                  child: SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ),
               )
             else if (!_listSupported)
-              Padding(
-                padding: const EdgeInsets.all(16),
+              const Padding(
+                padding: EdgeInsets.all(16),
                 child: Row(
                   children: [
-                    Icon(Icons.info_outline, color: AppColors.textTertiary, size: 14),
-                    const SizedBox(width: 8),
+                    Icon(
+                      Icons.info_outline,
+                      color: AppColors.textTertiary,
+                      size: 14,
+                    ),
+                    SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         '服务端不支持分支列表',
-                        style: TextStyle(color: AppColors.textTertiary, fontSize: 12),
+                        style: TextStyle(
+                          color: AppColors.textTertiary,
+                          fontSize: 12,
+                        ),
                       ),
                     ),
                   ],
                 ),
               )
             else if (_branches.isEmpty)
-              Padding(
-                padding: const EdgeInsets.all(16),
+              const Padding(
+                padding: EdgeInsets.all(16),
                 child: Text(
                   '无分支信息',
                   style: TextStyle(color: AppColors.textTertiary, fontSize: 12),
                 ),
               )
             else
-              ..._branches.map((b) => _BranchItem(
-                name: b,
-                isCurrent: b == currentBranch,
-                onTap: () {
-                  // Reserved for branch switch callback
-                },
-              )),
+              ..._branches.map(
+                (b) => _BranchItem(
+                  name: b,
+                  isCurrent: b == currentBranch,
+                  onTap: () {
+                    // Reserved for branch switch callback
+                  },
+                ),
+              ),
           ],
         ],
       ),
@@ -168,11 +200,7 @@ class _BranchItem extends StatelessWidget {
   final bool isCurrent;
   final VoidCallback? onTap;
 
-  const _BranchItem({
-    required this.name,
-    required this.isCurrent,
-    this.onTap,
-  });
+  const _BranchItem({required this.name, required this.isCurrent, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -203,9 +231,14 @@ class _BranchItem extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                 decoration: BoxDecoration(
                   color: AppColors.primaryLight,
-                  borderRadius: BorderRadius.circular(AppColors.kChipBorderRadius),
+                  borderRadius: BorderRadius.circular(
+                    AppColors.kChipBorderRadius,
+                  ),
                 ),
-                child: const Text('当前', style: TextStyle(color: AppColors.primary, fontSize: 9)),
+                child: const Text(
+                  '当前',
+                  style: TextStyle(color: AppColors.primary, fontSize: 9),
+                ),
               ),
           ],
         ),

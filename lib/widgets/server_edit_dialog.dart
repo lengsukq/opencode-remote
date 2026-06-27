@@ -43,7 +43,9 @@ class _AppServerEditDialogState extends State<AppServerEditDialog> {
   @override
   void initState() {
     super.initState();
-    final uri = widget.existing != null ? Uri.tryParse(widget.existing!.url) : null;
+    final uri = widget.existing != null
+        ? Uri.tryParse(widget.existing!.url)
+        : null;
     _nameCtrl = TextEditingController(text: widget.existing?.name ?? '');
     _hostCtrl = TextEditingController(
       text: uri?.host.isNotEmpty == true ? uri!.host : '',
@@ -51,7 +53,9 @@ class _AppServerEditDialogState extends State<AppServerEditDialog> {
     _portCtrl = TextEditingController(
       text: uri != null && uri.port > 0 ? uri.port.toString() : '4096',
     );
-    _userCtrl = TextEditingController(text: widget.existing?.username ?? 'opencode');
+    _userCtrl = TextEditingController(
+      text: widget.existing?.username ?? 'opencode',
+    );
     _passCtrl = TextEditingController(text: widget.existing?.password ?? '');
     _useHttps = uri?.scheme == 'https';
   }
@@ -149,7 +153,10 @@ class _AppServerEditDialogState extends State<AppServerEditDialog> {
             FocusScope.of(context).unfocus();
             Navigator.pop(context);
           },
-          child: const Text(S.cancel, style: TextStyle(color: AppColors.textSecondary)),
+          child: const Text(
+            S.cancel,
+            style: TextStyle(color: AppColors.textSecondary),
+          ),
         ),
         FilledButton(
           style: FilledButton.styleFrom(backgroundColor: AppColors.primary),

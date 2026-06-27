@@ -56,9 +56,20 @@ class _ReasoningBlockState extends State<ReasoningBlock> {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               child: Row(
                 children: [
-                  Icon(Icons.psychology, color: AppColors.warning, size: 16),
+                  const Icon(
+                    Icons.psychology,
+                    color: AppColors.warning,
+                    size: 16,
+                  ),
                   const SizedBox(width: 6),
-                  Text(S.thinkingProcess, style: TextStyle(color: AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.w500)),
+                  const Text(
+                    S.thinkingProcess,
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                   const Spacer(),
                   Icon(
                     _isExpanded ? Icons.unfold_less : Icons.unfold_more,
@@ -74,7 +85,12 @@ class _ReasoningBlockState extends State<ReasoningBlock> {
               padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
               child: Text(
                 widget.content,
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 12, fontFamily: 'monospace', height: 1.5),
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 12,
+                  fontFamily: 'monospace',
+                  height: 1.5,
+                ),
               ),
             ),
         ],

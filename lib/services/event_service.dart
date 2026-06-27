@@ -68,6 +68,8 @@ class EventService {
       final response = await _client!.send(request);
 
       if (response.statusCode != 200) {
+        _client?.close();
+        _client = null;
         _scheduleReconnect();
         return;
       }
@@ -79,11 +81,11 @@ class EventService {
           .transform(utf8.decoder)
           .transform(const LineSplitter())
           .listen(
-        _onLine,
-        onError: (_) => _scheduleReconnect(),
-        onDone: () => _scheduleReconnect(),
-        cancelOnError: false,
-      );
+            _onLine,
+            onError: (_) => _scheduleReconnect(),
+            onDone: () => _scheduleReconnect(),
+            cancelOnError: false,
+          );
     } catch (e) {
       _log('EventService._doConnect: $e');
       _scheduleReconnect();
@@ -107,7 +109,9 @@ class EventService {
     _heartbeatTimer = Timer.periodic(_heartbeatInterval, (_) {
       final elapsed = DateTime.now().difference(_lastEventTime);
       if (elapsed > _heartbeatTimeout) {
-        _log('EventService heartbeat timeout (${elapsed.inSeconds}s), reconnecting');
+        _log(
+          'EventService heartbeat timeout (${elapsed.inSeconds}s), reconnecting',
+        );
         _heartbeatTimer?.cancel();
         _scheduleReconnect();
       }
@@ -121,7 +125,9 @@ class EventService {
     Map<String, dynamic> data;
     try {
       final decoded = jsonDecode(rawData);
-      data = decoded is Map<String, dynamic> ? decoded : {'raw': rawData, 'decoded': decoded};
+      data = decoded is Map<String, dynamic>
+          ? decoded
+          : {'raw': rawData, 'decoded': decoded};
     } catch (e) {
       _log('EventService._emitEvent json parse: $e');
       return;
@@ -160,9 +166,7 @@ class EventService {
   void _scheduleReconnect() {
     if (_cancelled) return;
     _reconnectAttempts++;
-    final delay = Duration(
-      seconds: (_reconnectAttempts * 2).clamp(1, 30),
-    );
+    final delay = Duration(seconds: (_reconnectAttempts * 2).clamp(1, 30));
     _reconnectTimer?.cancel();
     _reconnectTimer = Timer(delay, _doConnect);
   }

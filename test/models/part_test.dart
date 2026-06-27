@@ -4,11 +4,7 @@ import 'package:opencode_remote/models/part.dart';
 void main() {
   group('Part.fromJson', () {
     test('parses text part', () {
-      final json = {
-        'id': 'p1',
-        'type': 'text',
-        'text': 'Hello',
-      };
+      final json = {'id': 'p1', 'type': 'text', 'text': 'Hello'};
       final part = Part.fromJson(json);
       expect(part.id, 'p1');
       expect(part.type, 'text');
@@ -17,11 +13,7 @@ void main() {
     });
 
     test('parses reasoning part', () {
-      final json = {
-        'id': 'p2',
-        'type': 'reasoning',
-        'text': 'Thinking...',
-      };
+      final json = {'id': 'p2', 'type': 'reasoning', 'text': 'Thinking...'};
       final part = Part.fromJson(json);
       expect(part.type, 'reasoning');
       expect(part.reasoningText, 'Thinking...');
@@ -33,10 +25,7 @@ void main() {
         'type': 'tool',
         'callID': 'call_1',
         'tool': 'read_file',
-        'state': {
-          'status': 'completed',
-          'output': 'file content',
-        },
+        'state': {'status': 'completed', 'output': 'file content'},
       };
       final part = Part.fromJson(json);
       expect(part.type, 'tool');
@@ -63,11 +52,7 @@ void main() {
     });
 
     test('parses snapshot part', () {
-      final json = {
-        'id': 'p5',
-        'type': 'snapshot',
-        'snapshot': 'base64data',
-      };
+      final json = {'id': 'p5', 'type': 'snapshot', 'snapshot': 'base64data'};
       final part = Part.fromJson(json);
       expect(part.type, 'snapshot');
       expect(part.snapshot, 'base64data');

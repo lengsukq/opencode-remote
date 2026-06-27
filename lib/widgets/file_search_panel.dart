@@ -83,7 +83,7 @@ class _FileSearchPanelState extends State<FileSearchPanel> {
         controller: _searchCtrl,
         autofocus: true,
         style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
-        decoration: InputDecoration(
+        decoration: const InputDecoration(
           hintText: S.searchFiles,
           hintStyle: TextStyle(color: AppColors.textTertiary),
           border: InputBorder.none,
@@ -116,16 +116,16 @@ class _FileSearchPanelState extends State<FileSearchPanel> {
           child: _isSearching
               ? const Center(child: AppLoadingIndicator())
               : _searchTabName == 'file'
-                  ? _fileResults.isNotEmpty
-                      ? _buildFileResultList()
-                      : _emptySearch()
-                  : _searchTabName == 'text'
-                      ? _searchResults.isNotEmpty
-                          ? _buildTextResultList()
-                          : _emptySearch()
-                      : _symbolResults.isNotEmpty
-                          ? _buildSymbolResultList()
-                          : _emptySearch(),
+              ? _fileResults.isNotEmpty
+                    ? _buildFileResultList()
+                    : _emptySearch()
+              : _searchTabName == 'text'
+              ? _searchResults.isNotEmpty
+                    ? _buildTextResultList()
+                    : _emptySearch()
+              : _symbolResults.isNotEmpty
+              ? _buildSymbolResultList()
+              : _emptySearch(),
         ),
       ],
     );
@@ -137,11 +137,15 @@ class _FileSearchPanelState extends State<FileSearchPanel> {
       itemCount: _fileResults.length,
       itemBuilder: (ctx, i) => ListTile(
         dense: true,
-        leading: Icon(Icons.insert_drive_file,
-            color: AppColors.textSecondary, size: 18),
-        title: Text(_fileResults[i],
-            style: const TextStyle(
-                color: AppColors.textPrimary, fontSize: 13)),
+        leading: const Icon(
+          Icons.insert_drive_file,
+          color: AppColors.textSecondary,
+          size: 18,
+        ),
+        title: Text(
+          _fileResults[i],
+          style: const TextStyle(color: AppColors.textPrimary, fontSize: 13),
+        ),
         onTap: () => widget.onOpenFile(_fileResults[i]),
       ),
     );
@@ -155,23 +159,34 @@ class _FileSearchPanelState extends State<FileSearchPanel> {
         final r = _searchResults[i];
         return ListTile(
           dense: true,
-          leading: Icon(Icons.text_snippet,
-              color: AppColors.textSecondary, size: 18),
-          title: Text(r.path.split('/').last,
-              style: const TextStyle(
-                  color: AppColors.textPrimary, fontSize: 13)),
+          leading: const Icon(
+            Icons.text_snippet,
+            color: AppColors.textSecondary,
+            size: 18,
+          ),
+          title: Text(
+            r.path.split('/').last,
+            style: const TextStyle(color: AppColors.textPrimary, fontSize: 13),
+          ),
           subtitle: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('行 ${r.lineNumber}',
-                  style: TextStyle(
-                      color: AppColors.textTertiary, fontSize: 10)),
-              Text(r.lines,
-                  style: const TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 11,
-                      fontFamily: 'monospace'),
-                  maxLines: 2),
+              Text(
+                '行 ${r.lineNumber}',
+                style: const TextStyle(
+                  color: AppColors.textTertiary,
+                  fontSize: 10,
+                ),
+              ),
+              Text(
+                r.lines,
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 11,
+                  fontFamily: 'monospace',
+                ),
+                maxLines: 2,
+              ),
             ],
           ),
           onTap: () => widget.onOpenFile(r.path),
@@ -188,13 +203,15 @@ class _FileSearchPanelState extends State<FileSearchPanel> {
         final s = _symbolResults[i];
         return ListTile(
           dense: true,
-          leading: Icon(Icons.code, color: AppColors.warning, size: 18),
-          title: Text(s.name,
-              style: const TextStyle(
-                  color: AppColors.textPrimary, fontSize: 13)),
-          subtitle: Text(s.path,
-              style: TextStyle(
-                  color: AppColors.textTertiary, fontSize: 11)),
+          leading: const Icon(Icons.code, color: AppColors.warning, size: 18),
+          title: Text(
+            s.name,
+            style: const TextStyle(color: AppColors.textPrimary, fontSize: 13),
+          ),
+          subtitle: Text(
+            s.path,
+            style: const TextStyle(color: AppColors.textTertiary, fontSize: 11),
+          ),
           onTap: () {
             if (s.path.isNotEmpty) widget.onOpenFile(s.path);
           },
@@ -252,9 +269,11 @@ class _FileSearchPanelState extends State<FileSearchPanel> {
   }
 
   Widget _emptySearch() {
-    return Center(
-      child: Text(S.searchKeyword,
-          style: TextStyle(color: AppColors.textTertiary, fontSize: 14)),
+    return const Center(
+      child: Text(
+        S.searchKeyword,
+        style: TextStyle(color: AppColors.textTertiary, fontSize: 14),
+      ),
     );
   }
 }

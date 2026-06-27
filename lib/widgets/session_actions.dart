@@ -61,7 +61,10 @@ class SessionActions {
             mainAxisSize: MainAxisSize.min,
             children: [
               AppBar(
-                title: const Text(S.childSessions, style: TextStyle(color: AppColors.textPrimary, fontSize: 14)),
+                title: const Text(
+                  S.childSessions,
+                  style: TextStyle(color: AppColors.textPrimary, fontSize: 14),
+                ),
                 leading: IconButton(
                   icon: const Icon(Icons.close, color: AppColors.textSecondary),
                   onPressed: () => Navigator.pop(ctx),
@@ -70,13 +73,30 @@ class SessionActions {
               if (children.isEmpty)
                 const Padding(
                   padding: EdgeInsets.all(20),
-                  child: Text(S.noChildSessions, style: TextStyle(color: AppColors.textTertiary)),
+                  child: Text(
+                    S.noChildSessions,
+                    style: TextStyle(color: AppColors.textTertiary),
+                  ),
                 )
               else
-                ...children.map((c) => ListTile(
-                  title: Text(c.title.isNotEmpty ? c.title : S.unnamed, style: TextStyle(color: AppColors.textPrimary, fontSize: 13)),
-                  subtitle: Text(c.status, style: TextStyle(color: AppColors.textTertiary, fontSize: 11)),
-                )),
+                ...children.map(
+                  (c) => ListTile(
+                    title: Text(
+                      c.title.isNotEmpty ? c.title : S.unnamed,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 13,
+                      ),
+                    ),
+                    subtitle: Text(
+                      c.status,
+                      style: const TextStyle(
+                        color: AppColors.textTertiary,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ),
+                ),
             ],
           ),
         ),
@@ -102,7 +122,10 @@ class SessionActions {
             mainAxisSize: MainAxisSize.min,
             children: [
               AppBar(
-                title: const Text(S.todoList, style: TextStyle(color: AppColors.textPrimary, fontSize: 14)),
+                title: const Text(
+                  S.todoList,
+                  style: TextStyle(color: AppColors.textPrimary, fontSize: 14),
+                ),
                 leading: IconButton(
                   icon: const Icon(Icons.close, color: AppColors.textSecondary),
                   onPressed: () => Navigator.pop(ctx),
@@ -111,27 +134,40 @@ class SessionActions {
               if (todos.isEmpty)
                 const Padding(
                   padding: EdgeInsets.all(20),
-                  child: Text(S.noTodos, style: TextStyle(color: AppColors.textTertiary)),
+                  child: Text(
+                    S.noTodos,
+                    style: TextStyle(color: AppColors.textTertiary),
+                  ),
                 )
               else
                 Expanded(
                   child: ListView(
-                    children: todos.map((t) => ListTile(
-                      dense: true,
-                      leading: Icon(
-                        t.done ? Icons.check_circle : Icons.radio_button_unchecked,
-                        color: t.done ? AppColors.success : AppColors.textSecondary,
-                        size: 18,
-                      ),
-                      title: Text(
-                        t.task,
-                        style: TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: 13,
-                          decoration: t.done ? TextDecoration.lineThrough : null,
-                        ),
-                      ),
-                    )).toList(),
+                    children: todos
+                        .map(
+                          (t) => ListTile(
+                            dense: true,
+                            leading: Icon(
+                              t.done
+                                  ? Icons.check_circle
+                                  : Icons.radio_button_unchecked,
+                              color: t.done
+                                  ? AppColors.success
+                                  : AppColors.textSecondary,
+                              size: 18,
+                            ),
+                            title: Text(
+                              t.task,
+                              style: TextStyle(
+                                color: AppColors.textPrimary,
+                                fontSize: 13,
+                                decoration: t.done
+                                    ? TextDecoration.lineThrough
+                                    : null,
+                              ),
+                            ),
+                          ),
+                        )
+                        .toList(),
                   ),
                 ),
             ],
@@ -205,7 +241,13 @@ class SessionActions {
             mainAxisSize: MainAxisSize.max,
             children: [
               AppBar(
-                title: Text(S.diffTitle(session.title), style: const TextStyle(color: AppColors.textPrimary, fontSize: 14)),
+                title: Text(
+                  S.diffTitle(session.title),
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 14,
+                  ),
+                ),
                 leading: IconButton(
                   icon: const Icon(Icons.close, color: AppColors.textSecondary),
                   onPressed: () => Navigator.pop(ctx),
@@ -214,14 +256,24 @@ class SessionActions {
               Expanded(
                 child: ListView(
                   padding: const EdgeInsets.all(12),
-                  children: diffs.map((d) => Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: DiffView(
-                      filePath: d.filePath,
-                      status: d.status,
-                      hunks: [DiffHunkView.fromContent(0, 0, d.patch ?? '+${d.additions} -${d.deletions}')],
-                    ),
-                  )).toList(),
+                  children: diffs
+                      .map(
+                        (d) => Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: DiffView(
+                            filePath: d.filePath,
+                            status: d.status,
+                            hunks: [
+                              DiffHunkView.fromContent(
+                                0,
+                                0,
+                                d.patch ?? '+${d.additions} -${d.deletions}',
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                      .toList(),
                 ),
               ),
             ],
@@ -264,14 +316,26 @@ class SessionActions {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.surface,
-        title: const Text(S.forkSession, style: TextStyle(color: AppColors.textPrimary)),
-        content: const Text(S.forkSessionConfirm, style: TextStyle(color: AppColors.textSecondary)),
+        title: const Text(
+          S.forkSession,
+          style: TextStyle(color: AppColors.textPrimary),
+        ),
+        content: const Text(
+          S.forkSessionConfirm,
+          style: TextStyle(color: AppColors.textSecondary),
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(S.cancel, style: const TextStyle(color: AppColors.textSecondary))),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text(
+              S.cancel,
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
             onPressed: () => Navigator.pop(ctx),
-            child: Text(S.fork),
+            child: const Text(S.fork),
           ),
         ],
       ),
@@ -300,14 +364,26 @@ class SessionActions {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.surface,
-        title: Text(S.deleteSession, style: TextStyle(color: AppColors.textPrimary)),
-        content: Text(S.confirmDeleteSession(session.title), style: TextStyle(color: AppColors.textSecondary)),
+        title: const Text(
+          S.deleteSession,
+          style: TextStyle(color: AppColors.textPrimary),
+        ),
+        content: Text(
+          S.confirmDeleteSession(session.title),
+          style: const TextStyle(color: AppColors.textSecondary),
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(S.cancel, style: const TextStyle(color: AppColors.textSecondary))),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text(
+              S.cancel,
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
             onPressed: () => Navigator.pop(ctx, true),
-            child: Text(S.delete),
+            child: const Text(S.delete),
           ),
         ],
       ),

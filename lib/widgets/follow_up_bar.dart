@@ -16,7 +16,7 @@ class FollowUpBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: AppColors.surface,
         border: Border(top: BorderSide(color: AppColors.border)),
       ),
@@ -24,7 +24,7 @@ class FollowUpBar extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
+          const Text(
             '建议后续',
             style: TextStyle(
               color: AppColors.textSecondary,
@@ -36,21 +36,25 @@ class FollowUpBar extends StatelessWidget {
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
-              children: suggestions.map((suggestion) => Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: ActionChip(
-                  label: Text(
-                    suggestion,
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 12,
+              children: suggestions
+                  .map(
+                    (suggestion) => Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ActionChip(
+                        label: Text(
+                          suggestion,
+                          style: const TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 12,
+                          ),
+                        ),
+                        backgroundColor: AppColors.surfaceAlt,
+                        side: const BorderSide(color: AppColors.border),
+                        onPressed: () => onSend(suggestion),
+                      ),
                     ),
-                  ),
-                  backgroundColor: AppColors.surfaceAlt,
-                  side: BorderSide(color: AppColors.border),
-                  onPressed: () => onSend(suggestion),
-                ),
-              )).toList(),
+                  )
+                  .toList(),
             ),
           ),
         ],

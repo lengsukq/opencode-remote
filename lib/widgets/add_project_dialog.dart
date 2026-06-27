@@ -64,9 +64,9 @@ class _AddProjectDialogState extends State<AddProjectDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       backgroundColor: AppColors.surface,
-      title: Text(
+      title: const Text(
         S.addProject,
-        style: const TextStyle(color: AppColors.textPrimary),
+        style: TextStyle(color: AppColors.textPrimary),
       ),
       content: SizedBox(
         width: double.maxFinite,
@@ -99,7 +99,10 @@ class _AddProjectDialogState extends State<AddProjectDialog> {
       actions: [
         TextButton(
           onPressed: _loading ? null : () => Navigator.pop(context),
-          child: const Text(S.cancel, style: TextStyle(color: AppColors.textSecondary)),
+          child: const Text(
+            S.cancel,
+            style: TextStyle(color: AppColors.textSecondary),
+          ),
         ),
         FilledButton(
           style: FilledButton.styleFrom(backgroundColor: AppColors.primary),

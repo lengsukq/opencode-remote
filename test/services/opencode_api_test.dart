@@ -66,10 +66,7 @@ void main() {
         'not a map',
         {'id': '3'},
       ];
-      final result = OpenCodeApi.safeList(
-        json,
-        (m) => m['id'] as String,
-      );
+      final result = OpenCodeApi.safeList(json, (m) => m['id'] as String);
       expect(result.length, 2);
     });
   });

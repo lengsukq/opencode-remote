@@ -22,7 +22,9 @@ class ChatInputBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final shellHint = shellMode ? 'Enter shell command...' : 'Enter message... (/ for commands)';
+    final shellHint = shellMode
+        ? 'Enter shell command...'
+        : 'Enter message... (/ for commands)';
     return Container(
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).padding.bottom),
       decoration: const BoxDecoration(
@@ -38,7 +40,10 @@ class ChatInputBar extends StatelessWidget {
               if (!sending)
                 IconButton(
                   onPressed: onPickAttachment,
-                  icon: const Icon(Icons.add_circle_outline, color: AppColors.primary),
+                  icon: const Icon(
+                    Icons.add_circle_outline,
+                    color: AppColors.primary,
+                  ),
                   tooltip: 'Add attachment',
                 ),
               const SizedBox(width: 4),
@@ -52,22 +57,36 @@ class ChatInputBar extends StatelessWidget {
                   ),
                   decoration: InputDecoration(
                     hintText: shellHint,
-                    hintStyle: TextStyle(color: AppColors.textTertiary, fontFamily: shellMode ? 'monospace' : null),
+                    hintStyle: TextStyle(
+                      color: AppColors.textTertiary,
+                      fontFamily: shellMode ? 'monospace' : null,
+                    ),
                     filled: true,
-                    fillColor: shellMode ? AppColors.surfaceAlt : AppColors.background,
+                    fillColor: shellMode
+                        ? AppColors.surfaceAlt
+                        : AppColors.background,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(20),
-                      borderSide: BorderSide(color: shellMode ? AppColors.success : AppColors.border),
+                      borderSide: BorderSide(
+                        color: shellMode ? AppColors.success : AppColors.border,
+                      ),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(20),
-                      borderSide: BorderSide(color: shellMode ? AppColors.success : AppColors.border),
+                      borderSide: BorderSide(
+                        color: shellMode ? AppColors.success : AppColors.border,
+                      ),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(20),
-                      borderSide: BorderSide(color: AppColors.borderFocused),
+                      borderSide: const BorderSide(
+                        color: AppColors.borderFocused,
+                      ),
                     ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
                   ),
                   maxLines: 4,
                   minLines: 1,

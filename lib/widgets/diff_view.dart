@@ -86,7 +86,11 @@ class DiffView extends StatelessWidget {
               ),
               child: Text(
                 '+$totalAdditions',
-                style: const TextStyle(color: AppColors.success, fontSize: 10, fontWeight: FontWeight.w600),
+                style: const TextStyle(
+                  color: AppColors.success,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           if (totalDeletions > 0) const SizedBox(width: 4),
@@ -99,7 +103,11 @@ class DiffView extends StatelessWidget {
               ),
               child: Text(
                 '-$totalDeletions',
-                style: const TextStyle(color: AppColors.danger, fontSize: 10, fontWeight: FontWeight.w600),
+                style: const TextStyle(
+                  color: AppColors.danger,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
         ],
@@ -124,8 +132,14 @@ class DiffHunkView {
   });
 
   DiffHunkView.fromContent(this.oldStart, this.newStart, this.content)
-      : additions = '\n$content'.split('\n').where((l) => l.startsWith('+')).length,
-        deletions = '\n$content'.split('\n').where((l) => l.startsWith('-')).length;
+    : additions = '\n$content'
+          .split('\n')
+          .where((l) => l.startsWith('+'))
+          .length,
+      deletions = '\n$content'
+          .split('\n')
+          .where((l) => l.startsWith('-'))
+          .length;
 }
 
 class _HunkView extends StatelessWidget {
@@ -155,9 +169,17 @@ class _HunkView extends StatelessWidget {
         ),
         ...lines.map((line) {
           if (line.startsWith('+')) {
-            return _diffLine(line, AppColors.success.withValues(alpha: 0.15), '+');
+            return _diffLine(
+              line,
+              AppColors.success.withValues(alpha: 0.15),
+              '+',
+            );
           } else if (line.startsWith('-')) {
-            return _diffLine(line, AppColors.danger.withValues(alpha: 0.15), '-');
+            return _diffLine(
+              line,
+              AppColors.danger.withValues(alpha: 0.15),
+              '-',
+            );
           } else {
             return _diffLine(line, Colors.transparent, ' ');
           }

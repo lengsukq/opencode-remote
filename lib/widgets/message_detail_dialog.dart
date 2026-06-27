@@ -14,9 +14,9 @@ void showMessageDetail(BuildContext context, SessionMessageResponse detail) {
         mainAxisSize: MainAxisSize.min,
         children: [
           AppBar(
-            title: Text(
+            title: const Text(
               S.messageDetails,
-              style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
+              style: TextStyle(color: AppColors.textPrimary, fontSize: 14),
             ),
             leading: IconButton(
               icon: const Icon(Icons.close, color: AppColors.textSecondary),
@@ -31,24 +31,31 @@ void showMessageDetail(BuildContext context, SessionMessageResponse detail) {
                 _buildInfoRow(S.role, detail.info.role),
                 _buildInfoRow('Parts', detail.parts.length.toString()),
                 const SizedBox(height: 12),
-                Text(
+                const Text(
                   'Parts:',
-                  style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                  ),
                 ),
                 const SizedBox(height: 4),
-                ...detail.parts.take(10).map((p) => Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: Text(
-                    '  [${p.type}] ${_partSummary(p)}',
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 11,
-                      fontFamily: 'monospace',
+                ...detail.parts
+                    .take(10)
+                    .map(
+                      (p) => Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Text(
+                          '  [${p.type}] ${_partSummary(p)}',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 11,
+                            fontFamily: 'monospace',
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
-                )),
               ],
             ),
           ),
@@ -66,7 +73,7 @@ Widget _buildInfoRow(String label, String value) {
       children: [
         Text(
           '$label: ',
-          style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+          style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
         ),
         Expanded(
           child: Text(

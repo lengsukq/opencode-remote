@@ -24,13 +24,36 @@ class CommandSuggestions extends StatelessWidget {
       child: ListView(
         padding: EdgeInsets.zero,
         shrinkWrap: true,
-        children: commands.map((c) => ListTile(
-          dense: true,
-          leading: Icon(Icons.terminal, color: AppColors.primary, size: 18),
-          title: Text('/${c.id}', style: TextStyle(color: AppColors.textPrimary, fontSize: 13, fontFamily: 'monospace')),
-          subtitle: c.description != null ? Text(c.description!, style: TextStyle(color: AppColors.textTertiary, fontSize: 11)) : null,
-          onTap: () => onSelect(c),
-        )).toList(),
+        children: commands
+            .map(
+              (c) => ListTile(
+                dense: true,
+                leading: const Icon(
+                  Icons.terminal,
+                  color: AppColors.primary,
+                  size: 18,
+                ),
+                title: Text(
+                  '/${c.id}',
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 13,
+                    fontFamily: 'monospace',
+                  ),
+                ),
+                subtitle: c.description != null
+                    ? Text(
+                        c.description!,
+                        style: const TextStyle(
+                          color: AppColors.textTertiary,
+                          fontSize: 11,
+                        ),
+                      )
+                    : null,
+                onTap: () => onSelect(c),
+              ),
+            )
+            .toList(),
       ),
     );
   }

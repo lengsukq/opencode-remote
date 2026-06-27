@@ -35,7 +35,11 @@ class CodeBlockBuilder extends MarkdownElementBuilder {
               children: [
                 Text(
                   language,
-                  style: TextStyle(color: AppColors.textSecondary, fontSize: 10, fontFamily: 'monospace'),
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 10,
+                    fontFamily: 'monospace',
+                  ),
                 ),
                 const Spacer(),
                 Builder(
@@ -45,17 +49,28 @@ class CodeBlockBuilder extends MarkdownElementBuilder {
                       if (onApply != null)
                         GestureDetector(
                           onTap: () => onApply!(code, language, ctx),
-                          child: Icon(Icons.smart_toy_outlined, size: 13, color: AppColors.textSecondary),
+                          child: const Icon(
+                            Icons.smart_toy_outlined,
+                            size: 13,
+                            color: AppColors.textSecondary,
+                          ),
                         ),
                       if (onApply != null) const SizedBox(width: 10),
                       GestureDetector(
                         onTap: () {
                           Clipboard.setData(ClipboardData(text: code));
                           ScaffoldMessenger.of(ctx).showSnackBar(
-                            const SnackBar(content: Text(S.copied), duration: Duration(seconds: 1)),
+                            const SnackBar(
+                              content: Text(S.copied),
+                              duration: Duration(seconds: 1),
+                            ),
                           );
                         },
-                        child: Icon(Icons.content_copy, size: 13, color: AppColors.textSecondary),
+                        child: const Icon(
+                          Icons.content_copy,
+                          size: 13,
+                          color: AppColors.textSecondary,
+                        ),
                       ),
                       const SizedBox(width: 4),
                     ],
@@ -69,7 +84,11 @@ class CodeBlockBuilder extends MarkdownElementBuilder {
             language: language,
             theme: githubTheme,
             padding: const EdgeInsets.all(12),
-            textStyle: const TextStyle(fontFamily: 'monospace', fontSize: 12, height: 1.5),
+            textStyle: const TextStyle(
+              fontFamily: 'monospace',
+              fontSize: 12,
+              height: 1.5,
+            ),
           ),
         ],
       ),

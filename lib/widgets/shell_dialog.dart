@@ -33,7 +33,7 @@ Future<String?> showShellDialog(BuildContext context) {
       FilledButton(
         style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
         onPressed: () => Navigator.pop(context, ''),
-        child: Text(S.ok),
+        child: const Text(S.ok),
       ),
     ],
   );
