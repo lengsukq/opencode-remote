@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../theme.dart';
+import '../strings.dart';
 
 /// A collapsible reasoning block displaying AI thought process.
 class ReasoningBlock extends StatefulWidget {
@@ -17,22 +18,22 @@ class ReasoningBlock extends StatefulWidget {
 }
 
 class _ReasoningBlockState extends State<ReasoningBlock> {
-  late bool _expanded;
+  late bool _isExpanded;
 
   @override
   void initState() {
     super.initState();
-    _expanded = widget.isLatest;
+    _isExpanded = widget.isLatest;
   }
 
   @override
   void didUpdateWidget(ReasoningBlock oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (!widget.isLatest && oldWidget.isLatest) {
-      setState(() => _expanded = false);
+      setState(() => _isExpanded = false);
     }
     if (widget.isLatest && !oldWidget.isLatest) {
-      setState(() => _expanded = true);
+      setState(() => _isExpanded = true);
     }
   }
 
@@ -42,25 +43,25 @@ class _ReasoningBlockState extends State<ReasoningBlock> {
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
         color: AppColors.surfaceAlt,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(AppColors.kSmallBorderRadius),
         border: Border.all(color: AppColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           InkWell(
-            onTap: () => setState(() => _expanded = !_expanded),
-            borderRadius: BorderRadius.circular(10),
+            onTap: () => setState(() => _isExpanded = !_isExpanded),
+            borderRadius: BorderRadius.circular(AppColors.kSmallBorderRadius),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               child: Row(
                 children: [
                   Icon(Icons.psychology, color: AppColors.warning, size: 16),
                   const SizedBox(width: 6),
-                  Text('思考过程', style: TextStyle(color: AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.w500)),
+                  Text(S.thinkingProcess, style: TextStyle(color: AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.w500)),
                   const Spacer(),
                   Icon(
-                    _expanded ? Icons.unfold_less : Icons.unfold_more,
+                    _isExpanded ? Icons.unfold_less : Icons.unfold_more,
                     color: AppColors.textTertiary,
                     size: 16,
                   ),
@@ -68,7 +69,7 @@ class _ReasoningBlockState extends State<ReasoningBlock> {
               ),
             ),
           ),
-          if (_expanded)
+          if (_isExpanded)
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
               child: Text(

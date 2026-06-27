@@ -7,6 +7,7 @@ import '../../utils/time_format.dart';
 import '../settings_sheet.dart';
 import '../../widgets/app_dialog.dart';
 import '../../widgets/app_bottom_sheet.dart';
+import '../../widgets/app_snackbar.dart';
 import 'session_list_screen.dart';
 import 'file_browser_screen.dart';
 import 'project_screen.dart';
@@ -135,9 +136,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (apiKey == null || apiKey.isEmpty) return;
     try {
       await _api.setAuth(providerID, {'apiKey': apiKey});
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('认证已设置')));
+      if (mounted) AppSnackBar.success(context, '认证已设置');
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('设置认证失败: $e')));
+      if (mounted) AppSnackBar.error(context, '设置认证失败: $e');
     }
   }
 
@@ -163,13 +164,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
               if (v == 'dispose') {
                 try {
                   await _api.disposeInstance();
-                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('实例已销毁')));
+                  if (mounted) AppSnackBar.show(context, '实例已销毁');
                 } catch (e) {
-                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('销毁失败: $e')));
+                  if (mounted) AppSnackBar.error(context, '销毁失败: $e');
                 }
               } else if (v == 'log') {
                 await _api.writeLog('client', 'info', 'Dashboard health check from remote app', extra: {'url': _entry.url});
-                if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('日志已写入')));
+                if (mounted) AppSnackBar.show(context, '日志已写入');
               } else if (v == 'auth') {
                 await _showAuthDialog();
               }

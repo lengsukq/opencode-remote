@@ -5,6 +5,8 @@ import '../models.dart';
 import '../theme.dart';
 import '../services/storage_service.dart';
 import '../widgets/server_edit_dialog.dart';
+import '../widgets/app_bottom_sheet.dart';
+import '../widgets/app_snackbar.dart';
 import 'launcher_screen.dart';
 
 class WebViewScreen extends StatefulWidget {
@@ -40,9 +42,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
         onPageFinished: (_) => setState(() => _loading = false),
         onWebResourceError: (error) {
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('加载失败: ${error.description}')),
-            );
+            AppSnackBar.error(context, '加载失败: ${error.description}');
           }
         },
       ));
@@ -63,38 +63,36 @@ class _WebViewScreenState extends State<WebViewScreen> {
     final servers = await StorageService.loadServers();
     if (!mounted) return;
 
-    final selected = await showModalBottomSheet<ServerEntry>(
+    final selected = await AppBottomSheet.show<ServerEntry>(
       context: context,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text('切换服务器', style: TextStyle(color: AppColors.textPrimary, fontSize: 16)),
-            ),
-            const Divider(),
-            ...servers.map((s) => ListTile(
-                  leading: Icon(Icons.computer, color: s.id == _entry.id ? AppColors.primary : AppColors.textSecondary),
-                  title: Text(s.name, style: TextStyle(color: s.id == _entry.id ? AppColors.primary : AppColors.textPrimary)),
-                  subtitle: Text(s.url, style: TextStyle(color: AppColors.textTertiary, fontSize: 12)),
-                  onTap: () => Navigator.pop(ctx, s),
-                )),
-            const Divider(),
-            ListTile(
-              leading: Icon(Icons.add, color: AppColors.textSecondary),
-              title: const Text('添加新服务器', style: TextStyle(color: AppColors.textPrimary)),
-              onTap: () {
-                Navigator.pop(ctx);
-                WidgetsBinding.instance.addPostFrameCallback((_) => _addNew());
-              },
-            ),
-            const SizedBox(height: 8),
-          ],
+      child: Builder(
+        builder: (ctx) => SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text('切换服务器', style: TextStyle(color: AppColors.textPrimary, fontSize: 16)),
+              ),
+              const Divider(),
+              ...servers.map((s) => ListTile(
+                    leading: Icon(Icons.computer, color: s.id == _entry.id ? AppColors.primary : AppColors.textSecondary),
+                    title: Text(s.name, style: TextStyle(color: s.id == _entry.id ? AppColors.primary : AppColors.textPrimary)),
+                    subtitle: Text(s.url, style: TextStyle(color: AppColors.textTertiary, fontSize: 12)),
+                    onTap: () => Navigator.pop(ctx, s),
+                  )),
+              const Divider(),
+              ListTile(
+                leading: Icon(Icons.add, color: AppColors.textSecondary),
+                title: const Text('添加新服务器', style: TextStyle(color: AppColors.textPrimary)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  WidgetsBinding.instance.addPostFrameCallback((_) => _addNew());
+                },
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
         ),
       ),
     );

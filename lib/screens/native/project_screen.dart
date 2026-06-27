@@ -3,6 +3,9 @@ import '../../models.dart';
 import '../../theme.dart';
 import '../../services/opencode_api.dart';
 import '../../widgets/app_card.dart';
+import '../../widgets/app_bottom_sheet.dart';
+import '../../widgets/app_snackbar.dart';
+import '../../widgets/app_states.dart';
 
 class ProjectScreen extends StatefulWidget {
   final ServerEntry entry;
@@ -62,7 +65,7 @@ class _ProjectScreenState extends State<ProjectScreen> {
         ],
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+          ? const AppLoadingIndicator()
           : _error != null
               ? Center(child: Text(_error!, style: TextStyle(color: AppColors.textSecondary)))
               : ListView(
@@ -99,45 +102,41 @@ class _ProjectScreenState extends State<ProjectScreen> {
   }
 
   void _showProjectDetail(Project project) {
-    showModalBottomSheet(
+    AppBottomSheet.show(
       context: context,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppColors.kDefaultBorderRadius)),
-      ),
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(project.name, style: const TextStyle(color: AppColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w600)),
-              const SizedBox(height: 12),
-              _detailRow(Icons.folder, '路径', project.path),
-              if (project.id.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                _detailRow(Icons.tag, 'ID', project.id),
-              ],
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
-                  icon: const Icon(Icons.check_circle, size: 18),
-                  label: Text(project.id == _current?.id ? '当前项目' : '切换到该项目'),
-                  onPressed: project.id == _current?.id ? null : () {
-                    widget.api.directory = project.path;
-                    Navigator.pop(ctx);
-                    _load();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('已切换到: ${project.name}')),
-                    );
-                  },
+      child: Builder(
+        builder: (ctx) => SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(project.name, style: const TextStyle(color: AppColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w600)),
+                const SizedBox(height: 12),
+                _detailRow(Icons.folder, '路径', project.path),
+                if (project.id.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  _detailRow(Icons.tag, 'ID', project.id),
+                ],
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+                    icon: const Icon(Icons.check_circle, size: 18),
+                    label: Text(project.id == _current?.id ? '当前项目' : '切换到该项目'),
+                    onPressed: project.id == _current?.id ? null : () {
+                      widget.api.directory = project.path;
+                      Navigator.pop(ctx);
+                      _load();
+                      AppSnackBar.success(context, '已切换到: ${project.name}');
+                    },
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
-            ],
+                const SizedBox(height: 8),
+              ],
+            ),
           ),
         ),
       ),

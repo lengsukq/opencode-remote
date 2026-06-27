@@ -7,6 +7,7 @@ import '../widgets/server_edit_dialog.dart';
 import 'settings_sheet.dart';
 import 'webview_screen.dart';
 import '../widgets/main_scaffold.dart';
+import '../widgets/app_bottom_sheet.dart';
 
 class LauncherScreen extends StatefulWidget {
   final AppMode? initialMode;
@@ -63,13 +64,9 @@ class _LauncherScreenState extends State<LauncherScreen> {
   }
 
   void _openSettings() {
-    showModalBottomSheet(
+    AppBottomSheet.show(
       context: context,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (_) => SettingsSheet(
+      child: SettingsSheet(
         entry: _servers.isNotEmpty ? _servers.first : ServerEntry(name: '', url: ''),
         currentMode: _mode,
       ),

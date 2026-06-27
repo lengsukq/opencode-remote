@@ -4,6 +4,7 @@ import 'package:flutter_highlight/flutter_highlight.dart';
 import 'package:flutter_highlight/themes/github.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import '../../theme.dart';
+import '../strings.dart';
 
 /// Markdown element builder for syntax-highlighted code blocks with copy/apply actions.
 class CodeBlockBuilder extends MarkdownElementBuilder {
@@ -19,7 +20,7 @@ class CodeBlockBuilder extends MarkdownElementBuilder {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 6),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppColors.kSmallBorderRadius),
         border: Border.all(color: AppColors.border),
       ),
       clipBehavior: Clip.antiAlias,
@@ -51,7 +52,7 @@ class CodeBlockBuilder extends MarkdownElementBuilder {
                         onTap: () {
                           Clipboard.setData(ClipboardData(text: code));
                           ScaffoldMessenger.of(ctx).showSnackBar(
-                            const SnackBar(content: Text('已复制'), duration: Duration(seconds: 1)),
+                            const SnackBar(content: Text(S.copied), duration: Duration(seconds: 1)),
                           );
                         },
                         child: Icon(Icons.content_copy, size: 13, color: AppColors.textSecondary),

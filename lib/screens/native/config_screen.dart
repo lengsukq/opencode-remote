@@ -5,6 +5,7 @@ import '../../services/opencode_api.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/app_input_decoration.dart';
 import '../../widgets/app_section_header.dart';
+import '../../widgets/app_snackbar.dart';
 
 class ConfigScreen extends StatefulWidget {
   final ServerEntry entry;
@@ -112,11 +113,11 @@ class _ConfigScreenState extends State<ConfigScreen> {
     try {
       await widget.api.patchConfig({keyCtrl.text.trim(): valueCtrl.text.trim()});
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('配置已更新')));
+        AppSnackBar.success(context, '配置已更新');
         _load();
       }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('更新失败: $e')));
+      if (mounted) AppSnackBar.error(context, '更新失败: $e');
     }
   }
 

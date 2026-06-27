@@ -5,6 +5,7 @@ import '../../services/opencode_api.dart';
 import '../../widgets/diff_view.dart';
 import '../../widgets/app_dialog.dart';
 import '../../widgets/app_bottom_sheet.dart';
+import '../../widgets/app_snackbar.dart';
 import 'chat_screen.dart';
 
 class SessionListScreen extends StatefulWidget {
@@ -75,7 +76,7 @@ class _SessionListScreenState extends State<SessionListScreen> {
       await _load();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('创建失败: $e')));
+        AppSnackBar.error(context, '创建失败: $e');
       }
     }
   }
@@ -126,11 +127,11 @@ class _SessionListScreenState extends State<SessionListScreen> {
     try {
       await widget.api.abortSession(session.id);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('会话已中止')));
+        AppSnackBar.show(context, '会话已中止');
         await _load();
       }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('中止失败: $e')));
+      if (mounted) AppSnackBar.error(context, '中止失败: $e');
     }
   }
 
@@ -138,11 +139,11 @@ class _SessionListScreenState extends State<SessionListScreen> {
     try {
       await widget.api.unshareSession(session.id);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('已取消分享')));
+        AppSnackBar.show(context, '已取消分享');
         await _load();
       }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('取消失败: $e')));
+      if (mounted) AppSnackBar.error(context, '取消失败: $e');
     }
   }
 
@@ -179,7 +180,7 @@ class _SessionListScreenState extends State<SessionListScreen> {
         ),
       );
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('获取子会话失败: $e')));
+      if (mounted) AppSnackBar.error(context, '获取子会话失败: $e');
     }
   }
 
@@ -232,7 +233,7 @@ class _SessionListScreenState extends State<SessionListScreen> {
         ),
       );
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('获取待办失败: $e')));
+      if (mounted) AppSnackBar.error(context, '获取待办失败: $e');
     }
   }
 
@@ -249,7 +250,7 @@ class _SessionListScreenState extends State<SessionListScreen> {
       await _load();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('重命名失败: $e')));
+        AppSnackBar.error(context, '重命名失败: $e');
       }
     }
   }
@@ -258,14 +259,11 @@ class _SessionListScreenState extends State<SessionListScreen> {
     try {
       await widget.api.shareSession(session.id);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('会话已分享', style: TextStyle(color: AppColors.textPrimary)),
-          backgroundColor: AppColors.surface,
-        ));
+        AppSnackBar.success(context, '会话已分享');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('分享失败: $e')));
+        AppSnackBar.error(context, '分享失败: $e');
       }
     }
   }
@@ -275,7 +273,7 @@ class _SessionListScreenState extends State<SessionListScreen> {
       final diffs = await widget.api.getSessionDiff(session.id);
       if (!mounted) return;
       if (diffs.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('暂无差异')));
+        AppSnackBar.show(context, '暂无差异');
         return;
       }
       showDialog(
@@ -311,7 +309,7 @@ class _SessionListScreenState extends State<SessionListScreen> {
       );
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('获取差异失败: $e')));
+        AppSnackBar.error(context, '获取差异失败: $e');
       }
     }
   }
@@ -320,15 +318,12 @@ class _SessionListScreenState extends State<SessionListScreen> {
     try {
       await widget.api.summarizeSession(session.id);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: const Text('总结完成', style: TextStyle(color: AppColors.textPrimary)),
-          backgroundColor: AppColors.surface,
-        ));
+        AppSnackBar.success(context, '总结完成');
         await _load();
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('总结失败: $e')));
+        AppSnackBar.error(context, '总结失败: $e');
       }
     }
   }
@@ -354,15 +349,12 @@ class _SessionListScreenState extends State<SessionListScreen> {
     try {
       await widget.api.forkSession(session.id);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('已分叉为新会话', style: TextStyle(color: AppColors.textPrimary)),
-          backgroundColor: AppColors.surface,
-        ));
+        AppSnackBar.success(context, '已分叉为新会话');
         await _load();
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('分叉失败: $e')));
+        AppSnackBar.error(context, '分叉失败: $e');
       }
     }
   }
@@ -390,7 +382,7 @@ class _SessionListScreenState extends State<SessionListScreen> {
       await _load();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('删除失败: $e')));
+        AppSnackBar.error(context, '删除失败: $e');
       }
     }
   }

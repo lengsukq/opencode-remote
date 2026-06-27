@@ -3,6 +3,7 @@ import '../../models.dart';
 import '../../theme.dart';
 import '../../services/opencode_api.dart';
 import '../../widgets/app_full_screen_dialog.dart';
+import '../../widgets/app_snackbar.dart';
 
 class FileBrowserScreen extends StatefulWidget {
   final ServerEntry entry;
@@ -123,7 +124,7 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
       } catch (e) {
         setState(() => node.loading = false);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('加载失败: $e')));
+          AppSnackBar.error(context, '加载失败: $e');
         }
       }
     } else {
@@ -152,7 +153,7 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
       );
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('读取失败: $e')));
+        AppSnackBar.error(context, '读取失败: $e');
       }
     }
   }
@@ -227,7 +228,7 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
       );
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('读取失败: $e')));
+        AppSnackBar.error(context, '读取失败: $e');
       }
     }
   }
@@ -262,7 +263,7 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('搜索失败: $e')));
+        AppSnackBar.error(context, '搜索失败: $e');
       }
     }
     if (mounted) setState(() => _searching = false);

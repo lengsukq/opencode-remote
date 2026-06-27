@@ -14,6 +14,9 @@ import '../../widgets/chat_input_bar.dart';
 import '../../widgets/command_suggestions.dart';
 import '../../widgets/revert_banner.dart';
 import '../../widgets/todo_banner.dart';
+import '../../widgets/app_snackbar.dart';
+import '../../widgets/app_dialog.dart';
+import '../../widgets/app_bottom_sheet.dart';
 import 'message_bubble.dart';
 import 'model_picker_sheet.dart';
 
@@ -138,43 +141,41 @@ class _ChatScreenState extends State<ChatScreen> {
     final props = (data['payload'] is Map ? data['payload']['properties'] : data['properties']) as Map<String, dynamic>?;
     if (props == null) return;
     final permissionID = data['id'] as String?;
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        title: Text('Permission Request', style: TextStyle(color: AppColors.textPrimary)),
-        content: Text('${props['message'] ?? 'Allow this operation?'}', style: TextStyle(color: AppColors.textSecondary)),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              if (permissionID != null) {
-                widget.api.executeCommand(widget.session.id, command: 'permission', arguments: ['deny', permissionID]);
-              }
-            },
-            child: Text('Deny', style: TextStyle(color: AppColors.danger)),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              if (permissionID != null) {
-                widget.api.executeCommand(widget.session.id, command: 'permission', arguments: ['approve', permissionID, '--remember']);
-              }
-            },
-            child: Text('Always Allow', style: TextStyle(color: AppColors.warning)),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
-            onPressed: () {
-              Navigator.pop(ctx);
-              if (permissionID != null) {
-                widget.api.executeCommand(widget.session.id, command: 'permission', arguments: ['approve', permissionID]);
-              }
-            },
-            child: Text('Allow Once'),
-          ),
-        ],
-      ),
+    AppDialog.showCustom(
+      context,
+      title: 'Permission Request',
+      showDefaultCancel: false,
+      content: Text('${props['message'] ?? 'Allow this operation?'}', style: TextStyle(color: AppColors.textSecondary)),
+      actions: [
+        TextButton(
+          onPressed: () {
+            Navigator.pop(context);
+            if (permissionID != null) {
+              widget.api.executeCommand(widget.session.id, command: 'permission', arguments: ['deny', permissionID]);
+            }
+          },
+          child: Text('Deny', style: TextStyle(color: AppColors.danger)),
+        ),
+        TextButton(
+          onPressed: () {
+            Navigator.pop(context);
+            if (permissionID != null) {
+              widget.api.executeCommand(widget.session.id, command: 'permission', arguments: ['approve', permissionID, '--remember']);
+            }
+          },
+          child: Text('Always Allow', style: TextStyle(color: AppColors.warning)),
+        ),
+        FilledButton(
+          style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+          onPressed: () {
+            Navigator.pop(context);
+            if (permissionID != null) {
+              widget.api.executeCommand(widget.session.id, command: 'permission', arguments: ['approve', permissionID]);
+            }
+          },
+          child: Text('Allow Once'),
+        ),
+      ],
     );
   }
 
@@ -182,21 +183,18 @@ class _ChatScreenState extends State<ChatScreen> {
     if (!mounted) return;
     final props = (data['payload'] is Map ? data['payload']['properties'] : data['properties']) as Map<String, dynamic>?;
     if (props == null) return;
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        title: Text('Question', style: TextStyle(color: AppColors.textPrimary)),
-        content: Text('${props['message'] ?? props['question'] ?? ''}', style: TextStyle(color: AppColors.textSecondary)),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('Cancel', style: TextStyle(color: AppColors.textSecondary))),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
-            onPressed: () => Navigator.pop(ctx),
-            child: Text('OK'),
-          ),
-        ],
-      ),
+    AppDialog.showCustom(
+      context,
+      title: 'Question',
+      cancelLabel: 'Cancel',
+      content: Text('${props['message'] ?? props['question'] ?? ''}', style: TextStyle(color: AppColors.textSecondary)),
+      actions: [
+        FilledButton(
+          style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+          onPressed: () => Navigator.pop(context),
+          child: Text('OK'),
+        ),
+      ],
     );
   }
 
@@ -381,7 +379,7 @@ class _ChatScreenState extends State<ChatScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Attachment failed: $e')));
+        AppSnackBar.error(context, 'Attachment failed: $e');
       }
     }
   }
@@ -461,19 +459,20 @@ class _ChatScreenState extends State<ChatScreen> {
       _waitForFirstReply();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Shell failed: $e')));
+        AppSnackBar.error(context, 'Shell failed: $e');
         setState(() => _sending = false);
       }
     }
   }
 
   Future<String?> _showShellDialog() {
-    return showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        title: const Text('Run Shell Command', style: TextStyle(color: AppColors.textPrimary)),
-        content: TextField(
+    return AppDialog.showCustom<String>(
+      context,
+      title: 'Run Shell Command',
+      showDefaultCancel: true,
+      cancelLabel: 'Cancel',
+      content: Builder(
+        builder: (ctx) => TextField(
           autofocus: true,
           style: const TextStyle(color: AppColors.textPrimary),
           decoration: const InputDecoration(
@@ -484,15 +483,14 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
           onSubmitted: (v) => Navigator.pop(ctx, v),
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary))),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
-            onPressed: () => Navigator.pop(ctx, ''),
-            child: const Text('Run'),
-          ),
-        ],
       ),
+      actions: [
+        FilledButton(
+          style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+          onPressed: () => Navigator.pop(context, ''),
+          child: const Text('Run'),
+        ),
+      ],
     );
   }
 
@@ -552,15 +550,13 @@ class _ChatScreenState extends State<ChatScreen> {
                   agent: _selectedAgent, model: _selectedModel,
                 );
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Code submitted to $path'), duration: Duration(seconds: 2)),
-                  );
+                  AppSnackBar.success(context, 'Code submitted to $path');
                 }
                 _refreshMessages();
                 _waitForFirstReply();
               } catch (e) {
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Write failed: $e')));
+                  AppSnackBar.error(context, 'Write failed: $e');
                 }
               }
             },
@@ -596,11 +592,9 @@ class _ChatScreenState extends State<ChatScreen> {
   // --- Agent & Model Pickers ---
 
   void _showAgentPicker() {
-    showModalBottomSheet(
+    AppBottomSheet.show(
       context: context,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
-      builder: (ctx) => SafeArea(
+      child: SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -618,7 +612,7 @@ class _ChatScreenState extends State<ChatScreen> {
               title: Text(a.name, style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w500)),
               subtitle: a.description != null ? Text(a.description!, style: TextStyle(color: AppColors.textTertiary, fontSize: 12)) : null,
               trailing: _selectedAgent == a.name ? const Icon(Icons.check, color: AppColors.primary) : null,
-              onTap: () { setState(() => _selectedAgent = a.name); Navigator.pop(ctx); },
+              onTap: () { setState(() => _selectedAgent = a.name); Navigator.pop(context); },
             )),
             const SizedBox(height: 8),
           ],
@@ -628,16 +622,13 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _showModelPicker() {
-    showModalBottomSheet(
+    AppBottomSheet.show(
       context: context,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
-      isScrollControlled: true,
-      builder: (ctx) => ModelPickerSheet(
+      child: ModelPickerSheet(
         providers: _providers,
         selectedId: _selectedModel,
         defaultModel: _selectedModel,
-        onSelect: (fullID) { setState(() => _selectedModel = fullID); Navigator.pop(ctx); },
+        onSelect: (fullID) { setState(() => _selectedModel = fullID); Navigator.pop(context); },
       ),
     );
   }
@@ -657,27 +648,19 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<String?> _showActionSheet(Message msg) {
-    return showModalBottomSheet<String>(
-      context: context,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(padding: const EdgeInsets.all(16), child: Text('Message Actions', style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w600))),
-            const Divider(),
-            ListTile(leading: const Icon(Icons.copy, color: AppColors.textSecondary), title: const Text('Copy Content', style: TextStyle(color: AppColors.textPrimary)), onTap: () => Navigator.pop(ctx, 'copy')),
-            if (msg.role != 'user') ...[
-              ListTile(leading: const Icon(Icons.undo, color: AppColors.textSecondary), title: const Text('Revert Message', style: TextStyle(color: AppColors.textPrimary)), onTap: () => Navigator.pop(ctx, 'revert')),
-              ListTile(leading: const Icon(Icons.redo, color: AppColors.textSecondary), title: const Text('Restore Reverted', style: TextStyle(color: AppColors.textPrimary)), onTap: () => Navigator.pop(ctx, 'unrevert')),
-              ListTile(leading: const Icon(Icons.info_outline, color: AppColors.textSecondary), title: const Text('View Details', style: TextStyle(color: AppColors.textPrimary)), onTap: () => Navigator.pop(ctx, 'detail')),
-            ],
-            ListTile(leading: const Icon(Icons.call_split, color: AppColors.textSecondary), title: const Text('Fork from Here', style: TextStyle(color: AppColors.textPrimary)), onTap: () => Navigator.pop(ctx, 'fork')),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
+    final options = <BottomSheetOption<String>>[
+      BottomSheetOption(icon: Icons.copy, label: 'Copy Content', value: 'copy'),
+      if (msg.role != 'user') ...[
+        BottomSheetOption(icon: Icons.undo, label: 'Revert Message', value: 'revert'),
+        BottomSheetOption(icon: Icons.redo, label: 'Restore Reverted', value: 'unrevert'),
+        BottomSheetOption(icon: Icons.info_outline, label: 'View Details', value: 'detail'),
+      ],
+      BottomSheetOption(icon: Icons.call_split, label: 'Fork from Here', value: 'fork'),
+    ];
+    return AppBottomSheet.showOptions(
+      context,
+      title: 'Message Actions',
+      options: options,
     );
   }
 
@@ -738,7 +721,7 @@ class _ChatScreenState extends State<ChatScreen> {
         ),
       );
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Detail failed: $e')));
+      if (mounted) AppSnackBar.error(context, 'Detail failed: $e');
     }
   }
 
@@ -760,9 +743,7 @@ class _ChatScreenState extends State<ChatScreen> {
   Future<void> _copyToClipboard(String text) async {
     await Clipboard.setData(ClipboardData(text: text));
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Copied', style: TextStyle(color: AppColors.textPrimary)), backgroundColor: AppColors.surface),
-      );
+      AppSnackBar.success(context, 'Copied');
     }
   }
 
@@ -771,7 +752,7 @@ class _ChatScreenState extends State<ChatScreen> {
       await widget.api.revertMessage(widget.session.id, msg.id);
       if (mounted) await _refreshMessages();
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Revert failed: $e')));
+      if (mounted) AppSnackBar.error(context, 'Revert failed: $e');
     }
   }
 
@@ -780,7 +761,7 @@ class _ChatScreenState extends State<ChatScreen> {
       await widget.api.unrevertMessages(widget.session.id);
       if (mounted) await _refreshMessages();
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Restore failed: $e')));
+      if (mounted) AppSnackBar.error(context, 'Restore failed: $e');
     }
   }
 
@@ -793,7 +774,7 @@ class _ChatScreenState extends State<ChatScreen> {
         ));
       }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Fork failed: $e')));
+      if (mounted) AppSnackBar.error(context, 'Fork failed: $e');
     }
   }
 
@@ -881,7 +862,7 @@ class _ChatScreenState extends State<ChatScreen> {
       setState(() => _revertSnapshot = null);
       if (mounted) await _refreshMessages();
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Restore failed: $e')));
+      if (mounted) AppSnackBar.error(context, 'Restore failed: $e');
     }
   }
 
@@ -931,7 +912,7 @@ class _ChatScreenState extends State<ChatScreen> {
         builder: (_) => ChatScreen(session: session, entry: widget.entry, api: widget.api),
       ));
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('create session failed: $e')));
+      if (mounted) AppSnackBar.error(context, 'create session failed: $e');
     }
   }
 }
