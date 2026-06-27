@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../models.dart';
 import '../theme.dart';
@@ -15,6 +16,7 @@ import '../utils/project_helpers.dart';
 
 import '../utils/responsive.dart';
 import '../utils/responsive_values.dart';
+import '../utils/glass_effect.dart';
 import 'project_avatar.dart';
 import 'add_project_dialog.dart';
 import 'app_snackbar.dart';
@@ -47,7 +49,13 @@ class _MainScaffoldState extends State<MainScaffold> {
     _initProjects();
   }
 
-  List<NavPage> get _navPages => NavPage.values.where((p) => p != NavPage.projects).toList();
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
+  List<NavPage> get _navPages =>
+      NavPage.values.where((p) => p != NavPage.projects).toList();
 
   void _initProjects() async {
     try {
@@ -59,7 +67,9 @@ class _MainScaffoldState extends State<MainScaffold> {
           _activeProject = current;
         });
       }
-      _api.directory = current.path;
+      if (current.path.isNotEmpty) {
+        _api.directory = current.path;
+      }
       // 后台持久化：不阻塞 UI
       unawaited(ProjectHelpers.saveProjects(widget.entry.id, projects));
     } catch (e) {
@@ -94,14 +104,26 @@ class _MainScaffoldState extends State<MainScaffold> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.surface,
-        title: Text(S.closeProject, style: const TextStyle(color: AppColors.textPrimary)),
-        content: Text('${S.confirmCloseProject}\n${project.name}', style: TextStyle(color: AppColors.textSecondary)),
+        title: const Text(
+          S.closeProject,
+          style: TextStyle(color: AppColors.textPrimary),
+        ),
+        content: Text(
+          '${S.confirmCloseProject}\n${project.name}',
+          style: const TextStyle(color: AppColors.textSecondary),
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(S.cancel, style: TextStyle(color: AppColors.textSecondary))),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text(
+              S.cancel,
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
             onPressed: () => Navigator.pop(ctx, true),
-            child: Text(S.closeProject),
+            child: const Text(S.closeProject),
           ),
         ],
       ),
@@ -128,26 +150,53 @@ class _MainScaffoldState extends State<MainScaffold> {
       context: context,
       backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppColors.kDefaultBorderRadius)),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppColors.kDefaultBorderRadius),
+        ),
       ),
-      builder: (_) => SettingsSheet(entry: widget.entry, currentMode: AppMode.native),
+      builder: (_) =>
+          SettingsSheet(entry: widget.entry, currentMode: AppMode.native),
     );
   }
 
   Widget _buildPage() {
     switch (_currentPage) {
       case NavPage.dashboard:
-        return DashboardScreen(entry: widget.entry, api: _api, activeProject: _activeProject);
+        return DashboardScreen(
+          entry: widget.entry,
+          api: _api,
+          activeProject: _activeProject,
+        );
       case NavPage.sessions:
-        return SessionListScreen(entry: widget.entry, api: _api, activeProject: _activeProject);
+        return SessionListScreen(
+          entry: widget.entry,
+          api: _api,
+          activeProject: _activeProject,
+        );
       case NavPage.files:
-        return FileBrowserScreen(entry: widget.entry, api: _api, activeProject: _activeProject);
+        return FileBrowserScreen(
+          entry: widget.entry,
+          api: _api,
+          activeProject: _activeProject,
+        );
       case NavPage.projects:
-        return ProjectScreen(entry: widget.entry, api: _api, onProjectsChanged: _initProjects);
+        return ProjectScreen(
+          entry: widget.entry,
+          api: _api,
+          onProjectsChanged: _initProjects,
+        );
       case NavPage.config:
-        return ConfigScreen(entry: widget.entry, api: _api, activeProject: _activeProject);
+        return ConfigScreen(
+          entry: widget.entry,
+          api: _api,
+          activeProject: _activeProject,
+        );
       case NavPage.terminal:
-        return TerminalScreen(entry: widget.entry, api: _api, activeProject: _activeProject);
+        return TerminalScreen(
+          entry: widget.entry,
+          api: _api,
+          activeProject: _activeProject,
+        );
     }
   }
 
@@ -158,15 +207,15 @@ class _MainScaffoldState extends State<MainScaffold> {
     return isPhone ? _buildPhoneLayout(context) : _buildTabletLayout(context);
   }
 
-  /// 手机布局：使用 BottomNavigationBar
+  /// 手机布局：iOS 风格毛玻璃导航栏 + 底部导航
   Widget _buildPhoneLayout(BuildContext context) {
-    final isDark = isDarkMode(context);
-    final selectedColor = isDark ? DarkColors.primary : AppColors.primary;
-    final unselectedColor = isDark ? DarkColors.textTertiary : AppColors.textTertiary;
+    final unselectedColor = isDarkMode(context)
+        ? DarkColors.textTertiary
+        : AppColors.textTertiary;
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
+      appBar: GlassNavBar(
         title: Text(_getPageTitle()),
         actions: [
           if (_activeProject != null)
@@ -174,10 +223,15 @@ class _MainScaffoldState extends State<MainScaffold> {
               padding: const EdgeInsets.only(right: 8),
               child: Center(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.primaryLight,
-                    borderRadius: BorderRadius.circular(AppColors.kChipBorderRadius),
+                    borderRadius: BorderRadius.circular(
+                      AppColors.kChipBorderRadius,
+                    ),
                   ),
                   child: Text(
                     _activeProject!.name,
@@ -191,21 +245,34 @@ class _MainScaffoldState extends State<MainScaffold> {
               ),
             ),
           IconButton(
-            icon: Icon(Icons.settings, color: unselectedColor, size: R.iconSize(context)),
+            icon: Icon(
+              Icons.settings,
+              color: unselectedColor,
+              size: R.iconSize(context),
+            ),
             onPressed: _openSettings,
           ),
+          if (_projects.isNotEmpty)
+            PopupMenuButton<NavPage>(
+              icon: Icon(
+                Icons.more_vert,
+                color: unselectedColor,
+                size: R.iconSize(context),
+              ),
+              onSelected: _navigateTo,
+              itemBuilder: (_) => [
+                const PopupMenuItem(
+                  value: NavPage.projects,
+                  child: Text(S.allProjects),
+                ),
+              ],
+            ),
         ],
       ),
       body: _buildPage(),
-      bottomNavigationBar: BottomNavigationBar(
+      bottomNavigationBar: GlassBottomNav(
         currentIndex: _navPages.indexOf(_currentPage),
         onTap: (i) => _navigateTo(_navPages[i]),
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: isDark ? DarkColors.surface : AppColors.surface,
-        selectedItemColor: selectedColor,
-        unselectedItemColor: unselectedColor,
-        selectedFontSize: R.labelFontSize(context),
-        unselectedFontSize: R.labelFontSize(context),
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.dashboard_outlined),
@@ -237,119 +304,163 @@ class _MainScaffoldState extends State<MainScaffold> {
     );
   }
 
-  /// 平板布局：使用 NavigationRail
+  /// 平板布局：iOS 风格毛玻璃导航栏 + 页面
   Widget _buildTabletLayout(BuildContext context) {
     final isDark = isDarkMode(context);
-    final bgColor = isDark ? DarkColors.surface : AppColors.surface;
     final selectedColor = isDark ? DarkColors.primary : AppColors.primary;
-    final unselectedColor = isDark ? DarkColors.textTertiary : AppColors.textTertiary;
+    final unselectedColor = isDark
+        ? DarkColors.textTertiary
+        : AppColors.textTertiary;
 
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: Row(
           children: [
-            NavigationRail(
-              selectedIndex: _navPages.indexOf(_currentPage),
-              onDestinationSelected: (i) => _navigateTo(_navPages[i]),
-              backgroundColor: bgColor,
-              indicatorColor: selectedColor.withValues(alpha: 0.15),
-              labelType: NavigationRailLabelType.all,
-              leading: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8, bottom: 16),
-                    child: Icon(Icons.code, color: selectedColor, size: 28),
-                  ),
-                  if (_activeProject != null)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Text(
-                        _activeProject!.name,
-                        style: const TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        textAlign: TextAlign.center,
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 1,
+            ClipRect(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(
+                  sigmaX: Glass.cardBlur,
+                  sigmaY: Glass.cardBlur,
+                ),
+                child: Container(
+                  width: R.navRailWidth(context),
+                  decoration: BoxDecoration(
+                    color: Glass.surface(context),
+                    border: Border(
+                      right: BorderSide(
+                        color: Glass.border(context),
+                        width: 0.5,
                       ),
                     ),
-                  if (_projects.isNotEmpty)
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(maxHeight: 300),
-                      child: SingleChildScrollView(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            ..._projects.map((p) => Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 2),
-                              child: ProjectAvatar(
-                                project: p,
-                                isActive: _activeProject?.id == p.id,
-                                onTap: () => _switchProject(p),
-                                onLongPress: p.id == _activeProject?.id ? () => _closeProject(p) : null,
+                  ),
+                  child: NavigationRail(
+                    selectedIndex: _navPages.indexOf(_currentPage),
+                    onDestinationSelected: (i) => _navigateTo(_navPages[i]),
+                    backgroundColor: Colors.transparent,
+                    indicatorColor: selectedColor.withValues(alpha: 0.15),
+                    labelType: NavigationRailLabelType.all,
+                    leading: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8, bottom: 16),
+                          child: Icon(
+                            Icons.code,
+                            color: selectedColor,
+                            size: 28,
+                          ),
+                        ),
+                        if (_activeProject != null)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: Text(
+                              _activeProject!.name,
+                              style: TextStyle(
+                                color: isDark
+                                    ? DarkColors.textPrimary
+                                    : AppColors.textPrimary,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
                               ),
-                            )),
-                            const SizedBox(height: 4),
-                            IconButton(
-                              icon: Icon(Icons.add_circle_outline, color: unselectedColor, size: 20),
+                              textAlign: TextAlign.center,
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
+                          ),
+                        if (_projects.isNotEmpty)
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(maxHeight: 300),
+                            child: SingleChildScrollView(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  ..._projects.map(
+                                    (p) => Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 2,
+                                      ),
+                                      child: ProjectAvatar(
+                                        project: p,
+                                        isActive: _activeProject?.id == p.id,
+                                        onTap: () => _switchProject(p),
+                                        onLongPress: p.id == _activeProject?.id
+                                            ? () => _closeProject(p)
+                                            : null,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  IconButton(
+                                    icon: Icon(
+                                      Icons.add_circle_outline,
+                                      color: unselectedColor,
+                                      size: 20,
+                                    ),
+                                    onPressed: _showAddProjectDialog,
+                                    tooltip: S.addProject,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        if (_projects.isEmpty)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            child: IconButton(
+                              icon: Icon(
+                                Icons.add_circle_outline,
+                                color: unselectedColor,
+                                size: 20,
+                              ),
                               onPressed: _showAddProjectDialog,
                               tooltip: S.addProject,
                             ),
-                          ],
-                        ),
-                      ),
+                          ),
+                      ],
                     ),
-                  if (_projects.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
+                    trailing: Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
                       child: IconButton(
-                        icon: Icon(Icons.add_circle_outline, color: unselectedColor, size: 20),
-                        onPressed: _showAddProjectDialog,
-                        tooltip: S.addProject,
+                        icon: Icon(
+                          Icons.settings,
+                          color: unselectedColor,
+                          size: 20,
+                        ),
+                        onPressed: _openSettings,
                       ),
                     ),
-                ],
-              ),
-              trailing: Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: IconButton(
-                  icon: Icon(Icons.settings, color: unselectedColor, size: 20),
-                  onPressed: _openSettings,
+                    destinations: const [
+                      NavigationRailDestination(
+                        icon: Icon(Icons.dashboard_outlined),
+                        selectedIcon: Icon(Icons.dashboard),
+                        label: Text(S.dashboard),
+                      ),
+                      NavigationRailDestination(
+                        icon: Icon(Icons.chat_outlined),
+                        selectedIcon: Icon(Icons.chat),
+                        label: Text(S.sessions),
+                      ),
+                      NavigationRailDestination(
+                        icon: Icon(Icons.folder_outlined),
+                        selectedIcon: Icon(Icons.folder),
+                        label: Text(S.files),
+                      ),
+                      NavigationRailDestination(
+                        icon: Icon(Icons.monitor_heart_outlined),
+                        selectedIcon: Icon(Icons.monitor_heart),
+                        label: Text(S.diagnostics),
+                      ),
+                      NavigationRailDestination(
+                        icon: Icon(Icons.terminal_outlined),
+                        selectedIcon: Icon(Icons.terminal),
+                        label: Text(S.terminal),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              destinations: const [
-                NavigationRailDestination(
-                  icon: Icon(Icons.dashboard_outlined),
-                  selectedIcon: Icon(Icons.dashboard),
-                  label: Text(S.dashboard),
-                ),
-                NavigationRailDestination(
-                  icon: Icon(Icons.chat_outlined),
-                  selectedIcon: Icon(Icons.chat),
-                  label: Text(S.sessions),
-                ),
-                NavigationRailDestination(
-                  icon: Icon(Icons.folder_outlined),
-                  selectedIcon: Icon(Icons.folder),
-                  label: Text(S.files),
-                ),
-                NavigationRailDestination(
-                  icon: Icon(Icons.monitor_heart_outlined),
-                  selectedIcon: Icon(Icons.monitor_heart),
-                  label: Text(S.diagnostics),
-                ),
-                NavigationRailDestination(
-                  icon: Icon(Icons.terminal_outlined),
-                  selectedIcon: Icon(Icons.terminal),
-                  label: Text(S.terminal),
-                ),
-              ],
             ),
-            const VerticalDivider(width: 1, thickness: 1),
             Expanded(child: _buildPage()),
           ],
         ),
