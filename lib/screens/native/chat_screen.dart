@@ -50,6 +50,9 @@ class _ChatScreenState extends State<ChatScreen> {
   final Map<String, String> _streamingDeltas = {};
   final Map<String, Map<String, dynamic>> _streamingToolStates = {};
   List<Map<String, dynamic>> _attachments = [];
+  List<String> _inputHistory = [];
+  int _historyIndex = -1;
+  bool _shellMode = false;
 
   @override
   void initState() {
@@ -183,6 +186,8 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void _onInputChanged() {
     final text = _inputCtrl.text;
+    final isShell = text.startsWith('!') && !text.startsWith('!/');
+    if (isShell != _shellMode) setState(() => _shellMode = isShell);
     if (text.startsWith('/') && text.length > 1) {
       final query = text.substring(1).toLowerCase();
       setState(() {
@@ -194,6 +199,7 @@ class _ChatScreenState extends State<ChatScreen> {
     } else if (text.isEmpty || !text.startsWith('/')) {
       setState(() => _showCommands = false);
     }
+    if (text.isEmpty) _historyIndex = _inputHistory.length;
   }
 
   Future<void> _load() async {
@@ -256,7 +262,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _sendMessage() async {
-    final text = _inputCtrl.text.trim();
+    var text = _inputCtrl.text.trim();
     if (text.isEmpty) return;
     _inputCtrl.clear();
     setState(() {
@@ -264,8 +270,13 @@ class _ChatScreenState extends State<ChatScreen> {
       _showCommands = false;
     });
 
+    final isShellCmd = _shellMode && text.startsWith('!');
+    if (isShellCmd) text = text.substring(1).trim();
+
     try {
-      if (text.startsWith('/')) {
+      if (isShellCmd) {
+        await widget.api.runShell(widget.session.id, command: text, agent: _selectedAgent, model: _selectedModel);
+      } else if (text.startsWith('/')) {
         final parts = text.substring(1).split(' ');
         final cmd = parts.first;
         final args = parts.skip(1).toList();
@@ -291,6 +302,9 @@ class _ChatScreenState extends State<ChatScreen> {
           await widget.api.sendMessage(widget.session.id, content: text, parts: allParts, agent: _selectedAgent, model: _selectedModel);
         }
       }
+      _inputHistory.add(text);
+      if (_inputHistory.length > 100) _inputHistory.removeAt(0);
+      _historyIndex = _inputHistory.length;
       _attachments = [];
       await _refreshMessages();
     } catch (e) {
@@ -312,6 +326,30 @@ class _ChatScreenState extends State<ChatScreen> {
         );
         setState(() => _sending = false);
       }
+    }
+  }
+
+  Future<void> _abortRequest() async {
+    try {
+      await widget.api.abortSession(widget.session.id);
+      setState(() => _sending = false);
+      await _refreshMessages();
+    } catch (e) {
+      debugPrint('ChatScreen._abortRequest: $e');
+      setState(() => _sending = false);
+    }
+  }
+
+  void _navigateHistory(int direction) {
+    if (_inputHistory.isEmpty) return;
+    final newIndex = (_historyIndex + direction).clamp(-1, _inputHistory.length - 1);
+    if (newIndex == _historyIndex) return;
+    _historyIndex = newIndex;
+    if (newIndex == -1) {
+      _inputCtrl.clear();
+    } else {
+      _inputCtrl.text = _inputHistory[newIndex];
+      _inputCtrl.selection = TextSelection.collapsed(offset: _inputCtrl.text.length);
     }
   }
 
@@ -1008,6 +1046,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget _buildInputBar() {
+    final shellHint = _shellMode ? '输入 shell 命令...' : '输入消息... (/ 查看命令)';
     return Container(
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).padding.bottom),
       decoration: const BoxDecoration(
@@ -1020,46 +1059,61 @@ class _ChatScreenState extends State<ChatScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           child: Row(
             children: [
-              IconButton(
-                onPressed: _pickAttachment,
-                icon: const Icon(Icons.add_circle_outline, color: AppColors.primary),
-                tooltip: '添加附件',
-              ),
+              if (!_sending)
+                IconButton(
+                  onPressed: _pickAttachment,
+                  icon: const Icon(Icons.add_circle_outline, color: AppColors.primary),
+                  tooltip: '添加附件',
+                ),
               const SizedBox(width: 4),
               Expanded(
                 child: TextField(
                   controller: _inputCtrl,
-                  style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 14,
+                    fontFamily: _shellMode ? 'monospace' : null,
+                  ),
                   decoration: InputDecoration(
-                    hintText: '输入消息... (/ 查看命令)',
-                    hintStyle: TextStyle(color: AppColors.textTertiary),
+                    hintText: shellHint,
+                    hintStyle: TextStyle(color: AppColors.textTertiary, fontFamily: _shellMode ? 'monospace' : null),
                     filled: true,
-                    fillColor: AppColors.background,
+                    fillColor: _shellMode ? AppColors.surfaceAlt : AppColors.background,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(20),
-                      borderSide: const BorderSide(color: AppColors.border),
+                      borderSide: BorderSide(color: _shellMode ? AppColors.success : AppColors.border),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(20),
-                      borderSide: const BorderSide(color: AppColors.border),
+                      borderSide: BorderSide(color: _shellMode ? AppColors.success : AppColors.border),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(20),
-                      borderSide: const BorderSide(color: AppColors.borderFocused),
+                      borderSide: BorderSide(color: AppColors.borderFocused),
                     ),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   ),
                   maxLines: 4,
                   minLines: 1,
                   textInputAction: TextInputAction.send,
-                  onSubmitted: (_) => _sendMessage(),
+                  onSubmitted: (_) => _sending ? null : _sendMessage(),
+                  onEditingComplete: () {
+                    if (!_sending) _sendMessage();
+                  },
                 ),
               ),
               const SizedBox(width: 8),
-              IconButton(
-                onPressed: _sendMessage,
-                icon: const Icon(Icons.send, color: AppColors.primary),
-              ),
+              if (_sending)
+                IconButton(
+                  onPressed: _abortRequest,
+                  icon: const Icon(Icons.stop_circle, color: AppColors.danger),
+                  tooltip: '停止',
+                )
+              else
+                IconButton(
+                  onPressed: _sendMessage,
+                  icon: const Icon(Icons.send, color: AppColors.primary),
+                ),
             ],
           ),
         ),
@@ -1528,6 +1582,7 @@ class _ToolPartWidgetState extends State<_ToolPartWidget> {
               ),
             ),
           _CodePreview(code: content, toolName: toolName, onApply: null),
+          ..._buildDiagnostics(input),
         ],
       );
     }
@@ -1611,6 +1666,45 @@ class _ToolPartWidgetState extends State<_ToolPartWidget> {
       );
     }
     return const SizedBox.shrink();
+  }
+
+  List<Widget> _buildDiagnostics(Map<String, dynamic> input) {
+    final raw = input['diagnostics'];
+    if (raw is! List) return [];
+    final items = raw.take(3).whereType<Map<String, dynamic>>().toList();
+    if (items.isEmpty) return [];
+    return items.map((d) {
+      final severity = d['severity'] as int? ?? 1;
+      final message = d['message'] as String? ?? '';
+      final line = d['line'] as int?;
+      final label = line != null ? '行 $line' : '';
+      final isError = severity >= 1;
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        color: (isError ? AppColors.danger : AppColors.warning).withValues(alpha: 0.1),
+        child: Row(
+          children: [
+            Icon(
+              isError ? Icons.error : Icons.warning_amber,
+              size: 14,
+              color: isError ? AppColors.danger : AppColors.warning,
+            ),
+            const SizedBox(width: 6),
+            if (label.isNotEmpty)
+              Text('$label: ', style: TextStyle(color: AppColors.textSecondary, fontSize: 11)),
+            Expanded(
+              child: Text(
+                message,
+                style: TextStyle(color: isError ? AppColors.danger : AppColors.warning, fontSize: 11),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      );
+    }).toList();
   }
 }
 
